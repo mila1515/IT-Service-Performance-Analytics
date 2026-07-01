@@ -77,6 +77,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*.nbconvert.ipynb
 
 # IPython
 profile_default/
@@ -151,6 +152,8 @@ activemq-data/
 .env
 .envrc
 .venv
+.venv-*/
+.uv-cache/
 env/
 venv/
 ENV/
@@ -216,3 +219,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local editor history
+.history/
+
+# Project data
+# Ignore all project datasets and generated data artifacts.
+data/
+
+# Power BI local/cache files
+*.pbi
+*.pbitmp
+
+# OS files
+.DS_Store
+Thumbs.db

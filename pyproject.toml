@@ -1,0 +1,8 @@
+[project]
+name = "it-service-performance-analytics"
+version = "0.1.0"
+description = "IT service performance analytics project using ServiceNow incident event log data."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "ipykernel>=6.29",   "jupyter>=1.1",   "matplotlib>=3.8",   "numpy>=1.26",   "pandas>=2.2",   "seaborn>=0.13",[tool.uv]    package = false

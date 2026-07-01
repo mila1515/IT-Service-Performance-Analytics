@@ -24,3 +24,13 @@ The IT department needs reliable performance indicators to answer questions such
 ## Expected Outcome
 
 Deliver dashboards and business recommendations to improve IT service performance.
+
+---
+
+## Stakeholders
+
+- IT Director
+- IT service managers
+- Support team leads
+- Service desk analysts
+- Business stakeholders impacted by IT service quality
