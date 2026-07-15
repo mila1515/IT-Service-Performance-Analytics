@@ -6,7 +6,7 @@
 ![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-150458)
 ![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811)
 
-Projet d'analyse de données de bout en bout combinant **Python**, **SQL**, **Power BI** et **DAX** afin d'analyser la performance du traitement des incidents IT.
+Projet d'analyse de données combinant **Python**, **SQL**, **Power BI** et **DAX** afin d'évaluer la performance du traitement des incidents IT.
 
 Le projet transforme un journal d'incidents ITSM en indicateurs opérationnels, analyses structurées, recommandations métier et tableau de bord interactif. Il permet aux responsables IT de suivre la qualité de service, d'identifier les risques de non-respect des SLA et de prioriser les actions d'amélioration.
 
