@@ -1,36 +1,14 @@
-# Business Context
+# Contexte métier
 
-## Company
+Une direction IT doit suivre la qualité du traitement des incidents afin de maintenir un bon niveau de service auprès des utilisateurs.
 
-This project simulates the work of a Data Analyst within the IT department of a medium-to-large enterprise.
+Les données d'incidents permettent d'analyser plusieurs dimensions clés :
 
-The organization manages thousands of IT incidents through ServiceNow.
+- le respect des engagements SLA ;
+- les délais de résolution et de clôture ;
+- la charge par groupe support ;
+- les réassignations, qui peuvent révéler des problèmes de routage ;
+- les réouvertures, qui peuvent signaler une résolution incomplète.
 
-The IT Director aims to improve operational performance by monitoring service quality indicators.
-
----
-
-## Business Problem
-
-The IT department needs reliable performance indicators to answer questions such as:
-
-- Are SLA targets being met?
-- Which support teams are the most efficient?
-- Which incident categories generate the longest resolution times?
-- Which operational factors increase the risk of SLA breaches?
-
----
-
-## Expected Outcome
-
-Deliver dashboards and business recommendations to improve IT service performance.
-
----
-
-## Stakeholders
-
-- IT Director
-- IT service managers
-- Support team leads
-- Service desk analysts
-- Business stakeholders impacted by IT service quality
+L'objectif de l'analyse est de transformer ces données opérationnelles en indicateurs utiles au pilotage métier.
+Les résultats peuvent aider à prioriser les actions d'amélioration et à mieux suivre la performance du support IT.

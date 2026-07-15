@@ -1,0 +1,30 @@
+relationship 85426196-8c31-4a6d-9b3f-a11f17658645
+	joinOnDateBehavior: datePartOnly
+	fromColumn: incident_clean.opened_at
+	toColumn: LocalDateTable_87437c68-3397-43f3-ac84-9c3e62d1dedc.Date
+
+relationship c2dda1bf-98a0-4bb3-a755-f6826ddd5d1b
+	joinOnDateBehavior: datePartOnly
+	fromColumn: incident_clean.sys_created_at
+	toColumn: LocalDateTable_36fb01b5-1a1b-44f1-8146-0c7f7bf3bc5b.Date
+
+relationship b4f92d62-ade6-4eba-a83e-d4e2f101d942
+	joinOnDateBehavior: datePartOnly
+	fromColumn: incident_clean.sys_updated_at
+	toColumn: LocalDateTable_3172f542-0896-498d-8646-a7818b68ca8d.Date
+
+relationship 5c514903-4acc-44c3-af5b-48ed14ca42a0
+	joinOnDateBehavior: datePartOnly
+	fromColumn: incident_clean.resolved_at
+	toColumn: LocalDateTable_eb2564bc-8cf5-49d3-b904-4c2100c97316.Date
+
+relationship 4fec5130-e226-4725-b973-98a5eae85959
+	joinOnDateBehavior: datePartOnly
+	fromColumn: incident_clean.closed_at
+	toColumn: LocalDateTable_0ed85e12-42d8-45ae-8890-1a3f5d568f9b.Date
+
+relationship 68bb072e-cfd6-42af-b991-4dbff88b145d
+	joinOnDateBehavior: datePartOnly
+	fromColumn: incident_clean.opened_month
+	toColumn: LocalDateTable_188da884-20ea-4a41-beeb-1ea0f6c767d4.Date
+

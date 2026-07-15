@@ -1,0 +1,502 @@
+table incident_clean
+	lineageTag: 3f9f8fd2-dd5f-432a-9804-6974d95e9302
+
+	measure 'Total Incidents' = DISTINCTCOUNT(incident_clean[number])
+		formatString: 0
+		lineageTag: 4be0c542-1bcc-4c37-a4fa-f101c656801b
+
+		annotation PBI_FormatHint = {"isDecimal":true}
+
+	measure 'SLA Compliance %' =
+			
+			DIVIDE(
+			    SUM(incident_clean[sla_compliant]),
+			    [Total Incidents],
+			    0
+			)
+		formatString: 0.00\ %;-0.00\ %;0.00\ %
+		lineageTag: adde762a-e26d-473c-a867-c493cb030423
+
+	measure 'Average Resolution Hours' =
+			
+			AVERAGE(incident_clean[resolution_time_hours])
+		formatString: 0.00
+		lineageTag: d4e0d039-c499-4565-8561-bbf9fb8fa12d
+
+	measure 'Average Closure Hours' =
+			
+			AVERAGE(incident_clean[closure_time_hours])
+		formatString: 0.00
+		lineageTag: 2a7669d2-3563-4af4-9afb-ae06e790cadf
+
+	measure 'Reassigned Incidents' =
+			
+			CALCULATE(
+			    [Total Incidents],
+			    incident_clean[reassignment_count] > 0
+			)
+		formatString: 0
+		lineageTag: fe3f16b3-7134-46d6-b8ed-6cbb1440bac9
+
+	measure 'Reassignment Rate %' =
+			
+			DIVIDE(
+			    [Reassigned Incidents],
+			    [Total Incidents],
+			    0
+			)
+		formatString: 0.00\ %;-0.00\ %;0.00\ %
+		lineageTag: cfbb424f-2edb-4e77-8d4d-5f31ca911511
+
+	column number
+		dataType: string
+		lineageTag: 462675ef-67c8-4c78-b56a-a7cfe3eea840
+		summarizeBy: none
+		sourceColumn: number
+
+		annotation SummarizationSetBy = Automatic
+
+	column incident_state
+		dataType: string
+		lineageTag: 5fe7b765-cb16-4673-b2f9-c81c26dca2be
+		summarizeBy: none
+		sourceColumn: incident_state
+
+		annotation SummarizationSetBy = Automatic
+
+	column active
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 1d278d88-f864-406b-8de4-81016bda3ddc
+		summarizeBy: none
+		sourceColumn: active
+
+		annotation SummarizationSetBy = Automatic
+
+	column reassignment_count
+		dataType: int64
+		formatString: 0
+		lineageTag: ec5611b1-1618-4c8c-9125-41a103c11fb9
+		summarizeBy: sum
+		sourceColumn: reassignment_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column reopen_count
+		dataType: int64
+		formatString: 0
+		lineageTag: d92b9dad-ab60-48eb-ae77-418d0dcf9b49
+		summarizeBy: sum
+		sourceColumn: reopen_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column sys_mod_count
+		dataType: int64
+		formatString: 0
+		lineageTag: 045e0345-b7d2-480f-a044-4e4a07dbe72d
+		summarizeBy: sum
+		sourceColumn: sys_mod_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column made_sla
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3bc345f5-b16b-48bd-b546-0c356c94d9bf
+		summarizeBy: none
+		sourceColumn: made_sla
+
+		annotation SummarizationSetBy = Automatic
+
+	column caller_id
+		dataType: string
+		lineageTag: 6027dc76-1483-40de-9411-6dbfa6c08f71
+		summarizeBy: none
+		sourceColumn: caller_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column opened_by
+		dataType: string
+		lineageTag: 18d79e59-8bee-4c2b-9d19-85e4bc432c72
+		summarizeBy: none
+		sourceColumn: opened_by
+
+		annotation SummarizationSetBy = Automatic
+
+	column opened_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ff93d5b3-d4d1-40fd-b018-308605a9687b
+		summarizeBy: none
+		sourceColumn: opened_at
+
+		variation Variation
+			isDefault
+			relationship: 85426196-8c31-4a6d-9b3f-a11f17658645
+			defaultHierarchy: LocalDateTable_87437c68-3397-43f3-ac84-9c3e62d1dedc.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column sys_created_by
+		dataType: string
+		lineageTag: 16029651-2e2d-47ea-8fdd-ce2f0dd78fd2
+		summarizeBy: none
+		sourceColumn: sys_created_by
+
+		annotation SummarizationSetBy = Automatic
+
+	column sys_created_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 18d6f717-0979-437e-9ca0-53873c25eea1
+		summarizeBy: none
+		sourceColumn: sys_created_at
+
+		variation Variation
+			isDefault
+			relationship: c2dda1bf-98a0-4bb3-a755-f6826ddd5d1b
+			defaultHierarchy: LocalDateTable_36fb01b5-1a1b-44f1-8146-0c7f7bf3bc5b.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column sys_updated_by
+		dataType: string
+		lineageTag: 9391df7e-bd85-4098-97b0-176e71931440
+		summarizeBy: none
+		sourceColumn: sys_updated_by
+
+		annotation SummarizationSetBy = Automatic
+
+	column sys_updated_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: e9175703-49fb-4fc7-9db3-03cb8a2da6b6
+		summarizeBy: none
+		sourceColumn: sys_updated_at
+
+		variation Variation
+			isDefault
+			relationship: b4f92d62-ade6-4eba-a83e-d4e2f101d942
+			defaultHierarchy: LocalDateTable_3172f542-0896-498d-8646-a7818b68ca8d.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column contact_type
+		dataType: string
+		lineageTag: 5f3afed3-1daa-4683-b9ae-8abf1c5fb6d4
+		summarizeBy: none
+		sourceColumn: contact_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column location
+		dataType: string
+		lineageTag: fd5a1af6-5afd-49ab-b563-cf8390510b77
+		summarizeBy: none
+		sourceColumn: location
+
+		annotation SummarizationSetBy = Automatic
+
+	column category
+		dataType: string
+		lineageTag: db6f3ef6-597f-4700-924f-47cb55e01f0e
+		summarizeBy: none
+		sourceColumn: category
+
+		annotation SummarizationSetBy = Automatic
+
+	column subcategory
+		dataType: string
+		lineageTag: b9f48b18-0325-47cc-8578-18ae8ef0d64a
+		summarizeBy: none
+		sourceColumn: subcategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column u_symptom
+		dataType: string
+		lineageTag: f9b399e5-d197-4740-9ffe-2c132116cdc5
+		summarizeBy: none
+		sourceColumn: u_symptom
+
+		annotation SummarizationSetBy = Automatic
+
+	column cmdb_ci
+		dataType: string
+		lineageTag: 8fd84995-c0c8-4530-9592-d04af9f1bc58
+		summarizeBy: none
+		sourceColumn: cmdb_ci
+
+		annotation SummarizationSetBy = Automatic
+
+	column impact
+		dataType: string
+		lineageTag: b51dfedc-f293-4aff-b3cc-9318c4dd67f8
+		summarizeBy: none
+		sourceColumn: impact
+
+		annotation SummarizationSetBy = Automatic
+
+	column urgency
+		dataType: string
+		lineageTag: 3b676be2-f403-4dec-ae24-a3519582542a
+		summarizeBy: none
+		sourceColumn: urgency
+
+		annotation SummarizationSetBy = Automatic
+
+	column priority
+		dataType: string
+		lineageTag: 403f028d-8b7d-4027-9328-a7192e9b0e39
+		summarizeBy: none
+		sourceColumn: priority
+
+		annotation SummarizationSetBy = Automatic
+
+	column assignment_group
+		dataType: string
+		lineageTag: b4fd6ac9-44a0-4936-ae72-1f103bfaed40
+		summarizeBy: none
+		sourceColumn: assignment_group
+
+		annotation SummarizationSetBy = Automatic
+
+	column assigned_to
+		dataType: string
+		lineageTag: 9d44fdb6-8742-48c9-a6a3-8a47af426a5a
+		summarizeBy: none
+		sourceColumn: assigned_to
+
+		annotation SummarizationSetBy = Automatic
+
+	column knowledge
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 0811520d-ec7e-48a7-86ae-b7e93445b881
+		summarizeBy: none
+		sourceColumn: knowledge
+
+		annotation SummarizationSetBy = Automatic
+
+	column u_priority_confirmation
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 4c0e3b83-75ee-4809-80e8-6c5dd4cc07b0
+		summarizeBy: none
+		sourceColumn: u_priority_confirmation
+
+		annotation SummarizationSetBy = Automatic
+
+	column notify
+		dataType: string
+		lineageTag: 22d2268b-c326-46a5-9028-3b772c06dfbc
+		summarizeBy: none
+		sourceColumn: notify
+
+		annotation SummarizationSetBy = Automatic
+
+	column problem_id
+		dataType: string
+		lineageTag: badcc548-4c65-452f-9d60-40a2506851dd
+		summarizeBy: none
+		sourceColumn: problem_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column rfc
+		dataType: string
+		lineageTag: eae57bcd-9ce5-43ae-a2ff-066c0ad92510
+		summarizeBy: none
+		sourceColumn: rfc
+
+		annotation SummarizationSetBy = Automatic
+
+	column vendor
+		dataType: string
+		lineageTag: 7bf6ba76-c69e-4be5-98bc-76c9e3506d51
+		summarizeBy: none
+		sourceColumn: vendor
+
+		annotation SummarizationSetBy = Automatic
+
+	column caused_by
+		dataType: string
+		lineageTag: f49d0d7c-50ff-48bf-bc88-f520feb2ccd2
+		summarizeBy: none
+		sourceColumn: caused_by
+
+		annotation SummarizationSetBy = Automatic
+
+	column closed_code
+		dataType: string
+		lineageTag: e253ae37-13af-4988-a556-5d8e439fc0d4
+		summarizeBy: none
+		sourceColumn: closed_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column resolved_by
+		dataType: string
+		lineageTag: 08be3b59-cdae-4bd4-b435-2cd715df3d5f
+		summarizeBy: none
+		sourceColumn: resolved_by
+
+		annotation SummarizationSetBy = Automatic
+
+	column resolved_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 60a8a9dc-3efd-4057-a8b0-dddd7f7cebfe
+		summarizeBy: none
+		sourceColumn: resolved_at
+
+		variation Variation
+			isDefault
+			relationship: 5c514903-4acc-44c3-af5b-48ed14ca42a0
+			defaultHierarchy: LocalDateTable_eb2564bc-8cf5-49d3-b904-4c2100c97316.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column closed_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ef5f95f1-cd34-4dfc-b4f5-82b9cdb32bd0
+		summarizeBy: none
+		sourceColumn: closed_at
+
+		variation Variation
+			isDefault
+			relationship: 4fec5130-e226-4725-b973-98a5eae85959
+			defaultHierarchy: LocalDateTable_0ed85e12-42d8-45ae-8890-1a3f5d568f9b.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column priority_level
+		dataType: int64
+		formatString: 0
+		lineageTag: 434472e7-f4c4-4402-8e3b-665c4875a241
+		summarizeBy: sum
+		sourceColumn: priority_level
+
+		annotation SummarizationSetBy = Automatic
+
+	column impact_level
+		dataType: int64
+		formatString: 0
+		lineageTag: 47f9853a-874d-41ba-90ec-1cd19c0b2468
+		summarizeBy: sum
+		sourceColumn: impact_level
+
+		annotation SummarizationSetBy = Automatic
+
+	column urgency_level
+		dataType: int64
+		formatString: 0
+		lineageTag: 00399b71-d261-4d5a-b187-08fa13313f9a
+		summarizeBy: sum
+		sourceColumn: urgency_level
+
+		annotation SummarizationSetBy = Automatic
+
+	column resolution_time_hours
+		dataType: double
+		lineageTag: efcc4459-ba8c-4d04-b5e7-7d5e5763fc9b
+		summarizeBy: sum
+		sourceColumn: resolution_time_hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column closure_time_hours
+		dataType: double
+		lineageTag: e4353ca8-aa17-4066-ab28-82aec4b92d85
+		summarizeBy: sum
+		sourceColumn: closure_time_hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column sla_compliant
+		dataType: int64
+		formatString: 0
+		lineageTag: e4fccfde-3385-4bf6-9cfe-12ded9bc5ccd
+		summarizeBy: sum
+		sourceColumn: sla_compliant
+
+		annotation SummarizationSetBy = Automatic
+
+	column has_reassignment
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5752e45a-f8df-4933-99e2-61d3ce88dcb8
+		summarizeBy: none
+		sourceColumn: has_reassignment
+
+		annotation SummarizationSetBy = Automatic
+
+	column has_reopen
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: dee9b23f-6ad7-4800-a4fa-123f8551e1e3
+		summarizeBy: none
+		sourceColumn: has_reopen
+
+		annotation SummarizationSetBy = Automatic
+
+	column opened_month
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 147787bb-d443-48ef-b9b8-9f641c73fdf7
+		summarizeBy: none
+		sourceColumn: opened_month
+
+		variation Variation
+			isDefault
+			relationship: 68bb072e-cfd6-42af-b991-4dbff88b145d
+			defaultHierarchy: LocalDateTable_188da884-20ea-4a41-beeb-1ea0f6c767d4.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column opened_hour
+		dataType: int64
+		formatString: 0
+		lineageTag: cbf85f77-38bb-4dd0-880b-d028bcbab7e7
+		summarizeBy: sum
+		sourceColumn: opened_hour
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Reassignment Status' =
+			
+			IF(
+			    incident_clean[reassignment_count] > 0,
+			    "Avec réassignation",
+			    "Sans réassignation"
+			)
+		lineageTag: ce2f8226-aa71-44b6-8fd3-a2b01dfb123d
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition incident_clean = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\djami\Desktop\Projects\IT-Service-Performance-Analytics\data\processed\incident_clean.csv"),[Delimiter=",", Columns=46, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"number", type text}, {"incident_state", type text}, {"active", type logical}, {"reassignment_count", Int64.Type}, {"reopen_count", Int64.Type}, {"sys_mod_count", Int64.Type}, {"made_sla", type logical}, {"caller_id", type text}, {"opened_by", type text}, {"opened_at", type datetime}, {"sys_created_by", type text}, {"sys_created_at", type datetime}, {"sys_updated_by", type text}, {"sys_updated_at", type datetime}, {"contact_type", type text}, {"location", type text}, {"category", type text}, {"subcategory", type text}, {"u_symptom", type text}, {"cmdb_ci", type text}, {"impact", type text}, {"urgency", type text}, {"priority", type text}, {"assignment_group", type text}, {"assigned_to", type text}, {"knowledge", type logical}, {"u_priority_confirmation", type logical}, {"notify", type text}, {"problem_id", type text}, {"rfc", type text}, {"vendor", type text}, {"caused_by", type text}, {"closed_code", type text}, {"resolved_by", type text}, {"resolved_at", type datetime}, {"closed_at", type datetime}, {"priority_level", Int64.Type}, {"impact_level", Int64.Type}, {"urgency_level", Int64.Type}, {"resolution_time_hours", type text}, {"closure_time_hours", type text}, {"sla_compliant", Int64.Type}, {"has_reassignment", type logical}, {"has_reopen", type logical}, {"opened_month", type date}, {"opened_hour", Int64.Type}}),
+				    #"Changed Type with Locale" = Table.TransformColumnTypes(#"Changed Type", {{"resolution_time_hours", type number}}, "en-US"),
+				    #"Changed Type with Locale1" = Table.TransformColumnTypes(#"Changed Type with Locale", {{"closure_time_hours", type number}}, "en-US")
+				in
+				    #"Changed Type with Locale1"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

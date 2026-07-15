@@ -1,58 +1,30 @@
-# Project Architecture
+# Architecture du projet
 
-This document describes the global structure of the analytics workflow. Detailed analysis, Python code and outputs are kept in the notebooks.
-
-## Analytics Workflow
+Le projet suit un workflow classique d'analyse de données.
 
 ```text
-Raw Data
+Données sources
     |
     v
-01_Data_Understanding
+Préparation et nettoyage
     |
     v
-02_Data_Cleaning
+Analyse exploratoire
     |
     v
-03_EDA
-    |
-    v
-SQL Database
-    |
-    v
-Power BI Dashboard
-    |
-    v
-Business Recommendations
+Table analytique unique (`incident_clean.csv`)
+    |                         |
+    v                         v
+Analyse SQL              Dashboard Power BI
+                         Mesures DAX dynamiques
 ```
 
-## Repository Structure
+## Rôle des dossiers
 
-```text
-IT-Service-Performance-Analytics/
-|
-|-- data/
-|   |-- raw/
-|   `-- processed/
-|
-|-- docs/
-|   |-- Business_Context.md
-|   |-- Project_Plan.md
-|   |-- Data_Dictionary.md
-|   |-- KPI_Definition.md
-|   `-- Architecture.md
-|
-|-- notebooks/
-|   `-- 01_Data_Understanding.ipynb
-|
-|-- README.md
-|-- pyproject.toml
-`-- uv.lock
-```
+- `data/raw` : fichier CSV source.
+- `data/processed` : table analytique nettoyée `incident_clean.csv`, utilisée par les notebooks et Power BI.
+- `data/database` : base SQLite créée pour les requêtes SQL.
+- `notebooks` : étapes du workflow analytique.
+- `docs` : documentation métier et technique du projet.
 
-## Separation of Responsibilities
-
-- `README.md` presents the project and helps recruiters or reviewers understand the scope quickly.
-- `docs/` contains project documentation: business context, planning, data dictionary, KPI definitions and architecture.
-- `notebooks/` contains executable analysis steps, including Python code, outputs and business interpretation.
-- `data/` stores raw and processed datasets.
+Les requêtes SQL servent à contrôler et approfondir les résultats, sans produire de fichiers de synthèse nécessaires au dashboard. Power BI calcule directement les KPI depuis la table analytique avec DAX, ce qui garantit que les cartes et graphiques réagissent aux filtres.

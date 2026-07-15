@@ -1,204 +1,164 @@
-# IT Service Performance Analytics
+# IT Incident Management Analytics
 
-## Project Overview
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![SQL](https://img.shields.io/badge/SQL-Analytics-lightgrey)
+![SQLite](https://img.shields.io/badge/SQLite-Database-003B57)
+![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-150458)
+![Power BI](https://img.shields.io/badge/Power%20BI-Ready-F2C811)
 
-This project simulates a real-world Data Analyst mission within an IT department (ITSM).
+Projet d'analyse de données de bout en bout combinant **Python**, **SQL**, **Power BI** et **DAX** afin d'analyser la performance du traitement des incidents IT.
 
-Using a ServiceNow incident management dataset, the objective is to analyze IT service performance, monitor SLA compliance, identify operational bottlenecks and provide actionable business insights through SQL, Python and Power BI.
+Le projet transforme un journal d'incidents ITSM en KPI opérationnels, analyses structurées, recommandations métier et tableau de bord interactif pour aider les responsables IT à suivre la qualité de service, détecter les risques de non-respect SLA et prioriser les actions d'amélioration.
 
-The project follows a complete analytics workflow similar to what is implemented in an enterprise environment.
+## Résultats clés
 
----
+| Indicateur | Résultat | Lecture métier |
+| --- | ---: | --- |
+| Incidents analysés | 24 918 | Base suffisamment large pour suivre la performance du support IT |
+| Conformité SLA globale | 63,45 % | Niveau perfectible, avec un risque réel de non-respect des engagements |
+| Temps moyen de résolution | 178,17 h | Les délais moyens restent élevés et doivent être suivis par priorité et groupe |
+| SLA Critical / High | 2,22 % / 0,98 % | Les incidents les plus sensibles sont les plus à risque |
+| Réassignations | 266 h vs 95 h | Les incidents réassignés prennent beaucoup plus de temps à résoudre |
 
-## Project Workflow
+## Aperçu Dashboard
 
-```
-Raw ServiceNow Data
-        │
-        ▼
-Business Understanding
-        │
-        ▼
-Data Understanding & Exploration
-        │
-        ▼
-Data Cleaning & Transformation
-        │
-        ▼
-SQL Analytics & KPI Calculation
-        │
-        ▼
-Power BI Dashboard & Visualization
-        │
-        ▼
-Business Recommendations & Insights
-```
+Le dashboard Power BI utilise directement `data/processed/incident_clean.csv`, la table analytique contenant une ligne par incident. Les KPI sont calculés dans Power BI avec des mesures DAX afin de rester dynamiques et de réagir aux segments (`priority`, `assignment_group`, `category` et `opened_month`). Un aperçu statique du dashboard est fourni pour montrer le rendu attendu.
 
----
+![IT Service Performance Power BI Dashboard](docs/images/powerbi_dashboard.png)
 
-## Business Context
+Vues recommandées pour Power BI :
 
-An IT department receives thousands of incidents every month through ServiceNow.
+- Cartes KPI : incidents, SLA, temps moyen de résolution, temps moyen de clôture.
+- Volume mensuel des incidents.
+- Conformité SLA par priorité.
+- Performance par groupe support.
+- Impact des réassignations sur le temps de résolution.
 
-Although large amounts of operational data are available, managers lack consolidated indicators to monitor service quality and identify improvement opportunities.
+Mesures DAX principales :
 
-As a Data Analyst, my mission is to transform raw incident data into business insights that support operational and strategic decision-making.
+```DAX
+Total Incidents =
+DISTINCTCOUNT(incident_clean[number])
 
----
+SLA Compliance % =
+DIVIDE(SUM(incident_clean[sla_compliant]), [Total Incidents], 0)
 
-## Business Objectives
+Average Resolution Hours =
+AVERAGE(incident_clean[resolution_time_hours])
 
-- Analyze incident management performance.
-- Measure SLA compliance.
-- Identify the main causes of service delays.
-- Evaluate support team performance.
-- Build executive dashboards.
-- Provide data-driven recommendations.
+Average Closure Hours =
+AVERAGE(incident_clean[closure_time_hours])
 
----
+Reassigned Incidents =
+CALCULATE([Total Incidents], incident_clean[reassignment_count] > 0)
 
-## Project Deliverables
-
-At the end of the project, the repository will include:
-
-- Enterprise-grade data cleaning pipeline
-- Exploratory data analysis notebook
-- SQL analytical queries
-- Power BI executive dashboard
-- Business recommendations report
-- Complete project documentation
-
----
-
-## Key Performance Indicators
-
-The project focuses on monitoring the following KPIs:
-
-- **SLA Compliance Rate** – Percentage of incidents resolved within SLA
-- **SLA Breach Rate** – Percentage of incidents exceeding SLA
-- **Average Resolution Time** – Mean time to resolve incidents
-- **Average Closure Time** – Mean time from incident creation to closure
-- **Reassignment Rate** – Percentage of incidents reassigned
-- **Reopen Rate** – Percentage of incidents reopened
-- **Incident Volume** – Total incident count and trends
-- **Support Team Performance** – Per-team resolution metrics
-
----
-
-## Technologies
-
-- Python
-- Pandas
-- SQL
-- Power BI
-- Git & GitHub
-- uv
-
----
-
-## Skills Demonstrated
-
-- Data Cleaning & Transformation
-- Exploratory Data Analysis
-- SQL Analytics & Query Optimization
-- Business Intelligence & Dashboarding
-- KPI Design & Measurement
-- Data Visualization & Storytelling
-- Business Context Understanding
-- Git Version Control
-- Enterprise Documentation
-
----
-
-## Environment Setup
-
-This project uses `uv` for Python dependency management.
-
-```powershell
-uv sync
+Reassignment Rate % =
+DIVIDE([Reassigned Incidents], [Total Incidents], 0)
 ```
 
-To launch Jupyter:
+Les anciens fichiers de synthèse `sql_*.csv` ne sont plus nécessaires pour le dashboard. Les requêtes SQL restent disponibles dans le notebook d'analyse pour valider les résultats sans créer de sources Power BI supplémentaires.
 
-```powershell
-uv run jupyter notebook
-```
+## Problématique métier
 
-The Python version is defined in `.python-version`, and project dependencies are defined in `pyproject.toml`.
+Les équipes support IT traitent un volume important d'incidents, répartis par priorité, catégorie et groupe d'affectation. Sans analyse structurée, il devient difficile d'identifier les risques de non-respect des SLA, les groupes support surchargés et les problèmes opérationnels récurrents.
 
----
+Ce projet répond aux questions suivantes :
 
-## Dataset
+- Les incidents sont-ils résolus dans les délais attendus ?
+- Quels groupes support concentrent la charge opérationnelle la plus élevée ?
+- Quels facteurs sont associés à des délais de résolution plus longs ?
+- Peut-on construire un premier modèle simple pour détecter les incidents à risque SLA ?
 
-Incident Management Process Enriched Event Log
+## Source des données
 
-- 141,712 events
-- 24,918 incidents
-- 36 variables
+Le projet utilise un journal d'événements d'incidents ITSM nommé `incident_event_log.csv`. Les données sont anonymisées : les utilisateurs, groupes, lieux et catégories sont remplacés par des identifiants génériques comme `Caller 2403`, `Group 70`, `Location 143` ou `Category 55`.
 
-Source:
-(UCI Machine Learning Repository)
+Plus de détails : [docs/Dataset_Source.md](docs/Dataset_Source.md).
 
----
+## Déroulé analytique
 
-## Project Documentation
+1. **Compréhension des données**
+   Exploration du fichier source, des champs disponibles, des valeurs manquantes, des doublons métier et de la période couverte.
 
-- [Business Context](docs/Business_Context.md)
-- [Project Plan](docs/Project_Plan.md)
-- [Data Dictionary](docs/Data_Dictionary.md)
-- [KPI Definitions](docs/KPI_Definition.md)
-- [Project Architecture](docs/Architecture.md)
+2. **Nettoyage des données**
+   Conversion des dates, traitement des valeurs manquantes utiles, création d'une table analytique avec une seule ligne par incident.
 
----
+3. **Analyse exploratoire**
+   Analyse du volume, du SLA, des priorités, des groupes support et de l'effet des réassignations.
 
-## Repository Structure
+4. **Analyse SQL**
+   Création d'une base SQLite et validation des KPI avec des requêtes SQL.
 
-```
+5. **Synthèse métier**
+   Traduction des résultats en recommandations opérationnelles.
+
+6. **Tableau de bord Power BI**
+   Création d'un dashboard interactif alimenté par `incident_clean.csv` et des mesures DAX dynamiques.
+
+## KPI suivis
+
+- Nombre total d'incidents.
+- Taux de conformité SLA.
+- Temps moyen de résolution.
+- Temps moyen de clôture.
+- Nombre moyen de réassignations.
+- Nombre moyen de réouvertures.
+- Volume d'incidents par mois.
+- Performance SLA par priorité.
+- Charge et performance par groupe support.
+
+## Technologies utilisées
+
+| Catégorie | Technologies |
+| --- | --- |
+| Programmation | Python |
+| Analyse de données | Pandas, NumPy |
+| Base de données | SQLite |
+| Requêtes | SQL |
+| Visualisation | Matplotlib |
+| BI / Tableau de bord | Power BI, mesures DAX |
+| Environnement | Jupyter Notebook |
+| Versioning | Git |
+
+## Structure du dépôt
+
+```text
 IT-Service-Performance-Analytics/
-│
-├── data/
-│   ├── raw/
-│   │   └── incident_event_log.csv
-│   └── processed/
-│
-├── notebooks/
-│   ├── 01_Data_Understanding.ipynb
-│   ├── 02_Data_Cleaning.ipynb
-│   ├── 03_Exploratory_Data_Analysis.ipynb
-│   ├── 04_SQL_Analysis.ipynb
-│   └── 05_Business_Insights.ipynb
-│
-├── sql/
-│   └── [analytical queries & KPI calculations]
-│
-├── dashboard/
-│   └── [Power BI files]
-│
-├── reports/
-│   └── [business insights & recommendations]
-│
-├── docs/
-│   ├── Business_Context.md
-│   ├── Project_Plan.md
-│   ├── Data_Dictionary.md
-│   ├── KPI_Definition.md
-│   └── Architecture.md
-│
-├── README.md
-├── pyproject.toml
-└── .python-version
+|
+|-- data/
+|   |-- raw/          données sources des incidents
+|   |-- processed/    table analytique `incident_clean.csv`
+|   `-- database/     base SQLite générée pour l'analyse SQL
+|
+|-- docs/
+|   |-- images/       aperçu dashboard
+|   `-- *.md          documentation métier et technique
+|
+|-- notebooks/        déroulé analytique de bout en bout
+|-- powerbi/          projet PBIP, rapport et modèle sémantique
+|-- requirements.txt  dépendances Python pinnées
+`-- README.md         présentation du projet
 ```
 
----
+## Notebooks
 
-## Project Status
+1. `01_Data_Understanding.ipynb` - exploration initiale des données.
+2. `02_Data_Cleaning.ipynb` - nettoyage et préparation de la table incident.
+3. `03_Exploratory_Data_Analysis.ipynb` - analyse des KPI et visualisations.
+4. `04_SQL_Analysis.ipynb` - requêtes KPI SQL pour contrôler les résultats.
+5. `05_Business_Insights.ipynb` - KPI calculés depuis la table incident, enseignements métier et recommandations.
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| Business Understanding | ✅ Completed | Context, objectives, and KPIs defined |
-| Data Understanding | 🚧 In Progress | Exploring dataset structure and variables |
-| Data Cleaning | ⏳ Planned | Handling missing values and data quality |
-| Exploratory Data Analysis | ⏳ Planned | Statistical analysis and visualization |
-| SQL Analysis | ⏳ Planned | KPI calculations and analytical queries |
-| Power BI Dashboard | ⏳ Planned | Executive dashboard creation |
-| Business Insights | ⏳ Planned | Recommendations and conclusions |
+## Lancer le projet
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+jupyter notebook
+```
+
+Pour exécuter tous les notebooks :
+
+```powershell
+jupyter nbconvert --to notebook --execute --inplace notebooks/*.ipynb
+```

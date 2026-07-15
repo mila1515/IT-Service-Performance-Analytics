@@ -1,71 +1,88 @@
-# KPI Definitions
+# Définition des KPI
 
-This document defines the main business indicators planned for the project. Final formulas may be refined after data cleaning and validation.
+Les KPI sont calculés à partir de la table `incident_clean.csv`, qui contient une ligne par incident et représente le dernier état connu de chaque incident.
 
-## SLA Compliance Rate
+Dans Power BI, ces indicateurs sont implémentés avec des mesures DAX calculées directement sur cette table. Aucun fichier de synthèse `sql_*.csv` n'est requis ; les mesures restent ainsi sensibles au contexte de filtre du dashboard.
 
-Percentage of incidents that met their SLA target.
+## Nombre d'incidents
 
-```text
-SLA Compliance Rate = Incidents with made_sla = True / Total incidents
+Nombre total d'incidents uniques présents dans la table préparée.
+
+```DAX
+Total Incidents = DISTINCTCOUNT(incident_clean[number])
 ```
 
-## SLA Breach Rate
+## Taux de conformité SLA
 
-Percentage of incidents that did not meet their SLA target.
-
-```text
-SLA Breach Rate = Incidents with made_sla = False / Total incidents
-```
-
-## Average Resolution Time
-
-Average time between incident opening and resolution.
+Part des incidents résolus dans le respect du SLA.
 
 ```text
-Average Resolution Time = Average(resolved_at - opened_at)
+Incidents conformes SLA / Total incidents
 ```
 
-## Average Closure Time
+```DAX
+SLA Compliance % =
+DIVIDE(SUM(incident_clean[sla_compliant]), [Total Incidents], 0)
+```
 
-Average time between incident opening and closure.
+## Temps moyen de résolution
+
+Durée moyenne entre l'ouverture de l'incident (`opened_at`) et sa résolution (`resolved_at`).
+
+```DAX
+Average Resolution Hours =
+AVERAGE(incident_clean[resolution_time_hours])
+```
+
+## Temps moyen de clôture
+
+Durée moyenne entre l'ouverture de l'incident (`opened_at`) et sa clôture (`closed_at`).
+
+```DAX
+Average Closure Hours =
+AVERAGE(incident_clean[closure_time_hours])
+```
+
+## Nombre moyen de réassignations
+
+Nombre moyen de réassignations par incident.
 
 ```text
-Average Closure Time = Average(closed_at - opened_at)
+Total des réassignations / Total incidents
 ```
 
-## Reassignment Rate
+## Nombre moyen de réouvertures
 
-Share of incidents reassigned at least once.
+Nombre moyen de réouvertures par incident.
 
 ```text
-Reassignment Rate = Incidents with reassignment_count > 0 / Total incidents
+Total des réouvertures / Total incidents
 ```
 
-## Reopen Rate
+## Taux de réassignation complémentaire
 
-Share of incidents reopened at least once.
+Part des incidents ayant été réassignés au moins une fois.
 
 ```text
-Reopen Rate = Incidents with reopen_count > 0 / Total incidents
+Incidents réassignés / Total incidents
 ```
 
-## Incident Volume
+Ce taux peut être utilisé en complément du nombre moyen pour distinguer la fréquence du problème de son intensité.
 
-Number of incidents opened over a selected period.
+```DAX
+Reassigned Incidents =
+CALCULATE([Total Incidents], incident_clean[reassignment_count] > 0)
+
+Reassignment Rate % =
+DIVIDE([Reassigned Incidents], [Total Incidents], 0)
+```
+
+## Taux de réouverture complémentaire
+
+Part des incidents rouverts au moins une fois après leur traitement initial.
 
 ```text
-Incident Volume = Count of distinct incident numbers
+Incidents rouverts / Total incidents
 ```
 
-## Performance Dimensions
-
-The KPIs should be analyzed by:
-
-- Assignment group
-- Category and subcategory
-- Priority
-- Impact and urgency
-- Contact type
-- Location
-- Time period
+Comme pour les réassignations, ce taux complète le nombre moyen de réouvertures.

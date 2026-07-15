@@ -1,42 +1,38 @@
-# Data Dictionary
+# Dictionnaire des données
 
-This document describes the dataset columns and their business role. Detailed exploration results are kept in the data understanding notebook.
+| Colonne | Description métier |
+| --- | --- |
+| `number` | Identifiant unique de l'incident |
+| `opened_at` | Date d'ouverture de l'incident |
+| `resolved_at` | Date de résolution |
+| `closed_at` | Date de clôture |
+| `made_sla` | Indicateur de respect du SLA |
+| `priority` | Niveau de priorité de l'incident |
+| `impact` | Impact métier déclaré |
+| `urgency` | Niveau d'urgence |
+| `category` | Catégorie de l'incident |
+| `assignment_group` | Groupe support responsable du traitement |
+| `reassignment_count` | Nombre de réassignations |
+| `reopen_count` | Nombre de réouvertures |
 
-| Column | Description | Type | Business Role |
-| ------ | ----------- | ---- | ------------- |
-| number | Incident identifier. | Text | Unique business key for incident tracking. |
-| incident_state | Current lifecycle state of the incident. | Text | Supports incident status and workflow analysis. |
-| active | Indicates whether the incident is still active. | Boolean | Helps separate open and closed incidents. |
-| reassignment_count | Number of times the incident was reassigned. | Integer | Proxy for routing complexity and operational friction. |
-| reopen_count | Number of times the incident was reopened. | Integer | Indicator of resolution quality. |
-| sys_mod_count | Number of system updates on the record. | Integer | Proxy for handling effort and activity volume. |
-| made_sla | Indicates whether the incident met SLA requirements. | Boolean | Main SLA compliance indicator. |
-| caller_id | Anonymized caller identifier. | Text | Supports demand and requester pattern analysis. |
-| opened_by | User who opened the incident. | Text | Helps understand ticket creation channels and ownership. |
-| opened_at | Incident opening timestamp. | Date/Time | Starting point for aging, trend and resolution time analysis. |
-| sys_created_by | User or process that created the record. | Text | Supports data lineage and creation pattern checks. |
-| sys_created_at | System creation timestamp. | Date/Time | Used to compare opening and system creation timing. |
-| sys_updated_by | Last user or process that updated the record. | Text | Supports update and ownership checks. |
-| sys_updated_at | Last system update timestamp. | Date/Time | Useful for activity recency and aging analysis. |
-| contact_type | Channel used to report the incident. | Text | Enables channel performance comparison. |
-| location | Anonymized location associated with the incident. | Text | Supports geographic or site-level analysis. |
-| category | Main incident category. | Text | Key dimension for service performance analysis. |
-| subcategory | More detailed incident category. | Text | Helps identify specific drivers of workload and delays. |
-| u_symptom | Reported symptom. | Text | Supports root-cause and demand pattern analysis. |
-| cmdb_ci | Configuration item linked to the incident. | Text | Connects incidents to impacted assets or services. |
-| impact | Business impact level. | Text | Used for severity and prioritization analysis. |
-| urgency | Urgency level. | Text | Used with impact to evaluate prioritization. |
-| priority | Incident priority. | Text | Key dimension for SLA and operational performance. |
-| assignment_group | Support group assigned to the incident. | Text | Main dimension for support team performance. |
-| assigned_to | User assigned to the incident. | Text | Supports analyst-level workload analysis when appropriate. |
-| knowledge | Indicates whether a knowledge article was used or linked. | Boolean | Helps assess knowledge management contribution. |
-| u_priority_confirmation | Indicates whether priority was confirmed. | Boolean | Supports quality checks around prioritization. |
-| notify | Notification setting. | Text | Describes communication handling for the incident. |
-| problem_id | Related problem record, if any. | Text | Links incidents to problem management. |
-| rfc | Related change request, if any. | Text | Links incidents to change management. |
-| vendor | Related vendor, if any. | Text | Supports third-party dependency analysis. |
-| caused_by | Related cause or change reference. | Text | Helps identify incidents caused by known events. |
-| closed_code | Closure code. | Text | Supports closure reason and resolution pattern analysis. |
-| resolved_by | User who resolved the incident. | Text | Supports resolution ownership analysis. |
-| resolved_at | Resolution timestamp. | Date/Time | End point for resolution time calculation. |
-| closed_at | Closure timestamp. | Date/Time | End point for closure delay and lifecycle analysis. |
+## Colonnes dérivées utilisées dans l'analyse
+
+| Colonne | Description métier |
+| --- | --- |
+| `resolution_time_hours` | Durée entre l'ouverture et la résolution de l'incident, en heures |
+| `closure_time_hours` | Durée entre l'ouverture et la clôture de l'incident, en heures |
+| `sla_compliant` | Version numérique de `made_sla`, utilisée pour calculer le taux de conformité SLA |
+| `has_reassignment` | Indique si l'incident a été réassigné au moins une fois |
+| `has_reopen` | Indique si l'incident a été rouvert au moins une fois |
+| `opened_month` | Mois d'ouverture de l'incident, utilisé pour l'analyse mensuelle |
+| `priority_level` | Niveau numérique extrait de la priorité |
+| `impact_level` | Niveau numérique extrait de l'impact |
+| `urgency_level` | Niveau numérique extrait de l'urgence |
+
+Ces colonnes constituent le périmètre principal de l'analyse. Les autres champs du fichier source sont conservés dans les données nettoyées lorsque leur présence peut être utile pour des analyses complémentaires.
+
+## Utilisation dans Power BI
+
+`incident_clean.csv` est l'unique source de données du dashboard. Les champs catégoriels alimentent les segments et les axes, tandis que les champs numériques alimentent les mesures DAX.
+
+Avant le chargement, `resolution_time_hours` et `closure_time_hours` doivent être définis comme nombres décimaux, et `opened_at`, `resolved_at` et `closed_at` comme dates/heures. Si Power BI interprète les décimales comme du texte, utiliser le type **Nombre décimal** avec les paramètres régionaux **Anglais (États-Unis)**, car le fichier CSV emploie le point comme séparateur décimal.
