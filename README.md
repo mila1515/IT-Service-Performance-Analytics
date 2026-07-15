@@ -4,11 +4,11 @@
 ![SQL](https://img.shields.io/badge/SQL-Analytics-lightgrey)
 ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57)
 ![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-150458)
-![Power BI](https://img.shields.io/badge/Power%20BI-Ready-F2C811)
+![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811)
 
 Projet d'analyse de données de bout en bout combinant **Python**, **SQL**, **Power BI** et **DAX** afin d'analyser la performance du traitement des incidents IT.
 
-Le projet transforme un journal d'incidents ITSM en KPI opérationnels, analyses structurées, recommandations métier et tableau de bord interactif pour aider les responsables IT à suivre la qualité de service, détecter les risques de non-respect SLA et prioriser les actions d'amélioration.
+Le projet transforme un journal d'incidents ITSM en indicateurs opérationnels, analyses structurées, recommandations métier et tableau de bord interactif. Il permet aux responsables IT de suivre la qualité de service, d'identifier les risques de non-respect des SLA et de prioriser les actions d'amélioration.
 
 ## Résultats clés
 
@@ -17,24 +17,27 @@ Le projet transforme un journal d'incidents ITSM en KPI opérationnels, analyses
 | Incidents analysés | 24 918 | Base suffisamment large pour suivre la performance du support IT |
 | Conformité SLA globale | 63,45 % | Niveau perfectible, avec un risque réel de non-respect des engagements |
 | Temps moyen de résolution | 178,17 h | Les délais moyens restent élevés et doivent être suivis par priorité et groupe |
-| SLA Critical / High | 2,22 % / 0,98 % | Les incidents les plus sensibles sont les plus à risque |
-| Réassignations | 266 h vs 95 h | Les incidents réassignés prennent beaucoup plus de temps à résoudre |
+| SLA — priorités Critical / High | 2,22 % / 0,98 % | Les incidents les plus sensibles présentent les taux de conformité les plus faibles |
+| Temps de résolution selon réassignation | 266 h contre 95 h | Les incidents réassignés sont associés à des délais nettement plus longs |
 
-## Aperçu Dashboard
+## Tableau de bord Power BI
 
-Le dashboard Power BI utilise directement `data/processed/incident_clean.csv`, la table analytique contenant une ligne par incident. Les KPI sont calculés dans Power BI avec des mesures DAX afin de rester dynamiques et de réagir aux segments (`priority`, `assignment_group`, `category` et `opened_month`). Un aperçu statique du dashboard est fourni pour montrer le rendu attendu.
+Le tableau de bord s'appuie directement sur `data/processed/incident_clean.csv`, une table analytique contenant une ligne par incident. Les indicateurs sont calculés avec des mesures DAX et réagissent aux filtres interactifs de priorité, groupe d'affectation, catégorie et période d'ouverture.
 
-![IT Service Performance Power BI Dashboard](docs/images/powerbi_dashboard.png)
+La capture ci-dessous présente la vue d'ensemble finale du rapport.
 
-Vues recommandées pour Power BI :
+![Tableau de bord Power BI de performance des services IT](docs/images/powerbi_dashboard.png)
 
-- Cartes KPI : incidents, SLA, temps moyen de résolution, temps moyen de clôture.
-- Volume mensuel des incidents.
-- Conformité SLA par priorité.
-- Performance par groupe support.
-- Impact des réassignations sur le temps de résolution.
+Le tableau de bord comprend :
 
-Mesures DAX principales :
+- six cartes de synthèse : volume total, conformité SLA, délais moyens de résolution et de clôture, taux de réassignation et nombre d'incidents réassignés ;
+- une analyse mensuelle du volume d'incidents ;
+- une comparaison de la conformité SLA par priorité ;
+- un classement des dix groupes support les plus sollicités ;
+- une comparaison du temps de résolution selon la présence ou non d'une réassignation ;
+- des filtres interactifs par catégorie, année, groupe d'affectation et priorité.
+
+### Principales mesures DAX
 
 ```DAX
 Total Incidents =
@@ -56,7 +59,21 @@ Reassignment Rate % =
 DIVIDE([Reassigned Incidents], [Total Incidents], 0)
 ```
 
-Les anciens fichiers de synthèse `sql_*.csv` ne sont plus nécessaires pour le dashboard. Les requêtes SQL restent disponibles dans le notebook d'analyse pour valider les résultats sans créer de sources Power BI supplémentaires.
+### Enseignements métier
+
+- La conformité SLA globale atteint 63,45 %, ce qui met en évidence une marge d'amélioration importante.
+- Les priorités Critical et High enregistrent moins de 3 % de conformité SLA et constituent le principal point d'alerte.
+- Les incidents réassignés nécessitent environ 266 heures de résolution, contre 95 heures sans réassignation.
+- Le groupe 70 concentre la plus grande part du volume et doit faire l'objet d'un suivi régulier de sa charge.
+- Les incidents associés au groupe `Inconnu` signalent un besoin d'amélioration de la qualité d'affectation.
+
+### Recommandations opérationnelles
+
+1. Mettre en place un suivi renforcé des incidents Critical et High.
+2. Améliorer la qualification initiale et les règles de routage afin de limiter les réassignations.
+3. Suivre conjointement le volume, la conformité SLA et le temps de résolution pour chaque groupe support.
+4. Contrôler les incidents non attribués ou associés au groupe `Inconnu`.
+5. Définir des alertes sur les incidents proches de dépasser leur délai SLA.
 
 ## Problématique métier
 
@@ -67,7 +84,7 @@ Ce projet répond aux questions suivantes :
 - Les incidents sont-ils résolus dans les délais attendus ?
 - Quels groupes support concentrent la charge opérationnelle la plus élevée ?
 - Quels facteurs sont associés à des délais de résolution plus longs ?
-- Peut-on construire un premier modèle simple pour détecter les incidents à risque SLA ?
+- Dans quelle mesure les réassignations allongent-elles le temps de résolution ?
 
 ## Source des données
 
@@ -93,7 +110,7 @@ Plus de détails : [docs/Dataset_Source.md](docs/Dataset_Source.md).
    Traduction des résultats en recommandations opérationnelles.
 
 6. **Tableau de bord Power BI**
-   Création d'un dashboard interactif alimenté par `incident_clean.csv` et des mesures DAX dynamiques.
+   Création d'un rapport interactif alimenté par `incident_clean.csv` et des mesures DAX dynamiques.
 
 ## KPI suivis
 
@@ -104,7 +121,7 @@ Plus de détails : [docs/Dataset_Source.md](docs/Dataset_Source.md).
 - Nombre moyen de réassignations.
 - Nombre moyen de réouvertures.
 - Volume d'incidents par mois.
-- Performance SLA par priorité.
+- Conformité SLA par priorité.
 - Charge et performance par groupe support.
 
 ## Technologies utilisées
@@ -131,12 +148,12 @@ IT-Service-Performance-Analytics/
 |   `-- database/     base SQLite générée pour l'analyse SQL
 |
 |-- docs/
-|   |-- images/       aperçu dashboard
+|   |-- images/       captures du tableau de bord
 |   `-- *.md          documentation métier et technique
 |
 |-- notebooks/        déroulé analytique de bout en bout
 |-- powerbi/          projet PBIP, rapport et modèle sémantique
-|-- requirements.txt  dépendances Python pinnées
+|-- requirements.txt  versions des dépendances Python
 `-- README.md         présentation du projet
 ```
 
