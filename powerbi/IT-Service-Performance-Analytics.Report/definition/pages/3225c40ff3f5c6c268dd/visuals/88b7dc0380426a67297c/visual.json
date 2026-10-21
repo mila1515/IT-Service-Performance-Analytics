@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "88b7dc0380426a67297c",
   "position": {
-    "x": 95.65217391304347,
-    "y": 197.82608695652172,
+    "x": 96,
+    "y": 192,
     "z": 5000,
-    "height": 417.39130434782606,
-    "width": 576.08695652173913,
+    "height": 432,
+    "width": 624,
     "tabOrder": 5000
   },
   "visual": {
@@ -76,7 +76,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             }
@@ -218,20 +218,6 @@
             }
           ]
         }
-      },
-      {
-        "name": "3e9c36fe795870c5dd8e",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "incident_clean"
-              }
-            },
-            "Property": "Total Incidents"
-          }
-        },
-        "type": "Advanced"
       }
     ]
   }
