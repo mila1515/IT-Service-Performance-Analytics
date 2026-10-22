@@ -1,4 +1,9 @@
-# Plateforme d'analyse guidée — première version
+# Analyse simple — audit qualité d'un CSV avant l'analyse métier
+
+Outil pour analyste débutant ou en apprentissage : importer n'importe quel fichier CSV,
+comprendre ce qu'il contient, corriger les problèmes de forme en un clic, contrôler le
+résultat en graphiques et remettre des données fiables avec la trace de ce qui a été décidé.
+L'analyse métier vient ensuite. Indépendant des notebooks et de Power BI.
 
 Depuis la racine du projet, dans l'environnement virtuel :
 
@@ -7,7 +12,30 @@ python -m pip install -r src/requirements.txt
 python -m streamlit run src/app.py
 ```
 
-Cette application est indépendante des notebooks et de Power BI.
+## Les 4 étapes
+
+1. **Importer** : déposer le fichier ; nombre de lignes et de colonnes, aperçu. Aucune saisie
+   obligatoire. Options de lecture (séparateur, encodage, décimales) repliées derrière « Le tableau
+   ne ressemble pas à votre fichier ? ». Les identifiants (001…) sont lus en texte pour garder
+   leurs zéros. Changer une option après des choix les efface, avec un avertissement.
+2. **Comprendre** : chiffres clés, une carte par colonne (rôle en mots simples, remplissage,
+   mini-graphique, rôle modifiable), liste des points à vérifier. Rien n'est modifié.
+3. **Corriger** : une carte par famille de points — codes de valeur manquante (« ? », « NA »…),
+   texte dans des nombres, cases vides, lignes identiques, dates ambiguës (jour/mois). Chaque
+   point se règle en un clic ; **par défaut, rien ne change**. Le résultat (lignes gardées et
+   écartées, cases vides, moyenne avant → après) et le journal se mettent à jour en direct.
+   Une ligne écartée n'est pas effacée et « écarter n'est pas corriger » est rappelé.
+4. **Visualiser et exporter** : trois graphiques de contrôle choisis selon les rôles, chacun avec
+   une phrase « À retenir » (règles générales : valeur la plus fréquente, moyenne fragile sous
+   3 valeurs, volume ≠ performance, textes ignorés signalés) ; ajout guidé par une question ;
+   téléchargements générés au clic : données corrigées (CSV), lignes écartées (CSV, numéro de
+   ligne d'origine et raison), rapport qualité (Markdown), archive ZIP avec le fichier d'origine
+   inchangé et le journal.
+
+Règles constantes : le fichier d'origine n'est jamais modifié ; chaque traitement repart de
+lui ; moyenne et médiane seulement pour les nombres, « Inconnu » seulement pour les
+catégories ; aucune règle métier ni colonne propre à un domaine ; le rapport ne certifie pas
+l'exactitude des valeurs. Les sessions restent en mémoire : télécharger avant de fermer.
 
 ## Lancer avec Docker Desktop
 
@@ -36,7 +64,49 @@ docker compose up -d --build
 
 Après une modification du code, relancer `docker compose up -d --build`.
 Les sessions restent en mémoire : exporter le projet avant d'arrêter ou de
-recréer le conteneur. Docker Desktop doit être démarré pour utiliser ces commandes.
+
+## Organisation du code
+
+```
+src/
+  app.py                 navigation entre les 4 étapes (point d'entrée)
+  config.py              constantes (seuils, couleurs, limites d'affichage)
+  .streamlit/config.toml thème
+  core/                  commun : lecture, dictionnaire, rôles, dates, statistiques, règles,
+                         textes, dessin des graphiques, session (seul module Streamlit)
+  etape1_importer/       écran d'import
+  etape2_comprendre/     fiches de colonnes, diagnostic, détection des points + écran
+  etape3_corriger/       pipeline, application des choix, résultat, journal + écran
+  etape4_visualiser/     préparation, graphiques de contrôle, exports + écran
+  expert/                mode expert gardé à côté (voir plus bas)
+  tests/                 tests en miroir ; tests/navigateur/ : parcours dans Chromium
+```
+
+Une étape n'importe que `core/`, `config.py` et des étapes antérieures ; le calcul (sans
+Streamlit) est séparé des écrans (`ecran.py`).
+
+## Vérifications
+
+- Tests : `python -m unittest discover -s src/tests` (depuis la racine).
+- Navigateur : voir `src/tests/navigateur/README.md`.
+
+## Limites
+
+Un seul fichier CSV, traitement en mémoire, pas de restauration d'une session. Pas d'import
+Excel ni de base de données. Les graphiques servent au contrôle, pas aux conclusions métier.
+La première arrivée sur les étapes 2 et 3 prend quelques secondes sur un gros fichier
+(environ 5 s pour 141 712 lignes × 36 colonnes) ; ensuite chaque interaction prend ~0,3 s.
+
+## Mode expert (gardé à côté)
+
+L'ancienne interface complète en 6 étapes reste disponible, hors du parcours simple :
+dictionnaire détaillé, règles de qualité P1/P2/P3 rejouées avant/après, diagnostic des
+répétitions, dashboard configurable (filtres, disposition, configuration JSON), décision GO /
+NO-GO. Code et tests dans `src/expert/` et `src/tests/expert/`.
+
+```powershell
+python -m streamlit run src/expert/app_expert.py
+```
 
 Parcours : découverte du CSV, exploration brute et statistiques, nettoyage avec
 prévisualisation et validation, comparaison avant/après, exploration nettoyée et
@@ -64,7 +134,7 @@ sont mémorisés pour la session et recalculés seulement si les données, le
 dictionnaire, les règles ou les rôles changent. Les fichiers à télécharger sont
 générés au clic.
 
-## Dashboard adaptable aux données
+### Dashboard adaptable aux données
 
 À l'étape 5, confirmer les rôles des colonnes : mesure, catégorie, date ou
 identifiant. Les identifiants sont exclus des suggestions d'agrégation.
@@ -123,7 +193,7 @@ validation métier des calculs. Aucun indicateur métier n'est déduit automatiq
 Chaque graphique affiche le nombre de lignes retenues par ses filtres sur la base
 des lignes après filtres globaux, et les lignes sans valeur exploitable.
 
-## Parcours essentiel de qualité des données
+### Parcours essentiel de qualité des données
 
 1. **Découverte du CSV** : fichier, dimensions et premières lignes immédiatement
    visibles, sans champ de saisie à remplir. Aucune connaissance préalable du
@@ -187,7 +257,7 @@ interprété selon les règles effectivement définies : il ne certifie pas l'ex
 métier. Les obligations conditionnelles, la fraîcheur automatisée, la modélisation,
 les jointures et les imports de plusieurs CSV restent hors périmètre pour le moment.
 
-## Comprendre les répétitions sans imposer de métier
+### Comprendre les répétitions sans imposer de métier
 
 Dans l'étape 2, la section « Comprendre les clés répétées » est facultative.
 Choisir une clé de regroupement simple ou composée, puis éventuellement des
@@ -222,7 +292,7 @@ occurrences signalées, sans choisir arbitrairement une ligne à conserver.
 Une nouvelle source CSV réinitialise la configuration et ces règles comme les
 autres paramètres du projet.
 
-## Interface simplifiée : observer avant de décider
+### Interface simplifiée : observer avant de décider
 
 Les étapes se suivent avec des boutons « Explorer les données », « Continuer vers
 le nettoyage », « Continuer vers les graphiques » et « Passer à la synthèse ».

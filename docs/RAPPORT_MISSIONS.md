@@ -666,3 +666,74 @@ Les noms des nouveaux fichiers sont en français ; les noms des fonctions resten
 Le moteur actuel (calculs, rejets tracés, comparaison exclusion / correction) est réutilisé tel quel : seuls le parcours et les écrans changent.
 
 **Maquette validée (2026-10-22).** Rôle de l'outil précisé par l'utilisatrice : les 4 étapes servent à **auditer et préparer la qualité des données avant de commencer l'analyse métier**. L'outil livre des données fiables et la trace de ce qui a été vérifié et décidé ; l'analyse métier se fait ensuite.
+
+---
+
+## Refonte — outil simple en 4 étapes : réalisation (2026-10-22)
+
+Plan validé : les 4 étapes de la maquette, mode expert gardé à côté (code et tests conservés).
+Branche `nettoyage`. Périmètre : `src/`, `compose.yaml`, docs ; notebooks, Power BI et données non touchés.
+
+### Commits
+
+| Commit | Contenu |
+|---|---|
+| `51b1d40` | Rangement de `src/` par étape (`git mv`, imports réécrits). Aucun changement de comportement : **résultats identiques à la référence** sur exemple.csv et sur le CSV réel. |
+| `5bcef54` | Moteur du parcours simple : fiches de colonnes, 5 familles de points à vérifier, plan de nettoyage, résultat avant/après, journal en phrases, graphiques de contrôle et « À retenir », rapport qualité et archive. Extensions sans effet sur l'existant : traitement des textes invalides par colonne (`pipeline`), ordre jour/mois par colonne (`prepare`), codes « ? » exclus des « textes dans des nombres » (`diagnose`, option). |
+| `7703c26` | Les 4 écrans (`etapeN_*/ecran.py`), navigation (`app.py`), thème (`src/.streamlit/config.toml`). Ancienne interface déplacée : `src/expert/app_expert.py`. |
+| `ffaf8c2` | **Correction** : les téléchargements générés au clic ne produisaient aucun fichier (un clic relançait le script et annulait le fichier). Défaut présent depuis la mission 3, aussi dans le mode expert. Ajout du test navigateur. |
+
+Au total, `src/` : 62 fichiers modifiés, +3 085 / −973 lignes.
+
+### Règle de rangement
+
+Une étape n'importe que `core/`, `config.py` et des étapes **antérieures**. Deux ajustements en cours de route pour la respecter :
+- la lecture des dates passe dans `core/dates.py` ;
+- la détection des points à vérifier passe dans l'étape 2 (Comprendre), car l'étape 3 (Corriger) applique les choix.
+
+### Tests
+
+**81 tests, tous OK** :
+
+| Dossier | Tests |
+|---|---|
+| core | 15 |
+| etape2_comprendre | 7 |
+| etape3_corriger | 10 |
+| etape4_visualiser | 19 |
+| expert | 23 |
+| parcours simple (AppTest) | 7 |
+
+Couleurs des graphiques vérifiées avec le script de validation : bleu `#1F5FD1`, bleu moyen `#6A8FDB` pour une moyenne fragile, gris `#8A919C` pour « non renseignée ». Contraste ≥ 3:1 ; chaque barre porte sa valeur écrite.
+
+### Test dans le navigateur (Chromium, Playwright)
+
+Script : `src/tests/navigateur/parcours_navigateur.py`.
+
+| Étape | Résultat |
+|---|---|
+| 1. Import (nom, lignes, colonnes, aperçu) | réussi |
+| 2. Mauvais séparateur → message, puis correction | réussi |
+| 3. Explorer (colonnes, doublons, bon réflexe) | réussi |
+| 4. « ? » reconnu comme vide, traitement choisi | réussi |
+| 5. Exclusion distinguée de la correction | réussi |
+| 6. Graphiques de contrôle, ajout d'un graphique | réussi |
+| 7. Chaque téléchargement (CSV, lignes écartées, rapport, ZIP) produit un fichier lisible ; fichier d'origine identique dans l'archive | réussi (après correction `ffaf8c2`) |
+| 8. Réimport de la configuration JSON du dashboard | non applicable à l'outil simple (mode expert ; couvert par ses tests AppTest) |
+| 9. Changement d'option de lecture après du travail → avertissement | réussi |
+
+**CSV réel (141 712 × 36), dans le navigateur :**
+- import 3,4 s ;
+- arrivée sur Comprendre 5,4 à 7,8 s, arrivée sur Corriger 1,9 à 5,9 s (une seule fois, analyse du fichier) ;
+- validation → graphiques 1,7 s ;
+- **chaque interaction 0,3 à 0,4 s**.
+
+**Docker** : image construite et lancée sur le port 8504. Le test navigateur complet réussit sur le conteneur, qui a ensuite été arrêté. L'ancien conteneur `itservice-analytics` (port 8503) n'a pas été touché.
+
+### Ce qui n'a pas pu être vérifié / limites
+
+- Le test navigateur n'est pas lancé par `unittest` : il demande un serveur et Chromium.
+- Les mesures AppTest surestiment certains temps (jusqu'à 1,3 s) : ce sont les mesures du navigateur qui font foi.
+- Le rendu sur téléphone n'a pas été testé.
+- Le champ « objectif » du rapport du mode expert reste vide (décision D2 : exports inchangés).
+

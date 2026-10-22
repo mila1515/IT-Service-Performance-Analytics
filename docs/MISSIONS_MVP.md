@@ -150,8 +150,9 @@ Commence par la MISSION 1. Ne code rien avant d'avoir lu les fichiers et exécut
 | 4. Filtres + caractère générique + nettoyage du code | Terminée : filtres Retenir/Exclure (identifiant 16 s → 0,5 s), rôles FR/ISO, code mort retiré ; 49 tests OK | [Mission 4](RAPPORT_MISSIONS.md#mission-4--filtres-caractère-générique-et-nettoyage-du-code--rapport) |
 | 5. Dashboard | Terminée : ordre unique (champ « Ligne » retiré), bouton « Modifier ce graphique », anciens JSON compatibles ; 51 tests OK | [Mission 5](RAPPORT_MISSIONS.md#mission-5--dashboard--ordre-largeur-modification--rapport) |
 | 6. Règles de qualité | Terminée : avant/après décomposé (exclusions / résolutions / nouvelles) ; 54 tests OK | [Mission 6](RAPPORT_MISSIONS.md#mission-6--règles-de-qualité--rapport) |
-| Nettoyage et restructuration | En cours : étapes 0 et 1 (état de départ, audit) faites ; en attente des décisions D1–D5 | [Nettoyage](RAPPORT_MISSIONS.md#mission-de-nettoyage--étapes-0-et-1--état-de-départ-et-audit-lecture-seule) |
-| 7. Répétitions | Après le nettoyage — à réévaluer : clé composée existe déjà | — |
+| Nettoyage et restructuration | Terminée : code mort retiré, rangement par étape, Docker renommé | [Nettoyage](RAPPORT_MISSIONS.md#mission-de-nettoyage--étapes-0-et-1--état-de-départ-et-audit-lecture-seule) |
+| Refonte : outil simple en 4 étapes | Terminée : Importer → Comprendre → Corriger → Visualiser ; mode expert gardé à côté ; 81 tests OK ; test navigateur et Docker réussis | [Refonte](RAPPORT_MISSIONS.md#refonte--outil-simple-en-4-étapes--réalisation-2026-10-22) |
+| 7. Répétitions | Gardée dans le mode expert (hors parcours simple) — à décider | — |
 
 Tous les rapports sont regroupés dans un seul fichier : [RAPPORT_MISSIONS.md](RAPPORT_MISSIONS.md).
 
