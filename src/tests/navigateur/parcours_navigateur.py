@@ -172,6 +172,15 @@ def parcours_regles_filtrage(p, url):
         page.keyboard.press("Escape")
     t.etape("E0. Comprendre : type changeable par un clic sur l'étiquette", type_colonne)
 
+    def repetitions():
+        page.get_by_text("Pourquoi « id » se répète ?").click()
+        t.fin_execution()
+        t.voir("Exemple : « 004 »")
+        t.voir("copies identiques")
+        page.get_by_text("Pourquoi « id » se répète ?").click()
+        t.fin_execution()
+    t.etape("E0b. Comprendre : pourquoi un identifiant se répète (lecture seule)", repetitions)
+
     def regle():
         page.get_by_text("Règles (facultatif)").first.click()
         page.locator('[data-testid="stCheckbox"]').filter(has_text="Valeurs uniques").click()

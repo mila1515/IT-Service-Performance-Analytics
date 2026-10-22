@@ -57,6 +57,11 @@ class ParcoursSimpleTests(unittest.TestCase):
         self.assertEqual(app.session_state.etape, "Comprendre")
         self.assertEqual(next(m.value for m in app.metric if m.label == "Points à vérifier"), "4")
         self.assertIn("ligne 6 = ligne 4", textes(app.markdown))
+        self.assertNotIn("Exemple : « 004 »", textes(app.markdown))
+        app.session_state["w_repet_0"] = True
+        app.run()
+        self.assertIn("Exemple : « 004 »", textes(app.markdown))
+        self.assertIn("copies identiques", textes(app.info))
         self.assertFalse(app.selectbox)
         app.radio(key="w_role_1").set_value("des identifiants").run()
         self.assertEqual(app.session_state.dictionary[1]["Rôle"], "Identifiant")

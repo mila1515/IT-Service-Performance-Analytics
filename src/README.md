@@ -20,7 +20,9 @@ python -m streamlit run src/app.py
    leurs zéros. Changer une option après des choix les efface, avec un avertissement.
 2. **Comprendre** : chiffres clés, une carte par colonne (type en mots simples, remplissage,
    mini-graphique), liste des points à vérifier. Un clic sur l'étiquette du type (« Catégorie »,
-   « Identifiant »…) permet de le corriger. Rien n'est modifié.
+   « Identifiant »…) permet de le corriger. Quand un identifiant se répète, le volet « Pourquoi
+   … se répète ? » montre ce qui change entre les lignes d'une même valeur (part des groupes où
+   chaque colonne change, colonnes toujours identiques, un exemple). Rien n'est modifié.
 3. **Corriger** : une carte par famille de points — codes de valeur manquante (« ? », « NA »…),
    texte dans des nombres, cases vides, lignes identiques, dates ambiguës (jour/mois), espaces en
    trop (« A » et « A␣ » comptés comme deux valeurs). L'explication de chaque carte est derrière

@@ -10,10 +10,13 @@ import streamlit as st
 from src.core.dessins import mini_repartition, periodes
 from src.core.regles import regles_simples
 from src.core.session import aller, cached
-from src.core.texte import nombre_lisible, pluriel
+from src.core.texte import nombre_lisible, pluriel, pour_affichage
 from src.etape2_comprendre.colonnes import resume_colonnes
 from src.etape2_comprendre.diagnostic import diagnose
 from src.etape2_comprendre.points import compter_espaces, detecter_points, dictionnaire_selon_choix, verifier_regles
+from src.etape2_comprendre.repetitions import part_lisible, variations
+
+COLONNES_LISTEES = 8
 
 ROLES = {"Identifiant": "des identifiants", "Catégorie": "des catégories", "Mesure": "des nombres", "Date": "des dates"}
 
@@ -121,6 +124,40 @@ def _alerte(texte):
     st.badge(texte, color="orange", icon=":material/warning:")
 
 
+def _liste(colonnes):
+    reste = len(colonnes) - COLONNES_LISTEES
+    return ", ".join(colonnes[:COLONNES_LISTEES]) + (f" et {pluriel(reste, 'autre')}" if reste > 0 else "")
+
+
+def _repetitions(fiche, index):
+    """Volet « Pourquoi … se répète ? » : calculé seulement quand il est ouvert."""
+    colonne = fiche["colonne"]
+    volet = st.expander(f"Pourquoi « {colonne} » se répète ?", key=f"w_repet_{index}", on_change="rerun",
+                        icon=":material/difference:")
+    if not volet.open:
+        return
+    with volet:
+        resultat = cached(variations, diagnostic_courant()["normalized"], colonne)
+        if resultat["changent"]:
+            st.markdown(f"Ce qui change entre les lignes d'une même valeur ({pluriel(resultat['lignes'], 'ligne')} "
+                        f"concernées) :\n" + "\n".join(
+                f"- {c} : change dans {part_lisible(p)} des groupes" for c, p in resultat["changent"][:COLONNES_LISTEES]))
+            if len(resultat["changent"]) > COLONNES_LISTEES:
+                reste = len(resultat["changent"]) - COLONNES_LISTEES
+                st.caption(f"Et {pluriel(reste, 'autre colonne qui change', 'autres colonnes qui changent')}.")
+            if resultat["identiques"]:
+                st.caption(f"Identiques dans tous les groupes : {_liste(resultat['identiques'])}.")
+        else:
+            st.info("Les lignes répétées sont des copies identiques : voir la carte « Des lignes identiques » "
+                    "à l'étape Corriger.", icon=":material/content_copy:")
+        total = resultat["exemple_total"]
+        affichees = len(resultat["exemple_lignes"])
+        st.markdown(f"**Exemple : « {resultat['exemple']} »**, {pluriel(total, 'ligne')}"
+                    + (f" ({affichees} premières)" if affichees < total else ""))
+        st.dataframe(pour_affichage(resultat["exemple_lignes"]), alt=f"Lignes de « {resultat['exemple']} »")
+        st.caption("Une valeur répétée n'est pas forcément une erreur : vérifiez ce que représente une ligne de votre fichier.")
+
+
 def _type(fiche, index):
     """Étiquette du type ; un clic ouvre le choix pour le corriger."""
     cle = f"w_role_{index}"
@@ -142,6 +179,7 @@ def _carte(fiche, index, resultats):
             valeur, fois = fiche["exemple_repete"]
             _alerte(f"« {valeur} » apparaît {fois} fois" if fiche["repetees"] == 1
                     else f"{nombre_lisible(fiche['repetees'])} valeurs apparaissent plusieurs fois")
+            _repetitions(fiche, index)
         elif role == "Catégorie" and fiche["frequences"]:
             st.altair_chart(mini_repartition(fiche["frequences"]), alt=f"Valeurs les plus fréquentes de {fiche['colonne']}")
             if fiche["autres"]:

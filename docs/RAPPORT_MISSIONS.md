@@ -789,3 +789,31 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 - **92 tests OK** (tests de l'interface adaptés : `ReglesEtFiltrageTests`).
 - **Test navigateur** : 12 étapes réussies, dont E0 (type changé par l'étiquette) et E3 (Filtrage éteint par défaut, « 4 / 5 lignes retenues », téléchargements inchangés).
 
+---
+
+## Mission 7 — Répétitions, version légère (2026-10-22)
+
+**Objectif du cahier :** diagnostic générique des répétitions : clé de regroupement choisie par l'utilisateur, groupes, colonnes qui varient, enregistrements sources. Ne jamais conclure qu'un identifiant répété est une erreur. Le diagnostic ne modifie ni les données ni le nettoyage.
+
+**Pourquoi c'est utile :** l'outil signalait « « 004 » apparaît 2 fois » et traitait les lignes strictement identiques, mais ne disait pas *ce qui change* quand un identifiant se répète. Dans un journal d'événements, un même incident a une ligne par mise à jour : sans cette information, un analyste débutant risque de prendre ces lignes pour des doublons et de les écarter.
+
+**Réalisé :**
+
+| Où | Ce qui est montré |
+|---|---|
+| Comprendre, carte d'une colonne Identifiant qui se répète | Volet fermé « Pourquoi « … » se répète ? », calculé seulement à l'ouverture |
+| Dans le volet | Les colonnes qui changent entre les lignes d'une même valeur, avec la part des groupes où elles changent (8 premières) ; les colonnes toujours identiques ; un exemple (la valeur la plus répétée, 20 premières lignes, colonnes qui changent seulement, numéros de ligne d'origine) ; la phrase « Une valeur répétée n'est pas forcément une erreur » |
+| Copies exactes | Renvoi vers la carte « Des lignes identiques » de l'étape Corriger |
+
+- La clé est la colonne de la carte : l'utilisateur la choisit en lui donnant le type « Identifiant ».
+- Une case vide face à une valeur compte comme un changement. Une part arrondie n'affiche « 100 % » que si la colonne change dans tous les groupes.
+- Code : `etape2_comprendre/repetitions.py` (fonction `variations`, en lecture seule).
+
+**Sur le fichier réel (141 712 lignes, colonne `number`) :** 24 918 identifiants se répètent, c'est-à-dire toutes les lignes. `incident_state`, `active` et `sys_mod_count` changent dans 100 % des groupes, `sys_updated_at` dans 99 %. `opened_at`, `opened_by`, `closed_code` et `resolved_at` sont identiques dans tous les groupes. Cela décrit un journal d'événements, pas des doublons. Calcul : environ 0,5 s ; ouverture du volet dans le navigateur : 1,6 s.
+
+**Hors de cette version (reste dans l'ancienne interface experte) :** clé composée, colonnes de détail, export JSON des groupes.
+
+**Vérifications :**
+- **95 tests OK**, dont 3 nouveaux (`test_repetitions.py`) et l'ouverture du volet dans `test_app.py`.
+- **Test navigateur** : 13 étapes sur l'exemple, dont E0b (volet des répétitions), et le parcours complet sur le fichier réel réussis.
+
