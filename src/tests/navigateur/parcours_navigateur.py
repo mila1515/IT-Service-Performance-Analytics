@@ -113,6 +113,8 @@ def parcours_exemple(p, url):
         t.bouton("Valider et voir les graphiques").click()
         t.voir("Vérifier vos données en graphiques")
         t.fin_execution()
+        t.voir("Ajouter un graphique")
+        t.fin_execution()
         assert page.get_by_text("À retenir").count() >= 3
         t.choisir("Comment se répartit une colonne")
         t.bouton("Ajouter ce graphique").click()
@@ -150,8 +152,8 @@ def parcours_exemple(p, url):
     return t.resultats
 
 
-def parcours_expert(p, url):
-    """Mode expert léger : règle simple, carte des règles non respectées, filtre avant les graphiques."""
+def parcours_regles_filtrage(p, url):
+    """Type modifiable par l'étiquette, règle facultative, carte des règles non respectées, Filtrage à l'étape 4."""
     page = p.new_page(viewport={"width": 1400, "height": 1200}, accept_downloads=True)
     t = Parcours(page)
     page.goto(url, wait_until="networkidle")
@@ -160,15 +162,22 @@ def parcours_expert(p, url):
     t.voir("Fichier lu correctement")
     t.fin_execution()
 
-    def regle():
-        t.choisir("Mode expert")
+    def type_colonne():
         t.bouton("Étape suivante : comprendre mes données").click()
-        t.voir("Mode expert : règles simples")
+        t.voir("Vos 4 colonnes")
         t.fin_execution()
+        assert page.get_by_text("Cette colonne contient").count() == 0, "menu du type affiché en double"
+        t.bouton("Identifiant").first.click()
+        page.get_by_role("radio", name="des catégories").first.wait_for()
+        page.keyboard.press("Escape")
+    t.etape("E0. Comprendre : type changeable par un clic sur l'étiquette", type_colonne)
+
+    def regle():
+        page.get_by_text("Règles (facultatif)").first.click()
         page.locator('[data-testid="stCheckbox"]').filter(has_text="Valeurs uniques").click()
         t.fin_execution()
         t.voir("2 lignes ne respectent pas (lignes 4, 6)")
-    t.etape("E1. Mode expert : règle « valeurs uniques » cochée et vérifiée", regle)
+    t.etape("E1. Règle « valeurs uniques » cochée et vérifiée", regle)
 
     def carte_regles():
         t.bouton("Étape suivante : corriger").click()
@@ -178,11 +187,14 @@ def parcours_expert(p, url):
         page.get_by_role("radio", name="Écarter ces lignes").last.click()
         t.fin_execution()
         t.voir("5 / 7")
-    t.etape("E2. Mode expert : règle non respectée → lignes écartées", carte_regles)
+    t.etape("E2. Règle non respectée → lignes écartées", carte_regles)
 
     def filtre():
         t.bouton("Valider et voir les graphiques").click()
-        t.voir("Filtrer avant de regarder")
+        t.voir("À retenir")
+        t.fin_execution()
+        assert page.get_by_text("lignes retenues").count() == 0, "le filtrage doit être éteint par défaut"
+        page.locator('[data-testid="stCheckbox"]').filter(has_text="Filtrage").click()
         t.fin_execution()
         t.choisir("Exclure")
         page.get_by_role("button", name="A", exact=True).click()
@@ -193,9 +205,9 @@ def parcours_expert(p, url):
         nom, contenu = t.telecharger("Données corrigées (CSV)")
         assert contenu.decode("utf-8-sig").count("\n") == 6, "le filtre ne doit pas changer les données téléchargées"
         nom, contenu = t.telecharger("Rapport qualité")
-        assert "Règles vérifiées (mode expert)" in contenu.decode("utf-8")
+        assert "Règles vérifiées" in contenu.decode("utf-8")
         return texte
-    t.etape("E3. Mode expert : filtre sur les graphiques, téléchargements inchangés", filtre)
+    t.etape("E3. Filtrage : graphiques filtrés, téléchargements inchangés", filtre)
     page.close()
     return t.resultats
 
@@ -222,7 +234,7 @@ def main():
     with sync_playwright() as playwright:
         navigateur = playwright.chromium.launch(headless=True)
         resultats = parcours_exemple(navigateur, url)
-        resultats += parcours_expert(navigateur, url)
+        resultats += parcours_regles_filtrage(navigateur, url)
         if reel:
             resultats += parcours_reel(navigateur, url, reel)
         navigateur.close()

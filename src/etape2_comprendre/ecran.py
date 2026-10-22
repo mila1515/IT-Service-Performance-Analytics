@@ -1,19 +1,19 @@
 """Étape 2 (Comprendre) : ce que contient le fichier, colonne par colonne, et les points à vérifier.
 
-Entrées en session : `raw`, `dictionary`, `choix`, `mode`, `regles`. Rien n'est modifié ici, sauf le
-rôle d'une colonne si l'utilisateur le corrige (« Cette colonne contient… ») et, en mode expert,
-les règles simples cochées sur les cartes (doit être remplie, valeurs uniques, entre deux bornes).
+Entrées en session : `raw`, `dictionary`, `choix`, `regles`. Rien n'est modifié ici, sauf le type
+d'une colonne si l'utilisateur le corrige (clic sur l'étiquette du type) et les règles facultatives
+cochées sur les cartes (doit être remplie, valeurs uniques, entre deux bornes).
 """
 import pandas as pd
 import streamlit as st
 
 from src.core.dessins import mini_repartition, periodes
 from src.core.regles import regles_simples
-from src.core.session import aller, cached, mode_expert
+from src.core.session import aller, cached
 from src.core.texte import nombre_lisible, pluriel
 from src.etape2_comprendre.colonnes import resume_colonnes
 from src.etape2_comprendre.diagnostic import diagnose
-from src.etape2_comprendre.points import detecter_points, dictionnaire_selon_choix, verifier_regles
+from src.etape2_comprendre.points import compter_espaces, detecter_points, dictionnaire_selon_choix, verifier_regles
 
 ROLES = {"Identifiant": "des identifiants", "Catégorie": "des catégories", "Mesure": "des nombres", "Date": "des dates"}
 
@@ -25,19 +25,20 @@ def diagnostic_courant():
 
 
 def regles_actives():
-    """Règles du mode expert à appliquer (aucune en mode simple)."""
-    return st.session_state.regles if mode_expert() else {}
+    """Règles cochées sur les cartes de l'étape Comprendre."""
+    return st.session_state.regles
 
 
 def points_courants():
-    """Points à vérifier selon les données, les rôles, les choix déjà faits et le mode."""
+    """Points à vérifier selon les données, les rôles, les choix déjà faits et les règles cochées."""
     etat = st.session_state
-    return cached(_detecter, etat.raw, etat.dictionary, etat.choix, regles_actives(), mode_expert())
+    return cached(_detecter, etat.raw, etat.dictionary, etat.choix, etat.regles)
 
 
-def _detecter(raw, dictionary, choix, regles, expert):
-    # Le diagnostic ne dépend pas des choix : il reste mémorisé quand seuls les choix changent.
-    return detecter_points(raw, dictionary, choix, cached(diagnose, raw, dictionary, True), regles_simples(regles), expert)
+def _detecter(raw, dictionary, choix, regles):
+    # Le diagnostic et les espaces ne dépendent pas des choix : ils restent mémorisés quand seuls les choix changent.
+    return detecter_points(raw, dictionary, choix, cached(diagnose, raw, dictionary, True), regles_simples(regles),
+                           cached(compter_espaces, raw))
 
 
 def _verifier(raw, dictionary, choix, regles):
@@ -47,7 +48,7 @@ def _verifier(raw, dictionary, choix, regles):
 
 
 def resultats_regles():
-    """Lignes qui ne respectent pas chaque règle active (vide en mode simple)."""
+    """Lignes qui ne respectent pas chaque règle cochée (vide si aucune)."""
     etat = st.session_state
     regles = regles_actives()
     return cached(_verifier, etat.raw, etat.dictionary, etat.choix, regles) if regles else {}
@@ -82,28 +83,29 @@ def _resultat_regle(controle, resultats):
 
 
 def _regles(fiche, index, resultats):
-    """Section « Règles à vérifier » d'une carte (mode expert)."""
+    """Volet « Règles (facultatif) » d'une carte, fermé par défaut."""
     colonne, role = fiche["colonne"], fiche["role"]
     regle = st.session_state.regles.get(colonne, {})
-    st.markdown("**Règles à vérifier**")
-    types = [("remplie", "Doit être remplie")] + ([("unique", "Valeurs uniques")] if role == "Identifiant" else [])
-    for type_, libelle in types:
-        cle = f"w_regle_{index}_{type_}"
-        st.checkbox(libelle, value=bool(regle.get(type_)), key=cle, on_change=_changer_regle, args=(colonne, type_, cle))
-        if regle.get(type_):
-            _resultat_regle(regles_simples({colonne: {type_: True}})[0], resultats)
-    if role == "Mesure" and fiche.get("nombres"):
-        cle = f"w_regle_{index}_bornes"
-        defaut = (fiche["minimum"], fiche["maximum"])
-        st.checkbox("Valeurs entre deux bornes", value=bool(regle.get("bornes")), key=cle,
-                    on_change=_changer_regle, args=(colonne, "bornes", cle, defaut))
-        if regle.get("bornes"):
-            gauche, droite = st.columns(2)
-            for colonne_ecran, position, libelle in ((gauche, 0, "Minimum"), (droite, 1, "Maximum")):
-                cle_borne = f"w_regle_{index}_borne_{position}"
-                colonne_ecran.number_input(libelle, value=float(regle["bornes"][position]), key=cle_borne,
-                                           on_change=_changer_borne, args=(colonne, position, cle_borne))
-            _resultat_regle(regles_simples({colonne: {"bornes": regle["bornes"]}})[0], resultats)
+    with st.expander("Règles (facultatif)", expanded=any(regle.values()), icon=":material/rule:",
+                     key=f"w_regle_{index}_volet"):
+        types = [("remplie", "Doit être remplie")] + ([("unique", "Valeurs uniques")] if role == "Identifiant" else [])
+        for type_, libelle in types:
+            cle = f"w_regle_{index}_{type_}"
+            st.checkbox(libelle, value=bool(regle.get(type_)), key=cle, on_change=_changer_regle, args=(colonne, type_, cle))
+            if regle.get(type_):
+                _resultat_regle(regles_simples({colonne: {type_: True}})[0], resultats)
+        if role == "Mesure" and fiche.get("nombres"):
+            cle = f"w_regle_{index}_bornes"
+            defaut = (fiche["minimum"], fiche["maximum"])
+            st.checkbox("Valeurs entre deux bornes", value=bool(regle.get("bornes")), key=cle,
+                        on_change=_changer_regle, args=(colonne, "bornes", cle, defaut))
+            if regle.get("bornes"):
+                gauche, droite = st.columns(2)
+                for colonne_ecran, position, libelle in ((gauche, 0, "Minimum"), (droite, 1, "Maximum")):
+                    cle_borne = f"w_regle_{index}_borne_{position}"
+                    colonne_ecran.number_input(libelle, value=float(regle["bornes"][position]), key=cle_borne,
+                                               on_change=_changer_borne, args=(colonne, position, cle_borne))
+                _resultat_regle(regles_simples({colonne: {"bornes": regle["bornes"]}})[0], resultats)
 
 
 def _changer_role(colonne, cle_widget):
@@ -119,11 +121,19 @@ def _alerte(texte):
     st.badge(texte, color="orange", icon=":material/warning:")
 
 
-def _carte(fiche, index, resultats=None):
+def _type(fiche, index):
+    """Étiquette du type ; un clic ouvre le choix pour le corriger."""
+    cle = f"w_role_{index}"
+    with st.popover(fiche["libelle"], icon=":material/edit:", help="Changer le type de cette colonne"):
+        st.radio("Cette colonne contient", list(ROLES.values()), index=list(ROLES).index(fiche["role"]), key=cle,
+                 on_change=_changer_role, args=(fiche["colonne"], cle))
+
+
+def _carte(fiche, index, resultats):
     with st.container(border=True, height="stretch"):
         with st.container(horizontal=True, vertical_alignment="center"):
             st.markdown(f"**{fiche['colonne']}**")
-            st.badge(fiche["libelle"], color="gray")
+            _type(fiche, index)
         st.caption(fiche["phrase"])
         st.markdown(f"Remplies : **{nombre_lisible(fiche['remplies'])}** sur {nombre_lisible(fiche['total'])} · "
                     f"Valeurs différentes : **{nombre_lisible(fiche['distinctes'])}**")
@@ -152,11 +162,7 @@ def _carte(fiche, index, resultats=None):
                 _alerte(f"{pluriel(fiche['illisibles'], 'date illisible', 'dates illisibles')}")
         if fiche["remplies"] < fiche["total"]:
             st.caption(f"{pluriel(fiche['total'] - fiche['remplies'], 'case vide', 'cases vides')}.")
-        cle = f"w_role_{index}"
-        st.selectbox("Cette colonne contient", list(ROLES.values()), index=list(ROLES).index(role), key=cle,
-                     on_change=_changer_role, args=(fiche["colonne"], cle))
-        if resultats is not None:
-            _regles(fiche, index, resultats)
+        _regles(fiche, index, resultats)
 
 
 def ecran_comprendre():
@@ -174,12 +180,7 @@ def ecran_comprendre():
     st.subheader(f"Vos {pluriel(len(etat.raw.columns), 'colonne')}", anchor=False)
     dayfirst = {cle: valeur == "jour" for cle, valeur in etat.choix.get("dates", {}).items()}
     fiches = cached(resume_colonnes, etat.raw, etat.dictionary, dayfirst)
-    resultats = None
-    if mode_expert():
-        st.info("Cochez sur chaque carte ce que la colonne doit respecter, d'après ce que vous savez du métier. "
-                "Une règle non respectée n'est pas forcément une erreur : les lignes concernées se traitent à l'étape Corriger.",
-                title="Mode expert : règles simples", icon=":material/rule:")
-        resultats = cached(_verifier, etat.raw, etat.dictionary, etat.choix, etat.regles)
+    resultats = resultats_regles()
     for debut in range(0, len(fiches), 2):
         colonnes = st.columns(2)
         for colonne, (index, fiche) in zip(colonnes, enumerate(fiches[debut:debut + 2], start=debut)):

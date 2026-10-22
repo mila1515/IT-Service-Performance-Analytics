@@ -29,7 +29,6 @@ OPTIONS = {
                  ("une", "Garder une seule ligne", "Les copies sont mises de côté, avec la raison")],
     "dates": [("jour", "Jour d'abord", "05/03 = 5 mars"),
               ("mois", "Mois d'abord", "05/03 = 3 mai")],
-    # Mode expert léger.
     "regles": [("garder", "Garder et signaler", "Les lignes restent ; le rapport le mentionne"),
                ("ecarter", "Écarter ces lignes", "Elles sont mises de côté, avec la raison")],
     "espaces": [("garder", "Laisser tel quel", "Aucun changement"),
@@ -202,20 +201,20 @@ def compter_espaces(raw):
     return total
 
 
-def _point_espaces(raw):
-    nombre = compter_espaces(raw)
+def _point_espaces(nombre):
     if not nombre:
         return []
     return [{"cle": "espaces", "texte": f"{pluriel(nombre, 'valeur')} avec des espaces au début ou à la fin",
              "options": OPTIONS["espaces"], "defaut": DEFAUTS["espaces"]}]
 
 
-def detecter_points(raw, dictionary, choix, diagnostic, controles=None, expert=False):
+def detecter_points(raw, dictionary, choix, diagnostic, controles=None, nb_espaces=None):
     """Cartes à afficher, dans l'ordre du parcours. `diagnostic` : résultat de `diagnose(..., ignore_markers=True)`.
 
     Chaque carte : {type, titre, pourquoi, lignes}, chaque ligne : {cle, texte, options, defaut}.
     Les cases vides tiennent compte des choix déjà faits sur les codes et les textes.
-    Mode expert : règles non respectées (`controles`, voir `regles_simples`) et espaces en trop.
+    `controles` : règles cochées à l'étape Comprendre (voir `regles_simples`).
+    `nb_espaces` : résultat de `compter_espaces(raw)` s'il est déjà connu.
     """
     dico, politiques = dictionnaire_selon_choix(dictionary, choix, diagnostic["suspects"])
     familles = {
@@ -224,10 +223,9 @@ def detecter_points(raw, dictionary, choix, diagnostic, controles=None, expert=F
         "vides": _point_vides(raw, dictionary, dico, politiques),
         "doublons": _point_doublons(raw),
         "dates": _point_dates(diagnostic["normalized"], dictionary),
+        "regles": _point_regles(verifier_regles(raw, dico, controles)) if controles else [],
+        "espaces": _point_espaces(compter_espaces(raw) if nb_espaces is None else nb_espaces),
     }
-    if expert:
-        familles["regles"] = _point_regles(verifier_regles(raw, dico, controles or []))
-        familles["espaces"] = _point_espaces(raw)
     return [{"type": t, "titre": TITRES[t][0], "pourquoi": TITRES[t][1], "lignes": lignes}
             for t, lignes in familles.items() if lignes]
 

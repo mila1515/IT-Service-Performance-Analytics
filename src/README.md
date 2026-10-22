@@ -18,10 +18,13 @@ python -m streamlit run src/app.py
    obligatoire. Options de lecture (séparateur, encodage, décimales) repliées derrière « Le tableau
    ne ressemble pas à votre fichier ? ». Les identifiants (001…) sont lus en texte pour garder
    leurs zéros. Changer une option après des choix les efface, avec un avertissement.
-2. **Comprendre** : chiffres clés, une carte par colonne (rôle en mots simples, remplissage,
-   mini-graphique, rôle modifiable), liste des points à vérifier. Rien n'est modifié.
+2. **Comprendre** : chiffres clés, une carte par colonne (type en mots simples, remplissage,
+   mini-graphique), liste des points à vérifier. Un clic sur l'étiquette du type (« Catégorie »,
+   « Identifiant »…) permet de le corriger. Rien n'est modifié.
 3. **Corriger** : une carte par famille de points — codes de valeur manquante (« ? », « NA »…),
-   texte dans des nombres, cases vides, lignes identiques, dates ambiguës (jour/mois). Chaque
+   texte dans des nombres, cases vides, lignes identiques, dates ambiguës (jour/mois), espaces en
+   trop (« A » et « A␣ » comptés comme deux valeurs). L'explication de chaque carte est derrière
+   l'icône (?). Chaque
    point se règle en un clic ; **par défaut, rien ne change**. Le résultat (lignes gardées et
    écartées, cases vides, moyenne avant → après) et le journal se mettent à jour en direct.
    Une ligne écartée n'est pas effacée et « écarter n'est pas corriger » est rappelé.
@@ -32,23 +35,21 @@ python -m streamlit run src/app.py
    ligne d'origine et raison), rapport qualité (Markdown), archive ZIP avec le fichier d'origine
    inchangé et le journal.
 
-## Mode simple / Mode expert
+## Options facultatives
 
-Deux boutons en haut de l'écran. **Mode simple** (par défaut) : le parcours ci-dessus.
-**Mode expert** : quatre ajouts seulement, pensés pour un analyste junior.
+Un seul parcours pour tout le monde, sans mode à choisir. Deux options, éteintes par défaut :
 
-1. **Comprendre** : sur chaque carte, des règles simples à cocher — « doit être remplie »,
-   « valeurs uniques » (identifiants), « valeurs entre deux bornes » (nombres). Le résultat
-   s'affiche aussitôt (lignes qui ne respectent pas).
-2. **Corriger** : une carte « Règles non respectées » : garder et signaler, ou écarter les lignes.
-   Une règle non respectée n'est pas forcément une erreur ; les textes non numériques ne sont
-   pas comptés dans les bornes (ils ont déjà leur propre carte).
-3. **Corriger** : une carte « Espaces en trop » quand des textes en ont (« A » et « A␣ »).
-4. **Visualiser** : un filtre avant les graphiques (garder ou exclure des valeurs d'une
-   catégorie, choisir une période). Il ne change pas les données téléchargées.
+- **Règles (facultatif)** — volet fermé sur chaque carte de l'étape Comprendre : « doit être
+  remplie », « valeurs uniques » (identifiants), « valeurs entre deux bornes » (nombres). Le
+  résultat s'affiche aussitôt. Si une règle n'est pas respectée, l'étape Corriger montre une carte
+  « Règles non respectées » : garder et signaler, ou écarter les lignes. Une règle non respectée
+  n'est pas forcément une erreur ; les textes non numériques ne sont pas comptés dans les bornes
+  (ils ont déjà leur propre carte). Le rapport qualité indique chaque règle vérifiée.
+- **Filtrage** — interrupteur à l'étape Visualiser : garder ou exclure des valeurs d'une
+  catégorie, choisir une période. Il ne change que les graphiques, pas les données téléchargées.
 
-Le rapport qualité indique alors chaque règle vérifiée. Volontairement absents : priorités
-P1/P2/P3, seuils en %, expressions régulières, clés composées, configuration JSON, GO/NO-GO.
+Volontairement absents : priorités P1/P2/P3, seuils en %, expressions régulières, clés composées,
+configuration JSON, GO/NO-GO.
 
 Règles constantes : le fichier d'origine n'est jamais modifié ; chaque traitement repart de
 lui ; moyenne et médiane seulement pour les nombres, « Inconnu » seulement pour les
@@ -117,7 +118,7 @@ La première arrivée sur les étapes 2 et 3 prend quelques secondes sur un gros
 
 ## Ancienne interface experte (archive)
 
-À ne pas confondre avec le bouton « Mode expert » ci-dessus. L'ancienne interface complète en
+L'ancienne interface complète en
 6 étapes reste disponible à part, pour mémoire :
 dictionnaire détaillé, règles de qualité P1/P2/P3 rejouées avant/après, diagnostic des
 répétitions, dashboard configurable (filtres, disposition, configuration JSON), décision GO /

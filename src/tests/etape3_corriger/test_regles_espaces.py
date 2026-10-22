@@ -1,4 +1,4 @@
-"""Mode expert léger : règles simples, espaces en trop, sans changement par défaut."""
+"""Règles facultatives et espaces en trop, sans changement par défaut."""
 import unittest
 from pathlib import Path
 
@@ -36,13 +36,12 @@ class ReglesSimplesTests(unittest.TestCase):
         self.assertEqual(resultats, {"id : valeurs uniques": [4, 6], "montant : entre 0 et 25": [7],
                                      "date_commande : doit être remplie": []})
 
-    def test_expert_points_only_in_expert_mode(self):
+    def test_rule_card_only_when_rules_are_checked(self):
         raw, dictionary, diagnostic = charger()
-        controles = regles_simples(REGLES)
-        simple = detecter_points(raw, dictionary, {}, diagnostic, controles)
-        self.assertNotIn("regles", [p["type"] for p in simple])
-        expert = detecter_points(raw, dictionary, {}, diagnostic, controles, expert=True)
-        regles = next(p for p in expert if p["type"] == "regles")
+        sans_regle = detecter_points(raw, dictionary, {}, diagnostic)
+        self.assertNotIn("regles", [p["type"] for p in sans_regle])
+        avec_regles = detecter_points(raw, dictionary, {}, diagnostic, regles_simples(REGLES))
+        regles = next(p for p in avec_regles if p["type"] == "regles")
         self.assertEqual([l["cle"] for l in regles["lignes"]], ["id : valeurs uniques", "montant : entre 0 et 25"])
         self.assertIn("2 lignes ne respectent pas (lignes 4, 6)", regles["lignes"][0]["texte"])
         self.assertEqual(exemples(raw, diagnostic, "regles", "id : valeurs uniques", numeros=[4, 6]).index.tolist(), [4, 6])
@@ -82,9 +81,9 @@ class EspacesTests(unittest.TestCase):
         self.dictionary = dictionnaire_propose(self.raw)
         self.diagnostic = diagnose(self.raw, self.dictionary, True)
 
-    def test_spaces_are_counted_and_offered_in_expert_mode(self):
+    def test_spaces_are_counted_and_offered(self):
         self.assertEqual(compter_espaces(self.raw), 2)
-        points = detecter_points(self.raw, self.dictionary, {}, self.diagnostic, expert=True)
+        points = detecter_points(self.raw, self.dictionary, {}, self.diagnostic)
         espaces = next(p for p in points if p["type"] == "espaces")
         self.assertEqual(espaces["lignes"][0]["texte"], "2 valeurs avec des espaces au début ou à la fin")
         self.assertEqual(exemples(self.raw, self.diagnostic, "espaces", "espaces").index.tolist(), [1, 3])

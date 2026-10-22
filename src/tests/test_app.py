@@ -57,7 +57,8 @@ class ParcoursSimpleTests(unittest.TestCase):
         self.assertEqual(app.session_state.etape, "Comprendre")
         self.assertEqual(next(m.value for m in app.metric if m.label == "Points à vérifier"), "4")
         self.assertIn("ligne 6 = ligne 4", textes(app.markdown))
-        app.selectbox(key="w_role_1").set_value("des identifiants").run()
+        self.assertFalse(app.selectbox)
+        app.radio(key="w_role_1").set_value("des identifiants").run()
         self.assertEqual(app.session_state.dictionary[1]["Rôle"], "Identifiant")
         self.assertFalse(app.exception)
 
@@ -115,7 +116,7 @@ class ParcoursSimpleTests(unittest.TestCase):
         self.assertEqual(app.session_state.choix, {})
 
 
-class ModeExpertTests(unittest.TestCase):
+class ReglesEtFiltrageTests(unittest.TestCase):
     def ouvrir(self):
         app = AppTest.from_file(APP, default_timeout=60)
         self.upload = patch("streamlit.file_uploader", return_value=fichier(EXEMPLE.read_bytes(), "exemple.csv"))
@@ -125,14 +126,16 @@ class ModeExpertTests(unittest.TestCase):
         app.session_state["etape"] = "Comprendre"
         return app.run()
 
-    def test_simple_mode_by_default_has_no_rules(self):
+    def test_rules_are_offered_but_unchecked_and_there_is_no_mode_switch(self):
         app = self.ouvrir()
-        self.assertEqual(app.session_state.mode, "simple")
-        self.assertFalse([c for c in app.checkbox if c.key and c.key.startswith("w_regle_")])
+        cases = [c for c in app.checkbox if (c.key or "").startswith("w_regle_")]
+        self.assertTrue(cases)
+        self.assertFalse(any(c.value for c in cases))
+        self.assertNotIn("mode", [c.key for c in app.segmented_control])
+        self.assertEqual(next(m.value for m in app.metric if m.label == "Points à vérifier"), "4")
 
     def test_rule_is_checked_then_handled_and_reported(self):
         app = self.ouvrir()
-        app.segmented_control(key="mode").set_value("expert").run()
         app.checkbox(key="w_regle_0_unique").check().run()
         self.assertFalse(app.exception)
         self.assertIn("2 lignes ne respectent pas (lignes 4, 6)", textes(app.markdown))
@@ -147,12 +150,13 @@ class ModeExpertTests(unittest.TestCase):
         bouton(app, "Valider et voir les graphiques").click().run()
         self.assertEqual(app.session_state.validation["regles_verifiees"], {"id : valeurs uniques": [4, 6]})
 
-    def test_filter_changes_charts_not_downloads(self):
+    def test_filter_is_off_by_default_and_changes_charts_not_downloads(self):
         app = self.ouvrir()
-        app.segmented_control(key="mode").set_value("expert").run()
         app.session_state["etape"] = "Corriger"
         app.run()
         bouton(app, "Valider et voir les graphiques").click().run()
+        self.assertNotIn("lignes retenues", textes(app.markdown))
+        app.toggle(key="w_filtre_actif").set_value(True).run()
         self.assertIn("7 / 7 lignes retenues", textes(app.markdown))
         app.segmented_control(key="w_filtre_mode").set_value("exclure").run()
         cle = next(p.key for p in app.get("button_group") if (p.key or "").startswith("w_filtre_valeurs_"))

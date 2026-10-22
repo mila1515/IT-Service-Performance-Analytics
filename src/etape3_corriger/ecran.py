@@ -42,13 +42,12 @@ def _valider(plan, complets):
 
 
 def _ligne(point, ligne, choisi, diagnostic):
-    options = {cle: (libelle, aide) for cle, libelle, aide in ligne["options"]}
+    options = {cle: libelle for cle, libelle, _ in ligne["options"]}
     cle_widget = _cle_widget(point["type"], ligne["cle"])
     st.markdown(f"**{ligne['texte']}**")
-    st.segmented_control(ligne["texte"], list(options), format_func=lambda cle: options[cle][0], default=choisi,
+    st.segmented_control(ligne["texte"], list(options), format_func=options.get, default=choisi,
                          required=True, key=cle_widget, label_visibility="collapsed",
                          on_change=_enregistrer, args=(point["type"], ligne["cle"], cle_widget))
-    st.caption(options[choisi][1])
     volet = st.expander("Voir les lignes concernées", key=f"{cle_widget}_lignes", on_change="rerun")
     if volet.open:
         with volet:
@@ -85,17 +84,12 @@ def ecran_corriger():
     points = points_courants()
     total = sum(len(p["lignes"]) for p in points)
     st.title("Corriger les points à vérifier" if total else "Aucun point à vérifier", anchor=False)
-    st.caption("Pour chaque point, choisissez ce qui correspond à vos données. Par défaut, rien n'est changé. "
-               "Le résultat se met à jour en bas de page.")
+    st.caption("Choisissez pour chaque point. Par défaut, rien n'est changé.")
     complets = choix_complets(points, etat.choix)
     diagnostic = diagnostic_courant()
     for point in points:
         with st.container(border=True):
-            with st.container(horizontal=True, vertical_alignment="center"):
-                st.subheader(point["titre"], anchor=False)
-                if point["type"] in ("regles", "espaces"):
-                    st.badge("Mode expert", color="blue", icon=":material/tune:")
-            st.caption(point["pourquoi"])
+            st.subheader(point["titre"], anchor=False, help=point["pourquoi"])
             for ligne in point["lignes"]:
                 _ligne(point, ligne, complets[point["type"]][ligne["cle"]], diagnostic)
 

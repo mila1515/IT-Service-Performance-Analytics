@@ -1,6 +1,6 @@
 """Contrôles qualité avec références aux enregistrements sources.
 
-Utilisé par le mode expert léger (règles simples : remplie, unique, entre deux bornes) et par
+Utilisé par les règles facultatives de l'étape Comprendre (règles simples : remplie, unique, entre deux bornes) et par
 l'ancienne interface experte (tous les contrôles, priorités P1/P2/P3, seuils).
 """
 
@@ -75,7 +75,7 @@ def audit(data, dictionary, rules):
             numbers = convert(values, "Nombre")
             bad = present & ~numbers.between(rule["low"], rule["high"])
             if rule.get("ignore_text"):
-                # Mode expert léger : un texte non numérique a déjà sa propre carte, il n'est pas compté ici.
+                # Règles facultatives : un texte non numérique a déjà sa propre carte, il n'est pas compté ici.
                 bad &= numbers.notna()
         elif kind == "Catégories autorisées":
             bad = present & ~values.astype("string").isin(rule["values"])
@@ -142,12 +142,12 @@ def recommendation(audit_after, row_count):
 
 
 def _controle(colonne, kind, libelle):
-    # Priorité et seuil fixes : dans le mode expert léger, toute ligne qui ne respecte pas est signalée.
+    # Priorité et seuil fixes : pour les règles facultatives, toute ligne qui ne respecte pas est signalée.
     return {"id": libelle, "column": colonne, "kind": kind, "priority": "P2", "threshold": 0.}
 
 
 def regles_simples(regles):
-    """Règles du mode expert léger → contrôles pour `audit` (l'identifiant est le libellé lisible).
+    """Règles facultatives cochées à l'étape Comprendre → contrôles pour `audit` (l'identifiant est le libellé lisible).
 
     `regles` : {colonne: {"remplie": bool, "unique": bool, "bornes": [minimum, maximum] ou None}}.
     """

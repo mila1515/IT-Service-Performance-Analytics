@@ -20,7 +20,7 @@ def plan_nettoyage(dictionary, choix, suspects, controles=()):
     """Traduit les choix en paramètres de `pipeline`, sans toucher au dictionnaire reçu.
 
     `suspects` : tableau des codes repérés par `diagnose` (colonnes « Colonne », « Valeur à vérifier »).
-    `controles` : règles du mode expert (`regles_simples`) ; seules celles marquées « écarter » rejettent.
+    `controles` : règles cochées à l'étape Comprendre (`regles_simples`) ; seules celles marquées « écarter » rejettent.
     Retourne {dictionary, missing_rules, deduplicate, conversion_policies, quality_rules, reject_rule_ids, trim}.
     """
     dico, politiques = dictionnaire_selon_choix(dictionary, choix, suspects)
@@ -71,7 +71,7 @@ def motif_lisible(motif):
     if motif == "Doublon strict après transformations":
         return "copie identique d'une autre ligne"
     for kind in ("Obligatoire", "Unique", "Intervalle"):
-        # Rejet par une règle du mode expert : « <libellé de la règle> : <type> ».
+        # Rejet par une règle cochée : « <libellé de la règle> : <type> ».
         if motif.endswith(f" : {kind}"):
             return f"règle non respectée ({motif.removesuffix(f' : {kind}')})"
     return motif
@@ -108,7 +108,7 @@ def regles_signalees(resultats, choix):
 def phrases_journal(log, signalees=()):
     """Entrées du journal du moteur → phrases simples, dans l'ordre.
 
-    `signalees` : règles du mode expert non respectées mais gardées (`regles_signalees`).
+    `signalees` : règles cochées non respectées mais gardées (`regles_signalees`).
     """
     phrases = []
     for entry in log:

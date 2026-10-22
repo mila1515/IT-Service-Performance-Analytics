@@ -762,3 +762,30 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 - **Test navigateur** : 11 étapes réussies, dont E1 à E3 pour le mode expert (règle cochée, lignes écartées, filtre « 4 / 5 lignes retenues » sans changement des fichiers téléchargés).
 - **Docker** reconstruit sur http://localhost:8503 ; le même test navigateur y réussit.
 
+---
+
+## Un seul parcours : règles facultatives et Filtrage (2026-10-22)
+
+**Demande :** l'écran Corriger était trop chargé de texte et le fond blanc fatiguait les yeux. Il n'y avait presque pas de différence entre le mode simple et le mode expert aux étapes 1 à 3. La demande : renommer « Mode expert » en « Filtrage » et le réserver à l'étape 4, garder les règles à cocher (jugées importantes) dans le parcours, et retirer « Cette colonne contient », répété sous chaque carte.
+
+**Réalisé :**
+
+| Où | Changement |
+|---|---|
+| Toute l'application | Couleurs plus douces : fond gris-bleu (#F2F4F8), texte bleu-gris foncé (#2C3E50), bordures gris-bleu ; même bleu pour les boutons |
+| Barre du haut | Boutons « Mode simple / Mode expert » retirés : un seul parcours |
+| Comprendre | Bloc « Cette colonne contient » retiré ; un clic sur l'étiquette du type (« Catégorie »…) ouvre le choix pour le corriger. Règles à cocher dans un volet fermé « Règles (facultatif) » sur chaque carte |
+| Corriger | Explication de chaque carte derrière l'icône (?) au lieu d'un paragraphe ; phrase sous les boutons retirée ; badge « Mode expert » retiré. Cartes « Règles non respectées » (si une règle cochée échoue) et « Espaces en trop » (si le fichier en contient) pour tout le monde |
+| Visualiser | Interrupteur « Filtrage », éteint par défaut, qui affiche le filtre existant |
+| Rapport qualité | Section « Règles vérifiées » (au lieu de « Règles vérifiées (mode expert) ») |
+
+**Choix à signaler :**
+- Le comptage des espaces en trop parcourt tout le fichier. Il est désormais mémorisé une fois par fichier, pour que les clics de l'étape Corriger restent rapides sur un gros CSV.
+- Sur un fichier qui contient des espaces en trop, une carte de plus apparaît à l'étape Corriger. Par défaut elle ne change rien (« Laisser tel quel »).
+- « Voir les lignes concernées » est gardé sur chaque carte de Corriger : il sert à vérifier avant de choisir.
+- `test_expert.py` est renommé `test_regles_espaces.py`.
+
+**Vérifications :**
+- **92 tests OK** (tests de l'interface adaptés : `ReglesEtFiltrageTests`).
+- **Test navigateur** : 12 étapes réussies, dont E0 (type changé par l'étiquette) et E3 (Filtrage éteint par défaut, « 4 / 5 lignes retenues », téléchargements inchangés).
+

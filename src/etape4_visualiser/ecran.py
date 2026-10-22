@@ -11,7 +11,7 @@ import streamlit as st
 
 from src.core.dessins import dessiner
 from src.config import LIBELLE_MANQUANT
-from src.core.session import aller, cached, mode_expert
+from src.core.session import aller, cached
 from src.etape2_comprendre.ecran import points_courants
 from src.etape3_corriger.correction import decisions, phrases_journal
 from src.etape4_visualiser.controles import comparaison, distribution, evolution, graphiques_controle, repartition
@@ -148,14 +148,16 @@ def _filtre_dates(data, colonne):
 
 
 def _filtre(data, roles):
-    """Mode expert : filtre sur une catégorie et une période. Retourne les lignes retenues (graphiques seulement)."""
+    """Filtrage facultatif sur une catégorie et une période. Retourne les lignes retenues (graphiques seulement)."""
     categories = [c for c, r in roles.items() if r == "Catégorie"]
     dates = [c for c, r in roles.items() if r == "Date" and data[c].notna().any()]
     if not categories and not dates:
         return data
+    if not st.toggle("Filtrage", key="w_filtre_actif", help="Regarder les graphiques sur une partie des lignes "
+                     "seulement. Les fichiers téléchargés ne changent pas."):
+        return data
     specs, resumes = [], []
     with st.container(border=True):
-        st.subheader("Filtrer avant de regarder", anchor=False)
         gauche, droite = st.columns(2)
         if categories:
             with gauche:
@@ -188,8 +190,7 @@ def ecran_visualiser():
     roles = _roles(validation)
     dayfirst = {col: valeur == "jour" for col, valeur in validation["choix"].get("dates", {}).items()}
     data, ignorees = cached(prepare, validation["cleaned"], roles, dayfirst)
-    if mode_expert():
-        data = _filtre(data, roles)
+    data = _filtre(data, roles)
     graphiques = [(g, None) for g in graphiques_controle(data, roles, ignorees)]
     graphiques += [(g, i) for i, spec in enumerate(etat.graphiques_ajoutes)
                    if (g := _graphique_ajoute(data, roles, spec, ignorees)) is not None]
