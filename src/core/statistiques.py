@@ -36,3 +36,9 @@ def statistics(data, exclude=()):
     })
     result["Variance"] = data[columns].var()
     return result
+
+
+def tukey_bounds(values):
+    """Bornes de Tukey (Q1 − 1,5 × IQR, Q3 + 1,5 × IQR) : au-delà, une valeur est inhabituelle, pas fausse."""
+    q1, q3 = values.quantile([.25, .75])
+    return q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1)

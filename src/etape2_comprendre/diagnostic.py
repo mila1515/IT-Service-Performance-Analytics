@@ -3,16 +3,21 @@
 
 import pandas as pd
 
+from src.config import MARQUEURS_POSSIBLES
 from src.core.dictionnaire import convert, normalize_missing
 from src.core.statistiques import numeric_columns
 
 
-def diagnose(raw, dictionary):
+def diagnose(raw, dictionary, ignore_markers=False):
+    """Vides, conversions, codes possibles de valeur manquante et textes dans des nombres, par colonne.
+
+    `ignore_markers` : les codes comme « ? » ne comptent pas parmi les textes dans des nombres
+    (ils sont signalés à part dans `suspects`).
+    """
     normalized = normalize_missing(raw, dictionary)
     prepared = normalized.copy(deep=True)
     rows, suspects, hints = [], [], []
     numeric = numeric_columns(normalized)
-    markers = {"?", "na", "n/a", "null", "none", "-", "inconnu"}
     for d in dictionary:
         col = d["Colonne"]
         prepared[col] = convert(normalized[col], d["Type attendu"], d["Format date"])
@@ -32,10 +37,13 @@ def diagnose(raw, dictionary):
         counts = (pd.Series(distinct.to_numpy(), index=pd.Index(labels.to_numpy(), dtype=object))
                   .groupby(level=0, sort=False).sum().sort_values(ascending=False, kind="stable"))
         counts = counts.loc[counts.index != ""]
-        for token, count in counts.loc[counts.index.str.casefold().isin(markers)].items():
+        is_marker = counts.index.str.casefold().isin(MARQUEURS_POSSIBLES)
+        for token, count in counts.loc[is_marker].items():
             suspects.append({"Colonne": col, "Valeur à vérifier": token, "Occurrences": int(count)})
         # Constat seulement : le type et le rôle restent décidés par l'utilisateur.
         if d["Type attendu"] == "Conserver" and d["Rôle"] != "Identifiant" and col not in numeric:
+            if ignore_markers:
+                counts = counts.loc[~is_marker]
             is_number = pd.to_numeric(counts.index.to_series(), errors="coerce").notna().to_numpy()
             filled, numbers = int(counts.sum()), int(counts[is_number].sum())
             if numbers < filled and numbers > filled / 2:

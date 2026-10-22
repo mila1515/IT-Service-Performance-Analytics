@@ -43,3 +43,10 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(result["prepared"].montant.tolist()[2], "abc")
         dictionary[0]["Type attendu"] = "Nombre"
         self.assertTrue(diagnose(data, dictionary)["numeric_hints"].empty)
+
+    def test_markers_can_be_left_out_of_text_in_numbers(self):
+        data = pd.DataFrame({"x": ["1", "2", "3", "4", "?", "abc"]})
+        dictionary = records(initial_dictionary(data))
+        self.assertEqual(diagnose(data, dictionary)["numeric_hints"].iloc[0]["Valeurs non numériques"], 2)
+        hints = diagnose(data, dictionary, ignore_markers=True)["numeric_hints"]
+        self.assertEqual((hints.iloc[0]["Valeurs non numériques"], hints.iloc[0]["Exemples non numériques"]), (1, "abc"))

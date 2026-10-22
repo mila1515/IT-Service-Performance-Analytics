@@ -37,8 +37,11 @@ def clean(data, rules):
 
 
 def pipeline(raw, dictionary, quality_rules, missing_rules, *, trim=False, deduplicate=False,
-             conversion_policy="Bloquer", reject_rule_ids=None, justification="", owner=""):
-    if conversion_policy not in ("Bloquer", "Mettre en rejet", "Convertir en vide"):
+             conversion_policy="Bloquer", reject_rule_ids=None, justification="", owner="",
+             conversion_policies=None):
+    """`conversion_policies` : politique propre à certaines colonnes ; les autres suivent `conversion_policy`."""
+    conversion_policies = conversion_policies or {}
+    if {conversion_policy, *conversion_policies.values()} - {"Bloquer", "Mettre en rejet", "Convertir en vide"}:
         raise ValueError("Politique de conversion inconnue.")
     work = normalize_missing(raw, dictionary)
     log, reasons = [], {}
@@ -63,12 +66,13 @@ def pipeline(raw, dictionary, quality_rules, missing_rules, *, trim=False, dedup
         record("Marqueurs vides normalisés", col, (raw[col].notna() & work[col].isna()).sum())
         converted = convert(work[col], target, d["Format date"])
         failed = work[col].notna() & converted.isna()
+        policy = conversion_policies.get(col, conversion_policy)
         if failed.any():
-            if conversion_policy == "Bloquer":
+            if policy == "Bloquer":
                 raise ValueError(f"{col} : {int(failed.sum())} conversions impossibles. Corrigez le type/format ou choisissez explicitement leur traitement.")
-            if conversion_policy == "Mettre en rejet":
+            if policy == "Mettre en rejet":
                 reject(work.index[failed], f"Conversion impossible : {col} → {target}")
-            record(f"Conversions impossibles : {conversion_policy}", col, failed.sum())
+            record(f"Conversions impossibles : {policy}", col, failed.sum())
         if target != "Conserver":
             record(f"Conversion en {target}", col, work[col].notna().sum())
         work[col] = converted
