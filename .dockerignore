@@ -1,0 +1,7 @@
+# Seul le code de la plateforme est envoyé au moteur de construction.
+**
+!Dockerfile
+!src/
+!src/**
+**/__pycache__/
+**/*.pyc

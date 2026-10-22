@@ -1,0 +1,8 @@
+name: itservice-analytics
+
+services:
+  itservice:
+    build: .
+    ports:
+      - "127.0.0.1:${ITSERVICE_PORT:-8503}:8501"
+    restart: unless-stopped
