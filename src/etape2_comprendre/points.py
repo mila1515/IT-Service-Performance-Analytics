@@ -1,34 +1,39 @@
-"""Étape 3 (Corriger) : points à vérifier, choix de l'utilisateur et résultat en mots simples.
+"""Étape 2 (Comprendre) : repérer les points à vérifier avant toute correction.
 
-Entrées : données brutes, dictionnaire (rôles), choix faits sur chaque point.
-Sorties : la liste des points (cartes à afficher), le plan de nettoyage passé à `pipeline`,
-le résumé du résultat et le journal en phrases.
-Par défaut, chaque choix laisse les données inchangées : rien n'est corrigé sans décision.
-Limites : cinq familles de points (codes de valeur manquante, texte dans des nombres, cases
-vides, lignes identiques, dates ambiguës) ; aucune règle métier n'est déduite.
+Entrées : données brutes, dictionnaire (rôles), diagnostic (`diagnose(..., ignore_markers=True)`) et
+choix déjà faits à l'étape 3 (les cases vides en dépendent). Sortie : une carte par famille de points,
+chaque ligne avec ses options et une valeur par défaut qui ne change rien aux données.
+Limites : cinq familles (codes de valeur manquante, texte dans des nombres, cases vides, lignes
+identiques, dates ambiguës) ; aucune règle métier n'est déduite.
 """
 from copy import deepcopy
 
 import numpy as np
 import pandas as pd
 
+from src.config import MARQUEURS_POSSIBLES
 from src.core.dates import parse_dates
 from src.core.dictionnaire import convert, normalize_missing
 from src.core.statistiques import duplicate_rows, numeric_columns
 from src.core.texte import nombre_lisible, pluriel
+
 
 OPTIONS = {
     "marqueurs": [("manquant", "C'est une valeur manquante", "Le code devient une case vide"),
                   ("garder", "Garder tel quel", "Aucun changement")],
     "texte": [("nombres", "Traiter comme des nombres", "Le texte devient une case vide, la ligne est gardée"),
               ("ecarter", "Écarter ces lignes", "Elles sont mises de côté, avec la raison"),
-              ("garder", "Ne rien changer", "La colonne reste du texte : aucun calcul possible")],
+              ("garder", "Ne rien changer", "Le texte reste dans les données ; les graphiques ne compteront que les nombres")],
     "doublons": [("garder", "Garder toutes les lignes", "Ce sont de vraies lignes"),
                  ("une", "Garder une seule ligne", "Les copies sont mises de côté, avec la raison")],
     "dates": [("jour", "Jour d'abord", "05/03 = 5 mars"),
               ("mois", "Mois d'abord", "05/03 = 3 mai")],
 }
+
+
 DEFAUTS = {"marqueurs": "garder", "texte": "garder", "vides": "laisser", "doublons": "garder"}
+
+
 TITRES = {
     "marqueurs": ("Des codes ressemblent à des valeurs manquantes",
                   "« ? », « NA » ou « inconnu » servent souvent à dire « pas d'information ». S'ils restent des valeurs, "
@@ -43,14 +48,13 @@ TITRES = {
     "dates": ("Des dates à lire dans le bon ordre",
               "« 05/03 » peut vouloir dire 5 mars ou 3 mai. Il faut choisir un seul sens pour toute la colonne."),
 }
-REGLES_VIDES = {"laisser": "Conserver", "mediane": "Médiane", "inconnu": "Inconnu", "ecarter": "Supprimer les lignes"}
 
 
-def plan_nettoyage(dictionary, choix, suspects):
-    """Traduit les choix en paramètres de `pipeline`, sans toucher au dictionnaire reçu.
+def dictionnaire_selon_choix(dictionary, choix, suspects):
+    """Copie du dictionnaire après les choix sur les codes manquants et les textes dans des nombres.
 
     `suspects` : tableau des codes repérés par `diagnose` (colonnes « Colonne », « Valeur à vérifier »).
-    Retourne {dictionary, missing_rules, deduplicate, conversion_policies}.
+    Retourne (dictionnaire, politiques de conversion par colonne). Le dictionnaire reçu n'est pas modifié.
     """
     dico = deepcopy(dictionary)
     par_colonne = {d["Colonne"]: d for d in dico}
@@ -65,9 +69,7 @@ def plan_nettoyage(dictionary, choix, suspects):
         if decision in ("nombres", "ecarter"):
             par_colonne[col].update({"Type attendu": "Nombre", "Rôle": "Mesure"})
             politiques[col] = "Convertir en vide" if decision == "nombres" else "Mettre en rejet"
-    regles = {col: REGLES_VIDES[decision] for col, decision in choix.get("vides", {}).items()}
-    return {"dictionary": dico, "missing_rules": regles,
-            "deduplicate": choix.get("doublons", {}).get("doublons") == "une", "conversion_policies": politiques}
+    return dico, politiques
 
 
 def _point_marqueurs(suspects):
@@ -88,17 +90,17 @@ def _point_texte(hints):
              "options": OPTIONS["texte"], "defaut": DEFAUTS["texte"]} for _, row in hints.iterrows()]
 
 
-def _point_vides(raw, dictionary, plan):
+def _point_vides(raw, dictionary, dico, politiques):
     """Cases vides après les choix déjà faits (codes reconnus, textes devenus vides)."""
-    normalized = normalize_missing(raw, plan["dictionary"])
-    roles = {d["Colonne"]: d for d in plan["dictionary"]}
+    normalized = normalize_missing(raw, dico)
+    roles = {d["Colonne"]: d for d in dico}
     lignes = []
     for d in dictionary:
         col = d["Colonne"]
         definition = roles[col]
         values = convert(normalized[col], definition["Type attendu"], definition["Format date"])
         manquants = values.isna()
-        if plan["conversion_policies"].get(col) == "Mettre en rejet":
+        if politiques.get(col) == "Mettre en rejet":
             manquants &= normalized[col].isna()
         count = int(manquants.sum())
         if not count:
@@ -155,11 +157,11 @@ def detecter_points(raw, dictionary, choix, diagnostic):
     Chaque carte : {type, titre, pourquoi, lignes}, chaque ligne : {cle, texte, options, defaut}.
     Les cases vides tiennent compte des choix déjà faits sur les codes et les textes.
     """
-    plan = plan_nettoyage(dictionary, choix, diagnostic["suspects"])
+    dico, politiques = dictionnaire_selon_choix(dictionary, choix, diagnostic["suspects"])
     familles = {
         "marqueurs": _point_marqueurs(diagnostic["suspects"]),
         "texte": _point_texte(diagnostic["numeric_hints"]),
-        "vides": _point_vides(raw, dictionary, plan),
+        "vides": _point_vides(raw, dictionary, dico, politiques),
         "doublons": _point_doublons(raw),
         "dates": _point_dates(diagnostic["normalized"], dictionary),
     }
@@ -167,65 +169,21 @@ def detecter_points(raw, dictionary, choix, diagnostic):
             for t, lignes in familles.items() if lignes]
 
 
-def decisions(points, choix):
-    """Pour le rapport : chaque point affiché, avec le libellé de l'option retenue (défaut si aucun choix)."""
-    lignes = []
-    for point in points:
-        for ligne in point["lignes"]:
-            cle = choix.get(point["type"], {}).get(ligne["cle"], ligne["defaut"])
-            libelle = next(label for key, label, _ in ligne["options"] if key == cle)
-            lignes.append({"titre": point["titre"], "texte": ligne["texte"], "choix": libelle})
-    return lignes
-
-
-def motif_lisible(motif):
-    """Motif de rejet du moteur → phrase simple."""
-    if motif.startswith("Valeur manquante : "):
-        return f"{motif.removeprefix('Valeur manquante : ')} vide"
-    if motif.startswith("Conversion impossible : "):
-        return f"{motif.removeprefix('Conversion impossible : ').split(' → ')[0]} : texte au lieu d'un nombre"
-    if motif == "Doublon strict après transformations":
-        return "copie identique d'une autre ligne"
-    return motif
-
-
-def resume_resultat(raw, plan, cleaned, rejects):
-    """Chiffres avant / après pour l'encadré « Résultat de vos choix ».
-
-    Les cases vides « avant » sont comptées avec les mêmes codes manquants que « après ».
-    Les moyennes ne portent que sur les colonnes numériques au rôle Mesure.
-    """
-    normalized = normalize_missing(raw, plan["dictionary"])
-    motifs = rejects[("Traçabilité", "Motifs")].str.split(" ; ").explode() if len(rejects) else pd.Series(dtype=str)
-    moyennes = []
-    mesures = [d["Colonne"] for d in plan["dictionary"] if d["Rôle"] == "Mesure"]
-    for col in [c for c in mesures if c in numeric_columns(cleaned)]:
-        avant = pd.to_numeric(normalized[col], errors="coerce").dropna()
-        apres = cleaned[col].dropna()
-        if len(avant) or len(apres):
-            moyennes.append({"colonne": col, "avant": float(avant.mean()) if len(avant) else None, "n_avant": len(avant),
-                             "apres": float(apres.mean()) if len(apres) else None, "n_apres": len(apres)})
-    return {"total": len(raw), "gardees": len(cleaned), "ecartees": len(rejects),
-            "vides_avant": int(normalized.isna().sum().sum()), "vides_apres": int(cleaned.isna().sum().sum()),
-            "motifs": [(motif_lisible(m), int(n)) for m, n in motifs.value_counts().items()],
-            "moyennes": moyennes}
-
-
-def phrases_journal(log):
-    """Entrées du journal du moteur → phrases simples, dans l'ordre."""
-    phrases = []
-    for entry in log:
-        action, col, n = entry["Action"], entry["Colonne"], entry["Cellules / lignes"]
-        if action == "Marqueurs vides normalisés":
-            phrases.append(f"{col} : {pluriel(n, 'code reconnu', 'codes reconnus')} comme valeur manquante")
-        elif action == "Conversions impossibles : Convertir en vide":
-            phrases.append(f"{col} : {pluriel(n, 'texte devenu', 'textes devenus')} une case vide")
-        elif action in ("Médiane", "Moyenne"):
-            phrases.append(f"{col} : {pluriel(n, 'case vide remplacée', 'cases vides remplacées')} par la {action.lower()}")
-        elif action == "Inconnu":
-            phrases.append(f"{col} : {pluriel(n, 'case vide remplacée', 'cases vides remplacées')} par « Inconnu »")
-        elif action.startswith("Mise en rejet : "):
-            phrases.append(f"{pluriel(n, 'ligne mise', 'lignes mises')} de côté : {motif_lisible(action.removeprefix('Mise en rejet : '))}")
-        elif action.startswith("Conversion en "):
-            phrases.append(f"{col} : traitée comme des nombres")
-    return phrases or ["Aucun changement : les données restent telles qu'importées."]
+def exemples(raw, diagnostic, type_, cle, limite=5):
+    """Quelques lignes concernées par un point, numérotées comme dans le fichier (à partir de 1)."""
+    normalized = diagnostic["normalized"]
+    if type_ == "marqueurs":
+        suspects = diagnostic["suspects"]
+        colonnes = suspects.loc[suspects["Valeur à vérifier"] == cle, "Colonne"].tolist()
+        masque = raw[colonnes].astype("string").apply(lambda col: col.str.strip()).eq(cle).any(axis=1)
+    elif type_ == "texte":
+        valeurs = normalized[cle].astype("string").str.strip()
+        masque = valeurs.notna() & pd.to_numeric(valeurs, errors="coerce").isna() & ~valeurs.str.casefold().isin(MARQUEURS_POSSIBLES)
+    elif type_ == "vides":
+        masque = normalized[cle].isna()
+    elif type_ == "doublons":
+        masque = raw.duplicated(keep=False)
+    else:
+        masque = normalized[cle].notna()
+    lignes = raw.loc[masque.fillna(False)].head(limite)
+    return lignes.set_axis(lignes.index + 1).rename_axis("Ligne")

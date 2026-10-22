@@ -11,7 +11,8 @@ import pandas as pd
 
 from src.config import CATEGORIES_RESUME
 from src.core.dates import compter_par_periode, parse_dates
-from src.core.dictionnaire import normalize_missing
+from src.core.dictionnaire import initial_dictionary, normalize_missing, records
+from src.etape2_comprendre.diagnostic import diagnose
 
 LIBELLES_ROLES = {"Identifiant": "Identifiant", "Catégorie": "Catégorie", "Mesure": "Nombre", "Date": "Date"}
 PHRASES_ROLES = {
@@ -74,3 +75,9 @@ def proposer_roles(dictionary, numeric_hints):
         if d["Colonne"] in surtout_numeriques and d["Rôle"] == "Catégorie":
             d["Rôle"] = "Mesure"
     return dictionary
+
+
+def dictionnaire_propose(raw):
+    """Dictionnaire de départ : rôles proposés à partir des noms et des valeurs, tous modifiables."""
+    dictionary = records(initial_dictionary(raw))
+    return proposer_roles(dictionary, diagnose(raw, dictionary, ignore_markers=True)["numeric_hints"])

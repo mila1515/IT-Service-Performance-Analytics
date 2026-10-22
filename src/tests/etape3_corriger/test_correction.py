@@ -8,8 +8,9 @@ from src.core.dictionnaire import initial_dictionary, records
 from src.etape2_comprendre.colonnes import proposer_roles
 from src.etape2_comprendre.diagnostic import diagnose
 from src.etape3_corriger.pipeline import pipeline
-from src.etape3_corriger.points import (decisions, detecter_points, motif_lisible, phrases_journal,
-                                        plan_nettoyage, resume_resultat)
+from src.etape2_comprendre.points import detecter_points
+from src.etape3_corriger.correction import (decisions, motif_lisible, phrases_journal, plan_nettoyage,
+                                            resume_resultat)
 
 EXEMPLE = Path(__file__).parents[1] / "fixtures" / "exemple.csv"
 

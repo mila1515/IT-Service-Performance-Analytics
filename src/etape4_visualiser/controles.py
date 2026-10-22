@@ -13,7 +13,7 @@ from src.config import (CATEGORIES_GRAPHIQUE, CATEGORIES_MAX_POUR_REPARTITION, L
                         VALEURS_MIN_MOYENNE)
 from src.core.dates import compter_par_periode
 from src.core.statistiques import tukey_bounds
-from src.core.texte import nombre_lisible
+from src.core.texte import nombre_lisible, pluriel
 
 
 def repartition(data, col):
@@ -38,12 +38,21 @@ def repartition(data, col):
             "donnees": pd.DataFrame(lignes, columns=["Groupe", "Lignes", "Type"]), "a_retenir": retenir}
 
 
-def distribution(data, col):
-    """Histogramme d'une mesure, avec la médiane et les valeurs inhabituelles (Tukey), conservées."""
+def _ignorees(vides, ignorees):
+    """« · 2 cases vides ignorées · 1 texte ignoré » : un texte non numérique n'est pas une case vide."""
+    texte = f" · {pluriel(vides, 'case vide ignorée', 'cases vides ignorées')}" if vides else ""
+    return texte + (f" · {pluriel(ignorees, 'texte ignoré', 'textes ignorés')}" if ignorees else "")
+
+
+def distribution(data, col, ignorees=0):
+    """Histogramme d'une mesure, avec la médiane et les valeurs inhabituelles (Tukey), conservées.
+
+    `ignorees` : valeurs non numériques de la colonne, devenues manquantes pour le graphique.
+    """
     values = data[col].dropna()
     if values.empty:
         return None
-    vides = len(data) - len(values)
+    vides = len(data) - len(values) - ignorees
     classes = min(20, max(5, int(np.sqrt(len(values)))))
     effectifs, bornes = np.histogram(values, bins=classes)
     bas, haut = tukey_bounds(values)
@@ -51,17 +60,17 @@ def distribution(data, col):
     retenir = [f"La moitié des valeurs est inférieure à {nombre_lisible(float(values.median()))}."]
     if inhabituelles:
         retenir.append(f"{nombre_lisible(inhabituelles)} valeurs sortent nettement du lot : à vérifier, pas à supprimer automatiquement.")
-    sous_titre = f"{nombre_lisible(len(values))} valeurs renseignées" + (f" · {nombre_lisible(vides)} cases vides ignorées" if vides else "")
+    sous_titre = f"{nombre_lisible(len(values))} valeurs renseignées" + _ignorees(vides, ignorees)
     return {"genre": "histogramme", "titre": f"Répartition de {col}", "sous_titre": sous_titre,
             "donnees": pd.DataFrame({"Début": bornes[:-1], "Fin": bornes[1:], "Lignes": effectifs}), "a_retenir": retenir}
 
 
-def comparaison(data, groupe, mesure):
+def comparaison(data, groupe, mesure, ignorees=0):
     """Moyenne d'une mesure par groupe, avec le nombre de valeurs de chaque groupe (fragile si trop peu)."""
     valides = data[[groupe, mesure]].dropna(subset=[mesure])
     if valides.empty:
         return None
-    vides = len(data) - len(valides)
+    vides = len(data) - len(valides) - ignorees
     groupes = valides[groupe].astype("string").fillna(LIBELLE_MANQUANT)
     stats = valides[mesure].groupby(groupes).agg(["mean", "size"])
     # Les groupes les plus fournis d'abord, puis tri par moyenne pour la lecture.
@@ -79,7 +88,7 @@ def comparaison(data, groupe, mesure):
         retenir = [f"Moyenne la plus haute : « {haut['Groupe']} » ({nombre_lisible(float(haut['Moyenne']))}), "
                    f"la plus basse : « {bas['Groupe']} » ({nombre_lisible(float(bas['Moyenne']))})."]
     retenir.append("Une moyenne résume un groupe ; elle ne dit pas pourquoi les groupes diffèrent.")
-    sous_titre = f"{nombre_lisible(len(valides))} valeurs renseignées" + (f" · {nombre_lisible(vides)} cases vides ignorées" if vides else "")
+    sous_titre = f"{nombre_lisible(len(valides))} valeurs renseignées" + _ignorees(vides, ignorees)
     return {"genre": "moyennes", "titre": f"Moyenne de {mesure} par {groupe}", "sous_titre": sous_titre,
             "donnees": donnees, "a_retenir": retenir}
 
@@ -100,8 +109,13 @@ def evolution(data, col):
             "donnees": donnees, "a_retenir": retenir}
 
 
-def graphiques_controle(data, roles):
-    """Jusqu'à trois graphiques choisis selon les rôles : répartition, comparaison (ou distribution), évolution."""
+def graphiques_controle(data, roles, ignorees=None):
+    """Jusqu'à trois graphiques choisis selon les rôles : répartition, comparaison (ou distribution), évolution.
+
+    `ignorees` : colonne → nombre de valeurs non convertibles (sortie `invalid` de `prepare`).
+    """
+    ignorees = ignorees or {}
+
     def premiere(role, condition):
         return next((c for c, r in roles.items() if r == role and condition(c)), None)
 
@@ -112,7 +126,8 @@ def graphiques_controle(data, roles):
     if categorie:
         graphiques.append(repartition(data, categorie))
     if mesure:
-        graphiques.append(comparaison(data, categorie, mesure) if categorie else distribution(data, mesure))
+        n = ignorees.get(mesure, 0)
+        graphiques.append(comparaison(data, categorie, mesure, n) if categorie else distribution(data, mesure, n))
     if date:
         graphiques.append(evolution(data, date))
     return [g for g in graphiques if g is not None]

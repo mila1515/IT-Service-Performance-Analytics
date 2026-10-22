@@ -1,0 +1,16 @@
+# Thème sobre de l'outil d'analyse simple (lu car placé à côté de src/app.py).
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "light"
+primaryColor = "#1F5FD1"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F3F5F8"
+textColor = "#1B1F24"
+borderColor = "#E3E6EB"
+linkColor = "#1F5FD1"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFontWeights = 700
+baseRadius = "0.75rem"
+showWidgetBorder = true

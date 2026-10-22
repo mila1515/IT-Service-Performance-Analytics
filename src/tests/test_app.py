@@ -1,196 +1,119 @@
+"""Parcours simple en 4 étapes, piloté avec AppTest (sans navigateur)."""
 import io
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from pandas.testing import assert_frame_equal
 from streamlit.testing.v1 import AppTest
 
+APP = str(Path(__file__).parents[1] / "app.py")
+EXEMPLE = Path(__file__).parent / "fixtures" / "exemple.csv"
 
-class AppTests(unittest.TestCase):
-    def test_missing_counts_are_visible_before_targeted_choices(self):
-        upload = io.BytesIO(b"group,hours,complete\na,1,yes\na,,yes\nb,3,yes\n")
-        upload.name = "missing.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            steps = app.radio(key="workflow_step").options
-            next(w for w in app.button if w.label == "Explorer les données").click().run()
-            self.assertEqual(app.radio(key="workflow_step").value, steps[1])
-            next(w for w in app.button if w.label == "Continuer vers le nettoyage").click().run()
-            table = app.dataframe[0].value
-            self.assertEqual(table.Colonne.tolist(), ["hours"])
-            self.assertEqual(table["Vides détectés"].tolist(), [1])
-            self.assertEqual(table["Moyenne"].tolist(), [2.])
-            self.assertEqual([w.key for w in app.selectbox if w.key and w.key.startswith("rule_")], ["rule_1"])
-            app.selectbox(key="rule_1").set_value("Médiane")
-            next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
-            self.assertFalse(app.exception)
-            next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
-            self.assertEqual(app.radio(key="workflow_step").value, steps[3])
-            self.assertEqual(app.session_state.cleaned.hours.tolist(), [1., 2., 3.])
-            self.assertTrue(app.session_state.config["justification"])
 
-    def test_sample_csv_through_all_steps(self):
-        upload = io.BytesIO((Path(__file__).parent / "fixtures" / "exemple.csv").read_bytes())
-        upload.name = "exemple.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            self.assertFalse(app.exception)
-            self.assertTrue(any("lues comme nombres : id" in w.value for w in app.info))
-            steps = app.radio(key="workflow_step").options
-            app.radio(key="workflow_step").set_value(steps[1]).run()
-            self.assertFalse(app.exception)
-            self.assertTrue(any("montant" in w.value.Colonne.tolist() for w in app.dataframe if "Exemples non numériques" in w.value))
-            self.assertTrue(any("exclues des statistiques" in w.value and "id" in w.value for w in app.caption))
-            app.radio(key="workflow_step").set_value(steps[2]).run()
-            next(w for w in app.button if w.label.startswith("Reconnaître ? comme vide")).click().run()
-            next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
-            next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
-            self.assertFalse(app.exception)
-            before_after = app.dataframe[0].value
-            self.assertEqual(before_after.loc["Cellules manquantes (marqueurs reconnus inclus)"].tolist(), [3, 3])
-            self.assertEqual(before_after.loc["Doublons exacts en excès"].tolist(), [1, 1])
-            app.radio(key="workflow_step").set_value(steps[4]).run()
-            self.assertFalse(app.exception)
-            self.assertTrue(any(w.value.startswith("Évaluation des règles : À évaluer") for w in app.info))
-            self.assertEqual(app.session_state.viz_roles, {d["Colonne"]: d["Rôle"] for d in app.session_state.dictionary})
-            app.radio(key="workflow_step").set_value(steps[5]).run()
-            self.assertFalse(app.exception)
+def fichier(contenu, nom="donnees.csv"):
+    upload = io.BytesIO(contenu)
+    upload.name = nom
+    return upload
 
-    def test_comparison_separates_exclusions_from_corrections(self):
-        upload = io.BytesIO((Path(__file__).parent / "fixtures" / "exemple.csv").read_bytes())
-        upload.name = "exemple.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            steps = app.radio(key="workflow_step").options
-            app.radio(key="workflow_step").set_value(steps[2]).run()
-            next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
-            next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
-            self.assertTrue(any("Aucune règle de qualité définie" in w.value for w in app.info))
-            app.session_state.dictionary[0]["Unique"] = True
-            app.radio(key="workflow_step").set_value(steps[2]).run()
-            next(w for w in app.checkbox if w.label == "Supprimer les lignes strictement identiques").check()
-            next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
-            next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
-            self.assertFalse(app.exception)
-            comparison = next(w.value for w in app.dataframe if "Écartées par exclusion de lignes" in w.value)
-            self.assertEqual(comparison[["Anomalies avant", "Anomalies après", "Écartées par exclusion de lignes",
-                                        "Résolues sur lignes conservées"]].iloc[0].tolist(), [2, 0, 1, 1])
-            self.assertTrue(any("1 anomalies ont disparu parce que leurs lignes ont été écartées" in w.value for w in app.warning))
 
-    def test_changing_read_options_after_work_is_announced(self):
-        upload = io.BytesIO(b"id,v\n001,1\n002,2\n")
-        upload.name = "ids.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            app.multiselect(key="import_text_columns").set_value(["id"]).run()
-            self.assertFalse(app.warning)
-            app.session_state.quality_rules = [{"id": "Q-1", "column": "v", "kind": "Obligatoire", "priority": "P2", "threshold": 0.}]
-            app.multiselect(key="import_text_columns").set_value([]).run()
-            self.assertFalse(app.exception)
-            self.assertTrue(any("session réinitialisée" in w.value for w in app.warning))
-            self.assertEqual(app.session_state.quality_rules, [])
-            app.run()
-            self.assertFalse(any("session réinitialisée" in w.value for w in app.warning))
+def bouton(app, debut):
+    return next(b for b in app.button if b.label.startswith(debut))
 
-    def test_special_markers_require_explicit_choice(self):
-        upload = io.BytesIO(b"group,value\na,?\nb,4\n")
-        upload.name = "markers.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            steps = app.radio(key="workflow_step").options
-            app.radio(key="workflow_step").set_value(steps[2]).run()
-            self.assertFalse(any(w.key == "rule_1" for w in app.selectbox))
-            next(w for w in app.button if w.label.startswith("Reconnaître ? comme vide")).click().run()
-            self.assertFalse(app.exception)
-            self.assertEqual(app.dataframe[0].value["Vides détectés"].tolist(), [1])
-            self.assertTrue(any(w.key == "rule_1" for w in app.selectbox))
-            self.assertEqual(app.session_state.dictionary[1]["Marqueurs vides"], "?")
 
-    def test_discovery_precedes_optional_business_notes(self):
-        upload = io.BytesIO(b"entity,detail,value\na,x,1\na,y,2\n")
-        upload.name = "discovery.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            self.assertFalse(app.exception)
-            self.assertTrue(app.dataframe)
-            self.assertEqual(app.dataframe[0].value.entity.tolist(), ["a", "a"])
-            self.assertFalse(app.text_input)
-            self.assertFalse(app.text_area)
-            steps = app.radio(key="workflow_step").options
-            app.radio(key="workflow_step").set_value(steps[1]).run()
-            self.assertFalse(app.exception)
-            self.assertFalse(any(w.key == "field_grain" for w in app.text_input))
-            app.radio(key="workflow_step").set_value(steps[0]).run()
-            self.assertFalse(app.text_input)
-            app.radio(key="workflow_step").set_value(steps[1]).run()
-            self.assertTrue(app.dataframe)
+def textes(elements):
+    return " ".join(str(e.value) for e in elements)
 
-    def test_repetition_analysis_does_not_change_cleaned_data(self):
-        upload = io.BytesIO(b"entity,detail,value\na,x,1\na,y,2\n")
-        upload.name = "generic.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            steps = app.radio(key="workflow_step").options
-            app.radio(key="workflow_step").set_value(steps[2]).run()
-            next(w for w in app.text_area if w.label == "Note sur les traitements (facultatif)").set_value("Conserver les données pour exploration.")
-            next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
-            next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
-            original = app.session_state.cleaned.copy(deep=True)
-            app.radio(key="workflow_step").set_value(steps[1]).run()
-            app.multiselect(key="repeat_keys_input").set_value(["entity"]).run()
-            app.multiselect(key="repeat_detail_input").set_value(["detail"]).run()
-            next(w for w in app.button if w.label == "Analyser les répétitions").click().run()
-            self.assertFalse(app.exception)
-            from pandas.testing import assert_frame_equal
-            assert_frame_equal(app.session_state.cleaned, original)
-            self.assertEqual(app.session_state.quality_rules, [])
-            next(w for w in app.checkbox if w.label.startswith("Je confirme que cette combinaison")).check()
-            next(w for w in app.button if w.label == "Ajouter le contrôle d'unicité composée").click().run()
-            self.assertFalse(app.exception)
-            self.assertEqual(app.session_state.quality_rules[0]["columns"], ["entity", "detail"])
-            self.assertNotIn("cleaned", app.session_state)
-            upload.seek(0)
-            with patch("streamlit.file_uploader", return_value=type("Upload", (), {"getvalue": lambda self: b"other\n1\n", "name": "other.csv"})()):
-                app.run()
-            self.assertFalse(app.exception)
-            self.assertNotIn("repetition_config", app.session_state)
-            self.assertEqual(app.session_state.quality_rules, [])
 
-    def test_quality_workflow_and_protected_identifiers(self):
-        upload = io.BytesIO(b"id,hours\n001,1\n002,NA\n003,bad\n")
-        upload.name = "donnees.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            app.multiselect(key="import_text_columns").set_value(["id"]).run()
-            dictionary = app.session_state.dictionary
-            dictionary[0].update(Obligatoire=True, Unique=True)
-            dictionary[1].update({"Type attendu": "Nombre", "Rôle": "Mesure", "Marqueurs vides": "NA"})
-            app.session_state.dictionary = dictionary
-            steps = app.radio(key="workflow_step").options
-            app.radio(key="workflow_step").set_value(steps[1]).run()
-            self.assertFalse(app.exception)
-            app.radio(key="workflow_step").set_value(steps[2]).run()
-            next(w for w in app.text_area if w.label == "Note sur les traitements (facultatif)").set_value("Écarter la valeur invalide et conserver les vides.")
-            next(w for w in app.selectbox if w.label == "Si une conversion de type échoue").set_value("Mettre en rejet")
-            next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
-            self.assertFalse(app.exception)
-            next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
-            self.assertEqual(app.session_state.cleaned.id.tolist(), ["001", "002"])
-            self.assertEqual(len(app.session_state.rejects), 1)
-            self.assertEqual(len(app.session_state.cleaning_versions), 1)
-            app.radio(key="workflow_step").set_value(steps[3]).run()
-            self.assertFalse(app.exception)
-            app.radio(key="workflow_step").set_value(steps[5]).run()
-            self.assertFalse(app.exception)
-            app.radio(key="workflow_step").set_value(steps[1]).run()
-            next(w for w in app.button if w.label == "Enregistrer le dictionnaire").click().run()
-            self.assertNotIn("cleaned", app.session_state)
-            self.assertEqual(len(app.session_state.cleaning_versions), 1)
+class ParcoursSimpleTests(unittest.TestCase):
+    def ouvrir(self, contenu=None):
+        app = AppTest.from_file(APP, default_timeout=60)
+        self.upload = patch("streamlit.file_uploader", return_value=fichier(contenu or EXEMPLE.read_bytes(), "exemple.csv"))
+        self.upload.start()
+        self.addCleanup(self.upload.stop)
+        return app.run()
+
+    def test_import_shows_the_file_without_any_required_input(self):
+        app = self.ouvrir()
+        self.assertFalse(app.exception)
+        self.assertIn("7 lignes et 4 colonnes", textes(app.success))
+        apercu = app.dataframe[0].value
+        self.assertEqual(apercu["id"].tolist()[:2], ["001", "002"])
+        self.assertNotIn("None", apercu.astype(str).to_numpy().ravel().tolist())
+        self.assertFalse(app.text_input)
+        self.assertFalse(app.text_area)
+
+    def test_wrong_separator_is_explained_and_fixed(self):
+        app = self.ouvrir(b"a;b\n1;x\n2;y\n")
+        self.assertIn("seule colonne", textes(app.warning))
+        self.assertTrue(bouton(app, "Étape suivante").disabled)
+        app.segmented_control(key="w_lecture_separateur").set_value(";").run()
+        self.assertFalse(app.exception)
+        self.assertIn("2 lignes et 2 colonnes", textes(app.success))
+
+    def test_understand_lists_the_points_and_roles_can_be_changed(self):
+        app = self.ouvrir()
+        bouton(app, "Étape suivante").click().run()
+        self.assertEqual(app.session_state.etape, "Comprendre")
+        self.assertEqual(next(m.value for m in app.metric if m.label == "Points à vérifier"), "4")
+        self.assertIn("ligne 6 = ligne 4", textes(app.markdown))
+        app.selectbox(key="w_role_1").set_value("des identifiants").run()
+        self.assertEqual(app.session_state.dictionary[1]["Rôle"], "Identifiant")
+        self.assertFalse(app.exception)
+
+    def test_default_choices_change_nothing(self):
+        app = self.ouvrir()
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        self.assertFalse(app.exception)
+        self.assertIn("Aucun changement", textes(app.markdown))
+        bouton(app, "Valider et voir les graphiques").click().run()
+        self.assertEqual(app.session_state.etape, "Visualiser")
+        assert_frame_equal(app.session_state.validation["cleaned"], app.session_state.raw)
+        self.assertTrue(app.session_state.validation["rejects"].empty)
+
+    def test_choices_update_the_result_and_exclusion_is_not_correction(self):
+        app = self.ouvrir()
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        cles = {c.label: c.key for c in app.segmented_control}
+        app.segmented_control(key=cles["« ? » : 2 cases dans 1 colonne (categorie)"]).set_value("manquant").run()
+        self.assertIn("categorie : 2 cases vides", textes(app.markdown))
+        cle_doublons = next(c.key for c in app.segmented_control if c.label.startswith("1 ligne identique"))
+        app.segmented_control(key=cle_doublons).set_value("une").run()
+        self.assertFalse(app.exception)
+        self.assertEqual(next(m.value for m in app.metric if m.label == "Lignes gardées"), "6 / 7")
+        self.assertIn("parce que sa ligne est écartée n'a pas été réparé", textes(app.warning))
+        self.assertIn("copie identique d'une autre ligne", textes(app.warning))
+        bouton(app, "Valider et voir les graphiques").click().run()
+        self.assertEqual(len(app.session_state.validation["rejects"]), 1)
+        self.assertEqual(app.session_state.validation["choix"]["marqueurs"], {"?": "manquant"})
+
+    def test_visualise_shows_control_charts_and_downloads(self):
+        app = self.ouvrir()
+        app.session_state["etape"] = "Visualiser"
+        app.run()
+        self.assertIn("Validez d'abord vos corrections", textes(app.info))
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        bouton(app, "Valider et voir les graphiques").click().run()
+        self.assertFalse(app.exception)
+        self.assertIn("À retenir", textes(app.markdown))
+        self.assertIn("1 texte ignoré", textes(app.caption))
+        self.assertEqual(len(app.get("download_button")), 4)
+        app.segmented_control(key="w_ajout_question").set_value("repartition").run()
+        bouton(app, "Ajouter ce graphique").click().run()
+        self.assertEqual(len(app.session_state.graphiques_ajoutes), 1)
+        self.assertFalse(app.exception)
+
+    def test_changing_read_options_after_choices_is_announced(self):
+        app = self.ouvrir()
+        app.session_state["choix"] = {"doublons": {"doublons": "une"}}
+        app.run()
+        app.segmented_control(key="w_lecture_decimale").set_value(",").run()
+        self.assertIn("vos choix ont été effacés", textes(app.warning))
+        self.assertEqual(app.session_state.choix, {})
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -10,3 +10,9 @@ def nombre_lisible(valeur):
 def pluriel(n, singulier, forme_plurielle=None):
     """« 1 case », « 3 cases » ; `forme_plurielle` pour les accords irréguliers ou les groupes de mots."""
     return f"{nombre_lisible(n)} {singulier if n <= 1 else (forme_plurielle or singulier + 's')}"
+
+
+def pour_affichage(lignes, numeroter=True):
+    """Tableau à montrer : cases vides affichées vides (pas « None »), lignes numérotées à partir de 1."""
+    affiche = lignes.astype(object).where(lignes.notna(), "")
+    return affiche.set_axis(lignes.index + 1).rename_axis("Ligne") if numeroter else affiche

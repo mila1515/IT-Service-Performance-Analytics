@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from src.core.texte import nombre_lisible
-from src.etape3_corriger.points import motif_lisible
+from src.etape3_corriger.correction import motif_lisible
 
 LIMITES = ("Les vérifications portent sur la forme des données : codes de valeur manquante, textes dans des "
            "nombres, cases vides, lignes identiques et ordre des dates. Elles ne prouvent pas que les valeurs "
