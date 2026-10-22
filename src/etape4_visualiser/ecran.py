@@ -102,16 +102,16 @@ def _section_export(validation):
         with st.container(horizontal=True):
             # Fichiers générés au clic seulement : aucun coût à chaque interaction.
             st.download_button("Données corrigées (CSV)", partial(csv_bytes, validation["cleaned"]),
-                               f"{base}_corrige.csv", "text/csv", icon=":material/table:")
+                               f"{base}_corrige.csv", "text/csv", icon=":material/table:", on_click="ignore")
             st.download_button("Lignes écartées (CSV)", lambda: csv_bytes(rejets_lisibles(validation["rejects"])),
-                               f"{base}_lignes_ecartees.csv", "text/csv", icon=":material/playlist_remove:")
+                               f"{base}_lignes_ecartees.csv", "text/csv", icon=":material/playlist_remove:", on_click="ignore")
             st.download_button("Rapport qualité", lambda: rapport().encode("utf-8"), f"{base}_rapport_qualite.md",
-                               "text/markdown", icon=":material/description:")
+                               "text/markdown", icon=":material/description:", on_click="ignore")
             st.download_button("Tout le projet (ZIP)",
                                lambda: archive_projet(source["contenu"], source["nom"], validation["cleaned"], validation["rejects"],
                                                       rapport(), validation["choix"], validation["log"], validation["plan"]["dictionary"]),
                                f"{base}_projet_{datetime.now(timezone.utc):%Y%m%d}.zip", "application/zip",
-                               type="primary", icon=":material/folder_zip:")
+                               type="primary", icon=":material/folder_zip:", on_click="ignore")
 
 
 def ecran_visualiser():

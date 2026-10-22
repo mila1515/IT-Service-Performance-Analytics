@@ -244,7 +244,7 @@ else:
         st.write(f"**{len(st.session_state.rejects)} lignes mises en rejet**, conservées avec leur motif.")
         with st.expander("Examiner les rejets"):
             st.dataframe(st.session_state.rejects, hide_index=True)
-        st.download_button("Exporter les rejets", partial(csv_bytes, st.session_state.rejects), "rejets.csv", "text/csv")
+        st.download_button("Exporter les rejets", partial(csv_bytes, st.session_state.rejects), "rejets.csv", "text/csv", on_click="ignore")
         st.download_button("Exporter les contrôles avant / après", comparison.to_csv(index=False).encode("utf-8-sig"), "controles.csv", "text/csv")
         st.button("Continuer vers les graphiques", on_click=navigate, args=(steps[4],), type="primary")
     elif step == steps[4]:
@@ -279,7 +279,7 @@ else:
             if st.session_state.decision != "À évaluer" and not st.session_state.decision_reason.strip():
                 st.warning("La décision restera à évaluer dans le rapport tant que sa justification est vide.")
         # Fichiers générés au clic seulement : aucun coût à chaque interaction.
-        st.download_button("Télécharger les données nettoyées", partial(csv_bytes, cleaned), "donnees_nettoyees.csv", "text/csv")
+        st.download_button("Télécharger les données nettoyées", partial(csv_bytes, cleaned), "donnees_nettoyees.csv", "text/csv", on_click="ignore")
         report = {"source": upload.name, "objectif": st.session_state.get("objective", ""),
                   "granularite": st.session_state.get("grain", ""), "configuration": st.session_state.get("config", {}),
                   "historique": st.session_state.get("log", []), "conclusions": st.session_state.get("conclusions", ""),
@@ -309,6 +309,6 @@ else:
                                      "differences": records(repetition_result["differences"]),
                                      "cles_incompletes": repetition_result["incomplete"]}
         st.download_button("Télécharger le rapport de traitement", json.dumps(report, ensure_ascii=False, indent=2), "rapport_analyse.json", "application/json")
-        st.download_button("Télécharger les rejets", partial(csv_bytes, st.session_state.rejects), "rejets.csv", "text/csv")
-        st.download_button("Télécharger l'archive du projet", partial(project_archive, payload, cleaned, st.session_state.rejects, report, list(st.session_state.cleaning_versions)), "projet_analyse.zip", "application/zip")
+        st.download_button("Télécharger les rejets", partial(csv_bytes, st.session_state.rejects), "rejets.csv", "text/csv", on_click="ignore")
+        st.download_button("Télécharger l'archive du projet", partial(project_archive, payload, cleaned, st.session_state.rejects, report, list(st.session_state.cleaning_versions)), "projet_analyse.zip", "application/zip", on_click="ignore")
         st.caption("L'archive conserve le brut, les versions nettoyées, les rejets, les recettes, les résultats et la configuration du dashboard. Elle peut contenir des données sensibles. La restauration automatique d'une session complète reste à ajouter.")
