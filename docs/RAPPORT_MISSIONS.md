@@ -559,3 +559,85 @@ N = nécessaire · R = redondant · O = obsolète · F = fragile (dépend d'un d
   - Réparation des tests fragiles (`radio[0]` → clé).
   - Renommage des données de test IT.
 - **D5 – Test navigateur (étape 6).** Installer Playwright et Chromium (environ 150 Mo) : dans le `.venv` du projet, ou dans un environnement séparé hors du dépôt ? (Docker 29.0.1 est disponible pour la vérification Docker.)
+
+### Décisions reçues et étape 2 (faite)
+
+Décisions : D1 commit de départ ✔ · D2 champ « objectif » conservé (exports inchangés) · D3 noms Docker renommés ✔ · D4 suppressions appliquées ✔ · D5 Playwright 1.64.0 + Chromium 156 dans le `.venv` du projet ✔.
+
+| Commit | Contenu | Vérifications |
+|---|---|---|
+| `cba2ec8` | État de départ (29 fichiers jamais suivis : `src/`, docs, Docker) | 54 tests OK |
+| `8d4e236` | Étape 2 : code mort a3, a4, a6, a7 ; `test_guided_workflow` et l'assertion « Noter ce que » retirés ; navigation des tests par clé (26 `app.radio[0]`) ; données de test sans nom IT | 53 tests OK · application démarrée · **référence identique** (exemple et CSV réel) · interactions 0,2–0,4 s (au lieu de 0,3–0,6 s) |
+| `887def1` | Docker : `itservice-analytics` / `itservice` / `ITSERVICE_PORT` → `analyse-csv` / `analyse` / `ANALYSE_PORT` (port 8503 inchangé) ; README | 53 tests OK · `docker compose config` valide |
+
+Un conteneur de l'ancien projet (`itservice-analytics-itservice-1`) tourne encore sur le port 8503. Il devra être arrêté avant la vérification Docker de l'étape 6.
+
+### Plan de restructuration (étape 3) — à valider
+
+**Contraintes relevées dans le code :**
+- Les règles de qualité (`audit`) servent aux étapes 2, 3, 4 et 6. Elles importent `infer_roles` (étape 5). → règles, dictionnaire et rôles vont dans `core/`.
+- `quality_ui` (étape 2) importe `reset_dashboard` et `ROLES` (étape 5) ; `cleaning_ui` (étape 3) importe `invalidate_cleaning` (interface de l'étape 2). → réinitialisations et cache dans `core/session.py`.
+- Le Dockerfile copie tout `src/` et lance `src/app.py` : aucun changement Docker nécessaire.
+
+**Arborescence cible :**
+
+```
+src/
+  app.py                     entrée Streamlit : page, barre latérale, navigation, appel des écrans
+  config.py                  constantes nommées (5 000 points, 1 000 / 50 valeurs, 30 graphiques, 100 groupes, 200 caractères, 2 Mo, P1/P2/P3, largeurs, tris…)
+  core/                      commun, sans Streamlit (sauf session.py)
+    lecture.py               lecture CSV (en-tête, options)                    ← app.read_csv (sans le décorateur de cache)
+    dictionnaire.py          initial_dictionary, normalize_missing, convert, records, TYPES   ← quality.py
+    roles.py                 infer_roles, looks_like_iso_dates, ROLES, mots-clés              ← visualization.py
+    statistiques.py          numeric_columns, statistics, profile, duplicate_rows, bornes de Tukey   ← analysis.py (+ doublon b4)
+    regles.py                CHECKS, validate_rule, audit, recommendation, création de règle (b1)   ← quality.py
+    session.py  [Streamlit]  cached, invalidate_cleaning, reset_dashboard, réinitialisation du projet   ← session_cache.py, quality_ui, dashboard, app
+  etape1_decouverte/
+    ecran.py                 import (barre latérale), relecture, avertissement d'effacement, aperçu   ← app.py
+  etape2_exploration/
+    diagnostic.py            diagnose                                           ← diagnostics.py
+    repetitions.py           inspect_repetitions                                ← repetitions.py
+    ecran.py                 explore + sections repliées                        ← app.py
+    dictionnaire_ui.py       dictionary_editor, missing_marker_editor          ← quality_ui.py
+    regles_ui.py             audit_editor                                       ← quality_ui.py
+    repetitions_ui.py        repetition_editor                                  ← repetitions_ui.py
+  etape3_nettoyage/
+    pipeline.py              pipeline, clean                                    ← quality.py, analysis.py
+    ecran.py                 cleaning_screen                                    ← cleaning_ui.py
+  etape4_comparaison/
+    comparaison.py           compare_audits, tableau avant/après                ← quality.py, app.py
+    ecran.py                                                                    ← app.py
+  etape5_visualisation/
+    preparation.py           parse_dates, prepare                               ← visualization.py
+    suggestions.py           suggestions
+    filtres.py               apply_filters
+    graphiques.py            chart_data
+    configuration.py         validate_configuration
+    ecran.py                 dashboard (orchestration)                          ← dashboard.py
+    filtres_ui.py, rendu.py  filter_editor, render_chart                        ← dashboard.py
+  etape6_synthese/
+    rapport.py               construction du rapport JSON (sortie de app.py), project_archive   ← app.py, reporting.py
+    ecran.py                 conclusions, décision, téléchargements, context()  ← app.py, quality_ui.py
+  tests/                     miroir : tests/core/, tests/etape2_exploration/ … ; test_app.py (parcours complet) et fixtures/ à la racine
+```
+
+Sens des imports : `core` ← étapes ; une étape n'importe que `core`, `config` et des étapes **antérieures** (ex. l'étape 3 réutilise `missing_marker_editor` de l'étape 2 ; l'étape 6 réutilise `prepare` et `chart_data` de l'étape 5 pour l'archive).
+
+**Ordre des commits** (tests, démarrage et comparaison à la référence entre chaque) :
+1. `core/` + `config.py`
+2. étape 5
+3. étape 2
+4. étape 3
+5. étape 4
+6. étape 6
+7. étape 1 et allègement de `app.py`
+8. tests en miroir
+
+Les fichiers qui gardent leur contenu principal sont déplacés avec `git mv` : `session_cache.py`, `analysis.py`, `diagnostics.py`, `repetitions.py`, `repetitions_ui.py`, `cleaning_ui.py`, `dashboard.py`, `reporting.py`, `visualization.py`. Les fichiers éclatés (`quality.py`, `quality_ui.py`, `app.py`) sont déplacés vers leur destination principale, puis leurs autres parties sont extraites.
+
+**Ce qui ne change pas :**
+- les noms des fonctions publiques (`audit`, `pipeline`, `diagnose`…), les clés de session, les messages et les exports ;
+- les commandes `python -m streamlit run src/app.py` et `python -m unittest discover -s src/tests` ;
+- Docker.
+
+Les noms des nouveaux fichiers sont en français ; les noms des fonctions restent ceux du code existant. L'étape 4 du cahier (classe de plan de nettoyage, découpage des fonctions longues, constantes) viendra **après** les déplacements, pour qu'aucun commit ne mélange déplacement et réécriture.
