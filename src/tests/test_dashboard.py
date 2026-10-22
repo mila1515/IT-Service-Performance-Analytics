@@ -11,7 +11,7 @@ import pandas as pd
 from src.dashboard import dashboard
 dashboard(pd.DataFrame({"group": ["a", "a", "b"], "category": ["x", "y", "x"],
                         "hours": [1., 3., 8.], "cost": [2., 5., 7.],
-                        "opened_at": ["2026-01-01", "2026-02-01", "2026-03-01"]}))
+                        "date_ouverture": ["2026-01-01", "2026-02-01", "2026-03-01"]}))
 '''
 
 
@@ -47,7 +47,7 @@ class DashboardTests(unittest.TestCase):
         app = AppTest.from_string(SCRIPT, default_timeout=20).run()
         from src.visualization import infer_roles, suggestions
         import pandas as pd
-        roles = infer_roles(pd.DataFrame({"group": ["a"], "category": ["x"], "hours": [1.], "cost": [2.], "opened_at": ["2026-01-01"]}))
+        roles = infer_roles(pd.DataFrame({"group": ["a"], "category": ["x"], "hours": [1.], "cost": [2.], "date_ouverture": ["2026-01-01"]}))
         seen = set()
         for index, spec in enumerate(suggestions(roles)):
             if spec["kind"] in seen:

@@ -161,8 +161,9 @@ if st.session_state.get("source_id") != source_id:
 st.session_state.import_payload_sha = payload_sha
 st.session_state.raw = raw
 
-st.session_state.setdefault("dictionary_initial", records(initial_dictionary(raw)))
-st.session_state.setdefault("dictionary", deepcopy(st.session_state.dictionary_initial))
+if "dictionary_initial" not in st.session_state:
+    st.session_state.dictionary_initial = records(initial_dictionary(raw))
+    st.session_state.dictionary = deepcopy(st.session_state.dictionary_initial)
 st.session_state.setdefault("quality_rules", [])
 st.session_state.setdefault("cleaning_versions", [])
 
@@ -256,7 +257,7 @@ else:
     else:
         st.subheader("Documenter vos conclusions")
         with st.expander("Compléter le contexte et les observations (facultatif)"):
-            context(stage="summary")
+            context()
         st.session_state.conclusions = st.text_area("Constats, limites et recommandations", value=st.session_state.get("conclusions", ""), key="conclusions_input")
         before, before_details = checks(raw)
         after, after_details = checks(cleaned)

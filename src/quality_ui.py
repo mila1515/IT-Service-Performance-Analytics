@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from src.dashboard import reset_dashboard
-from src.quality import CHECKS, TYPES, audit, initial_dictionary, records, validate_rule
+from src.quality import CHECKS, TYPES, audit, records, validate_rule
 from src.session_cache import cached
 from src.visualization import ROLES
 
@@ -45,16 +45,15 @@ def missing_marker_editor(diagnostic, key):
                 st.rerun()
 
 
-def context(stage="summary"):
+def context():
     state = st.session_state
     st.caption("Ces notes sont facultatives. Complétez-les au fil de vos observations ; vous pouvez laisser ce qui n'est pas encore connu vide.")
-    if stage == "summary":
-        for key, label in [("project_name", "Nom du projet (facultatif)"),
-                           ("expected_decision", "Décision métier à éclairer avec les résultats (facultatif)"),
-                           ("source_description", "Description de la source (facultatif)")]:
-            state[key] = st.text_input(label, value=state.get(key, ""), key=f"field_{key}")
-        choices = ["À préciser", "Oui", "Non"]
-        state.sensitive = st.selectbox("Présence de données sensibles", choices, index=choices.index(state.get("sensitive", "À préciser")), key="field_sensitive")
+    for key, label in [("project_name", "Nom du projet (facultatif)"),
+                       ("expected_decision", "Décision métier à éclairer avec les résultats (facultatif)"),
+                       ("source_description", "Description de la source (facultatif)")]:
+        state[key] = st.text_input(label, value=state.get(key, ""), key=f"field_{key}")
+    choices = ["À préciser", "Oui", "Non"]
+    state.sensitive = st.selectbox("Présence de données sensibles", choices, index=choices.index(state.get("sensitive", "À préciser")), key="field_sensitive")
     for key, label in [("grain", "D'après les observations, que représente une ligne ? (facultatif)"),
                        ("period_description", "Période observée dans les données (facultatif)")]:
         state[key] = st.text_input(label, value=state.get(key, ""), key=f"field_{key}")
@@ -67,7 +66,6 @@ def dictionary_editor(raw):
     state = st.session_state
     st.subheader("Dictionnaire de données")
     st.caption("Définissez les types avant le nettoyage. Les marqueurs vides sont saisis un par ligne et restent propres à chaque colonne. Dates : format explicite, par exemple %d/%m/%Y %H:%M ; sinon ISO 8601.")
-    state.setdefault("dictionary", records(initial_dictionary(raw)))
     with st.form("dictionary_form"):
         edited = st.data_editor(pd.DataFrame(state.dictionary), hide_index=True, disabled=["Colonne", "Type observé"],
                                 column_config={"Type attendu": st.column_config.SelectboxColumn(options=TYPES, required=True),

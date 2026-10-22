@@ -11,15 +11,15 @@ class VisualizationTests(unittest.TestCase):
     def setUp(self):
         self.raw = pd.DataFrame({"id": [1, 2, 3, 4], "group": ["a", "a", "b", None],
                                  "hours": [1., 3., 8., None], "cost": [5., 8., 10., 2.],
-                                 "opened_at": ["2026-01-01", "2026-01-31 23:59", "2026-03-01", "bad"]})
+                                 "date_ouverture": ["2026-01-01", "2026-01-31 23:59", "2026-03-01", "bad"]})
         self.roles = infer_roles(self.raw)
         self.data, self.invalid = prepare(self.raw, self.roles)
 
     def test_roles_conversion_and_source_preservation(self):
         original = self.raw.copy(deep=True)
         self.assertEqual(self.roles["id"], "Identifiant")
-        self.assertEqual(self.roles["opened_at"], "Date")
-        self.assertEqual(self.invalid, {"opened_at": 1})
+        self.assertEqual(self.roles["date_ouverture"], "Date")
+        self.assertEqual(self.invalid, {"date_ouverture": 1})
         self.assertFalse(any(c["x"] == "id" or c["y"] == "id" for c in suggestions(self.roles)))
         assert_frame_equal(self.raw, original)
 
@@ -34,7 +34,7 @@ class VisualizationTests(unittest.TestCase):
         self.assertEqual(missing.id.tolist(), ["4"])
 
     def test_end_date_includes_entire_day(self):
-        result = apply_filters(self.data, [{"column": "opened_at", "type": "Date", "low": "2026-01-01", "high": "2026-01-31", "missing": False}])
+        result = apply_filters(self.data, [{"column": "date_ouverture", "type": "Date", "low": "2026-01-01", "high": "2026-01-31", "missing": False}])
         self.assertEqual(len(result), 2)
 
     def test_aggregation_sort_and_excluded_rows(self):

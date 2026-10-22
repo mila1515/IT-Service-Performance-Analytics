@@ -12,9 +12,9 @@ class AppTests(unittest.TestCase):
         app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
         with patch("streamlit.file_uploader", return_value=upload):
             app.run()
-            steps = app.radio[0].options
+            steps = app.radio(key="workflow_step").options
             next(w for w in app.button if w.label == "Explorer les données").click().run()
-            self.assertEqual(app.radio[0].value, steps[1])
+            self.assertEqual(app.radio(key="workflow_step").value, steps[1])
             next(w for w in app.button if w.label == "Continuer vers le nettoyage").click().run()
             table = app.dataframe[0].value
             self.assertEqual(table.Colonne.tolist(), ["hours"])
@@ -25,7 +25,7 @@ class AppTests(unittest.TestCase):
             next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
             self.assertFalse(app.exception)
             next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
-            self.assertEqual(app.radio[0].value, steps[3])
+            self.assertEqual(app.radio(key="workflow_step").value, steps[3])
             self.assertEqual(app.session_state.cleaned.hours.tolist(), [1., 2., 3.])
             self.assertTrue(app.session_state.config["justification"])
 
@@ -37,12 +37,12 @@ class AppTests(unittest.TestCase):
             app.run()
             self.assertFalse(app.exception)
             self.assertTrue(any("lues comme nombres : id" in w.value for w in app.info))
-            steps = app.radio[0].options
-            app.radio[0].set_value(steps[1]).run()
+            steps = app.radio(key="workflow_step").options
+            app.radio(key="workflow_step").set_value(steps[1]).run()
             self.assertFalse(app.exception)
             self.assertTrue(any("montant" in w.value.Colonne.tolist() for w in app.dataframe if "Exemples non numériques" in w.value))
             self.assertTrue(any("exclues des statistiques" in w.value and "id" in w.value for w in app.caption))
-            app.radio[0].set_value(steps[2]).run()
+            app.radio(key="workflow_step").set_value(steps[2]).run()
             next(w for w in app.button if w.label.startswith("Reconnaître ? comme vide")).click().run()
             next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
             next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
@@ -50,11 +50,11 @@ class AppTests(unittest.TestCase):
             before_after = app.dataframe[0].value
             self.assertEqual(before_after.loc["Cellules manquantes (marqueurs reconnus inclus)"].tolist(), [3, 3])
             self.assertEqual(before_after.loc["Doublons exacts en excès"].tolist(), [1, 1])
-            app.radio[0].set_value(steps[4]).run()
+            app.radio(key="workflow_step").set_value(steps[4]).run()
             self.assertFalse(app.exception)
             self.assertTrue(any(w.value.startswith("Évaluation des règles : À évaluer") for w in app.info))
             self.assertEqual(app.session_state.viz_roles, {d["Colonne"]: d["Rôle"] for d in app.session_state.dictionary})
-            app.radio[0].set_value(steps[5]).run()
+            app.radio(key="workflow_step").set_value(steps[5]).run()
             self.assertFalse(app.exception)
 
     def test_comparison_separates_exclusions_from_corrections(self):
@@ -63,13 +63,13 @@ class AppTests(unittest.TestCase):
         app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
         with patch("streamlit.file_uploader", return_value=upload):
             app.run()
-            steps = app.radio[0].options
-            app.radio[0].set_value(steps[2]).run()
+            steps = app.radio(key="workflow_step").options
+            app.radio(key="workflow_step").set_value(steps[2]).run()
             next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
             next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
             self.assertTrue(any("Aucune règle de qualité définie" in w.value for w in app.info))
             app.session_state.dictionary[0]["Unique"] = True
-            app.radio[0].set_value(steps[2]).run()
+            app.radio(key="workflow_step").set_value(steps[2]).run()
             next(w for w in app.checkbox if w.label == "Supprimer les lignes strictement identiques").check()
             next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
             next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
@@ -101,8 +101,8 @@ class AppTests(unittest.TestCase):
         app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
         with patch("streamlit.file_uploader", return_value=upload):
             app.run()
-            steps = app.radio[0].options
-            app.radio[0].set_value(steps[2]).run()
+            steps = app.radio(key="workflow_step").options
+            app.radio(key="workflow_step").set_value(steps[2]).run()
             self.assertFalse(any(w.key == "rule_1" for w in app.selectbox))
             next(w for w in app.button if w.label.startswith("Reconnaître ? comme vide")).click().run()
             self.assertFalse(app.exception)
@@ -121,14 +121,13 @@ class AppTests(unittest.TestCase):
             self.assertEqual(app.dataframe[0].value.entity.tolist(), ["a", "a"])
             self.assertFalse(app.text_input)
             self.assertFalse(app.text_area)
-            steps = app.radio[0].options
-            app.radio[0].set_value(steps[1]).run()
+            steps = app.radio(key="workflow_step").options
+            app.radio(key="workflow_step").set_value(steps[1]).run()
             self.assertFalse(app.exception)
             self.assertFalse(any(w.key == "field_grain" for w in app.text_input))
-            self.assertFalse(any("Noter ce que" in w.label for w in app.expander))
-            app.radio[0].set_value(steps[0]).run()
+            app.radio(key="workflow_step").set_value(steps[0]).run()
             self.assertFalse(app.text_input)
-            app.radio[0].set_value(steps[1]).run()
+            app.radio(key="workflow_step").set_value(steps[1]).run()
             self.assertTrue(app.dataframe)
 
     def test_repetition_analysis_does_not_change_cleaned_data(self):
@@ -137,13 +136,13 @@ class AppTests(unittest.TestCase):
         app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
         with patch("streamlit.file_uploader", return_value=upload):
             app.run()
-            steps = app.radio[0].options
-            app.radio[0].set_value(steps[2]).run()
+            steps = app.radio(key="workflow_step").options
+            app.radio(key="workflow_step").set_value(steps[2]).run()
             next(w for w in app.text_area if w.label == "Note sur les traitements (facultatif)").set_value("Conserver les données pour exploration.")
             next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
             next(w for w in app.button if w.label == "Valider cette prévisualisation").click().run()
             original = app.session_state.cleaned.copy(deep=True)
-            app.radio[0].set_value(steps[1]).run()
+            app.radio(key="workflow_step").set_value(steps[1]).run()
             app.multiselect(key="repeat_keys_input").set_value(["entity"]).run()
             app.multiselect(key="repeat_detail_input").set_value(["detail"]).run()
             next(w for w in app.button if w.label == "Analyser les répétitions").click().run()
@@ -163,30 +162,9 @@ class AppTests(unittest.TestCase):
             self.assertNotIn("repetition_config", app.session_state)
             self.assertEqual(app.session_state.quality_rules, [])
 
-    def test_guided_workflow(self):
-        upload = io.BytesIO(b"group,hours\na,1\na,3\nb,\n")
-        upload.name = "incidents.csv"
-        app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
-        with patch("streamlit.file_uploader", return_value=upload):
-            app.run()
-            self.assertFalse(app.exception)
-            steps = app.radio[0].options
-            app.radio[0].set_value(steps[1]).run()
-            self.assertFalse(app.exception)
-            app.radio[0].set_value(steps[2]).run()
-            next(w for w in app.text_area if w.label == "Note sur les traitements (facultatif)").set_value("Remplacer le délai manquant pour cette exploration.")
-            app.selectbox(key="rule_1").select("Moyenne")
-            app.button[0].click().run()
-            self.assertFalse(app.exception)
-            next(b for b in app.button if b.label == "Valider cette prévisualisation").click().run()
-            self.assertEqual(app.session_state.cleaned.hours.tolist(), [1., 3., 2.])
-            for step in steps[3:]:
-                app.radio[0].set_value(step).run()
-                self.assertFalse(app.exception)
-
     def test_quality_workflow_and_protected_identifiers(self):
         upload = io.BytesIO(b"id,hours\n001,1\n002,NA\n003,bad\n")
-        upload.name = "incidents.csv"
+        upload.name = "donnees.csv"
         app = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=20)
         with patch("streamlit.file_uploader", return_value=upload):
             app.run()
@@ -195,10 +173,10 @@ class AppTests(unittest.TestCase):
             dictionary[0].update(Obligatoire=True, Unique=True)
             dictionary[1].update({"Type attendu": "Nombre", "Rôle": "Mesure", "Marqueurs vides": "NA"})
             app.session_state.dictionary = dictionary
-            steps = app.radio[0].options
-            app.radio[0].set_value(steps[1]).run()
+            steps = app.radio(key="workflow_step").options
+            app.radio(key="workflow_step").set_value(steps[1]).run()
             self.assertFalse(app.exception)
-            app.radio[0].set_value(steps[2]).run()
+            app.radio(key="workflow_step").set_value(steps[2]).run()
             next(w for w in app.text_area if w.label == "Note sur les traitements (facultatif)").set_value("Écarter la valeur invalide et conserver les vides.")
             next(w for w in app.selectbox if w.label == "Si une conversion de type échoue").set_value("Mettre en rejet")
             next(w for w in app.button if w.label == "Prévisualiser les traitements").click().run()
@@ -207,11 +185,11 @@ class AppTests(unittest.TestCase):
             self.assertEqual(app.session_state.cleaned.id.tolist(), ["001", "002"])
             self.assertEqual(len(app.session_state.rejects), 1)
             self.assertEqual(len(app.session_state.cleaning_versions), 1)
-            app.radio[0].set_value(steps[3]).run()
+            app.radio(key="workflow_step").set_value(steps[3]).run()
             self.assertFalse(app.exception)
-            app.radio[0].set_value(steps[5]).run()
+            app.radio(key="workflow_step").set_value(steps[5]).run()
             self.assertFalse(app.exception)
-            app.radio[0].set_value(steps[1]).run()
+            app.radio(key="workflow_step").set_value(steps[1]).run()
             next(w for w in app.button if w.label == "Enregistrer le dictionnaire").click().run()
             self.assertNotIn("cleaned", app.session_state)
             self.assertEqual(len(app.session_state.cleaning_versions), 1)

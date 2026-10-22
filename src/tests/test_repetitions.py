@@ -26,8 +26,8 @@ class RepetitionTests(unittest.TestCase):
         result = inspect_repetitions(rail, ["train", "date"], ["stop"])
         self.assertEqual(len(result["summary"]), 1)
         self.assertEqual(result["summary"].iloc[0]["Clés de ligne répétées"], 0)
-        hr = rail.rename(columns={"train": "employee", "date": "period", "stop": "assignment", "delay": "hours"})
-        other = inspect_repetitions(hr, ["employee", "period"], ["assignment"])
+        hr = rail.rename(columns={"train": "employee", "date": "period", "stop": "affectation", "delay": "hours"})
+        other = inspect_repetitions(hr, ["employee", "period"], ["affectation"])
         self.assertEqual(other["summary"]["Lecture proposée"].tolist(), result["summary"]["Lecture proposée"].tolist())
 
     def test_missing_keys_and_details_are_not_assumed_duplicates(self):

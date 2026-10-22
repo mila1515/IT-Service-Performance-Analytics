@@ -18,13 +18,13 @@ PERIODS = {"Jour": "D", "Mois": "MS", "Année": "YS"}
 ID_WORDS = {"id", "uuid", "code", "number", "num", "no", "n°", "numero", "numéro", "matricule",
             "identifiant", "ref", "réf", "reference", "référence", "cle", "clé"}
 DATE_WORDS = {"horodatage", "timestamp", "datetime"}
-ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$")
+ISO_DATE = r"^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$"
 
 
 def looks_like_iso_dates(series, sample=500):
     """Toutes les valeurs distinctes observées (échantillon) ont la forme AAAA-MM-JJ[ hh:mm[:ss]][fuseau]."""
     values = pd.Series(series.dropna().unique()[:sample], dtype="string").str.strip()
-    return bool(len(values)) and bool(values.str.fullmatch(ISO_DATE.pattern).all())
+    return bool(len(values)) and bool(values.str.fullmatch(ISO_DATE).all())
 
 
 def infer_roles(data):
