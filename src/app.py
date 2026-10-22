@@ -11,16 +11,22 @@ import pandas as pd
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.analysis import duplicate_rows, numeric_columns, profile, statistics
-from src.dashboard import dashboard
-from src.quality import audit, compare_audits, initial_dictionary, normalize_missing, recommendation, records
-from src.quality_ui import audit_editor, context, dictionary_editor, missing_marker_editor
-from src.reporting import project_archive
-from src.repetitions import inspect_repetitions
-from src.repetitions_ui import repetition_editor
-from src.cleaning_ui import cleaning_screen
-from src.diagnostics import diagnose
-from src.session_cache import cached
+from src.core.dictionnaire import initial_dictionary, normalize_missing, records
+from src.core.regles import audit, compare_audits, recommendation
+from src.core.session import cached
+from src.core.statistiques import duplicate_rows, numeric_columns, profile, statistics
+from src.etape2_comprendre.diagnostic import diagnose
+from src.expert.dashboard import dashboard
+from src.expert.nettoyage_ui import cleaning_screen
+from src.expert.qualite_ui import (
+    audit_editor,
+    context,
+    dictionary_editor,
+    missing_marker_editor,
+)
+from src.expert.rapport_projet import project_archive
+from src.expert.repetitions import inspect_repetitions
+from src.expert.repetitions_ui import repetition_editor
 
 st.set_page_config(page_title="Analyse guidée", page_icon="📊", layout="wide")
 st.title("Analyse guidée")

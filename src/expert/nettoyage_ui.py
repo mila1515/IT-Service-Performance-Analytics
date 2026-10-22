@@ -1,14 +1,17 @@
 """Écran de nettoyage : observation, choix ciblés, prévisualisation, validation."""
+
+
 from copy import deepcopy
 from datetime import datetime, timezone
 
 import streamlit as st
 
-from src.analysis import duplicate_rows, numeric_columns
-from src.diagnostics import diagnose
-from src.quality import audit, pipeline, recommendation
-from src.quality_ui import invalidate_cleaning, missing_marker_editor
-from src.session_cache import cached
+from src.core.regles import audit, recommendation
+from src.core.session import cached, invalidate_cleaning
+from src.core.statistiques import duplicate_rows, numeric_columns
+from src.etape2_comprendre.diagnostic import diagnose
+from src.etape3_corriger.pipeline import pipeline
+from src.expert.qualite_ui import missing_marker_editor
 
 
 def cleaning_screen(raw, next_step):

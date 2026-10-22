@@ -3,8 +3,10 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from src.quality import audit, initial_dictionary, normalize_missing, pipeline, records, validate_rule
-from src.repetitions import inspect_repetitions
+from src.core.dictionnaire import initial_dictionary, normalize_missing, records
+from src.core.regles import audit, validate_rule
+from src.etape3_corriger.pipeline import pipeline
+from src.expert.repetitions import inspect_repetitions
 
 
 class RepetitionTests(unittest.TestCase):

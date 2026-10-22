@@ -1,19 +1,16 @@
 """Écrans de cadrage, dictionnaire, audit et comparaison."""
+
+
 import re
 import uuid
 
 import pandas as pd
 import streamlit as st
 
-from src.dashboard import reset_dashboard
-from src.quality import CHECKS, TYPES, audit, records, validate_rule
-from src.session_cache import cached
-from src.visualization import ROLES
-
-
-def invalidate_cleaning():
-    for key in ("cleaned", "preview", "rejects", "log", "config", "decision", "decision_reason"):
-        st.session_state.pop(key, None)
+from src.core.dictionnaire import TYPES, records
+from src.core.regles import CHECKS, audit, validate_rule
+from src.core.roles import ROLES
+from src.core.session import cached, invalidate_cleaning, reset_dashboard
 
 
 def missing_marker_editor(diagnostic, key):

@@ -1,8 +1,10 @@
 """Observer et quantifier les problèmes avant de choisir des corrections."""
+
+
 import pandas as pd
 
-from src.analysis import numeric_columns
-from src.quality import convert, normalize_missing
+from src.core.dictionnaire import convert, normalize_missing
+from src.core.statistiques import numeric_columns
 
 
 def diagnose(raw, dictionary):

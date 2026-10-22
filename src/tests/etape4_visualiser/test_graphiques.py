@@ -4,7 +4,10 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from src.visualization import apply_filters, chart_data, infer_roles, prepare, suggestions, validate_configuration
+from src.core.roles import infer_roles
+from src.etape4_visualiser.graphiques import apply_filters, chart_data, suggestions
+from src.etape4_visualiser.preparation import prepare
+from src.expert.configuration import validate_configuration
 
 
 class VisualizationTests(unittest.TestCase):

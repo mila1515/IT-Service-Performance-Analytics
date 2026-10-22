@@ -1,50 +1,17 @@
 """Contrôles qualité et traitements avec références aux enregistrements sources."""
-from datetime import datetime, timezone
+
+
 import json
 import re
 
 import numpy as np
 import pandas as pd
 
-from src.analysis import clean
-from src.visualization import infer_roles
+from src.core.dictionnaire import convert, normalize_missing
 
-TYPES = ["Conserver", "Texte", "Nombre", "Date"]
 CHECKS = ["Obligatoire", "Unique", "Intervalle", "Catégories autorisées", "Format", "Ordre des dates"]
+
 AUDIT_COLUMNS = ["ID", "Colonne", "Dimension", "Règle", "Seuil (%)", "Anomalies", "Lignes", "Taux (%)", "Statut", "Priorité"]
-
-
-def initial_dictionary(data):
-    roles = infer_roles(data)
-    return pd.DataFrame([{"Colonne": col, "Définition": "", "Type observé": str(data[col].dtype),
-                          "Type attendu": "Conserver", "Rôle": roles[col], "Unité": "",
-                          "Obligatoire": False, "Unique": False, "Critique": False,
-                          "Marqueurs vides": "", "Format date": ""} for col in data])
-
-
-def normalize_missing(data, dictionary):
-    result = data.copy(deep=True)
-    for d in dictionary:
-        col = d["Colonne"]
-        markers = [v.strip() for v in d["Marqueurs vides"].splitlines() if v.strip()]
-        # Les cellules composées d'espaces sont vides ; les autres marqueurs sont explicites.
-        # Test sur les valeurs distinctes : même résultat, coût réduit sur les gros fichiers.
-        uniques = pd.Series(result[col].dropna().unique(), dtype=object)
-        text = uniques.astype("string").str.strip()
-        blanks = uniques[(text.eq("") | text.isin(markers)).fillna(False).to_numpy()]
-        if len(blanks):
-            result[col] = result[col].mask(result[col].isin(blanks.tolist()))
-    return result
-
-
-def convert(series, target, date_format=""):
-    if target == "Nombre":
-        return pd.to_numeric(series, errors="coerce").astype(float).replace([np.inf, -np.inf], np.nan)
-    if target == "Date":
-        return pd.to_datetime(series, format=date_format or "ISO8601", errors="coerce", utc=True).dt.tz_convert(None)
-    if target == "Texte":
-        return series.astype("string")
-    return series.copy()
 
 
 def validate_rule(rule, columns):
@@ -128,70 +95,6 @@ def audit(data, dictionary, rules):
     return pd.DataFrame(rows, columns=AUDIT_COLUMNS), pd.DataFrame(details, columns=["Enregistrement source", "ID règle", "Colonne", "Valeur", "Motif"])
 
 
-def pipeline(raw, dictionary, quality_rules, missing_rules, *, trim=False, deduplicate=False,
-             conversion_policy="Bloquer", reject_rule_ids=None, justification="", owner=""):
-    if conversion_policy not in ("Bloquer", "Mettre en rejet", "Convertir en vide"):
-        raise ValueError("Politique de conversion inconnue.")
-    work = normalize_missing(raw, dictionary)
-    log, reasons = [], {}
-    now = datetime.now(timezone.utc).isoformat()
-
-    def record(action, col, count):
-        if count:
-            log.append({"Date UTC": now, "Colonne": col, "Action": action,
-                        "Cellules / lignes": int(count), "Justification": justification, "Responsable": owner})
-
-    def reject(index, reason):
-        for idx in index:
-            reasons.setdefault(idx, []).append(reason)
-
-    if trim:
-        for col in work.select_dtypes(include=["object", "string"]):
-            previous = work[col].copy()
-            work[col] = work[col].str.strip()
-            record("Espaces de début / fin supprimés", col, (previous.notna() & previous.ne(work[col])).sum())
-    for d in dictionary:
-        col, target = d["Colonne"], d["Type attendu"]
-        record("Marqueurs vides normalisés", col, (raw[col].notna() & work[col].isna()).sum())
-        converted = convert(work[col], target, d["Format date"])
-        failed = work[col].notna() & converted.isna()
-        if failed.any():
-            if conversion_policy == "Bloquer":
-                raise ValueError(f"{col} : {int(failed.sum())} conversions impossibles. Corrigez le type/format ou choisissez explicitement leur traitement.")
-            if conversion_policy == "Mettre en rejet":
-                reject(work.index[failed], f"Conversion impossible : {col} → {target}")
-            record(f"Conversions impossibles : {conversion_policy}", col, failed.sum())
-        if target != "Conserver":
-            record(f"Conversion en {target}", col, work[col].notna().sum())
-        work[col] = converted
-    # Les rejets de règles sont identifiés avant imputation, pour conserver le motif initial.
-    if reject_rule_ids:
-        _, anomalies = audit(raw, dictionary, quality_rules)
-        for row in anomalies.to_dict("records"):
-            if row["ID règle"] in reject_rule_ids:
-                reject([row["Enregistrement source"]-1], f"{row['ID règle']} : {row['Motif']}")
-    for col, action in missing_rules.items():
-        if action == "Supprimer les lignes":
-            reject(work.index[work[col].isna()], f"Valeur manquante : {col}")
-    # Les lignes mises en rejet ne participent pas aux calculs de remplacement.
-    reference = work.drop(index=list(reasons))
-    cleaned, base_log = clean(reference, missing_rules)
-    for entry in base_log:
-        record(entry["Action"], entry["Colonne"], entry["Cellules concernées"])
-    if deduplicate:
-        duplicate = cleaned.duplicated(keep="first")
-        reject(cleaned.index[duplicate], "Doublon strict après transformations")
-        cleaned = cleaned.loc[~duplicate]
-    for reason in sorted({reason for items in reasons.values() for reason in items}):
-        record(f"Mise en rejet : {reason}", "Toutes", sum(reason in items for items in reasons.values()))
-    rejects = raw.loc[sorted(reasons)].copy()
-    # Colonnes de provenance en MultiIndex pour éviter toute collision avec le CSV.
-    rejects.columns = pd.MultiIndex.from_tuples([("Donnée source", str(c)) for c in rejects.columns])
-    rejects.insert(0, ("Traçabilité", "Enregistrement source"), [int(i)+1 for i in rejects.index])
-    rejects.insert(1, ("Traçabilité", "Motifs"), [" ; ".join(reasons[i]) for i in rejects.index])
-    return cleaned, rejects, log
-
-
 def compare_audits(before, before_details, after, after_details, kept_index):
     """Rejoue avant / après en séparant ce qui a été exclu de ce qui a été résolu.
 
@@ -228,7 +131,3 @@ def recommendation(audit_after, row_count):
     if not failed.empty:
         return "GO avec réserves", "Des contrôles P2/P3 restent non conformes."
     return "GO", "Tous les contrôles définis sont conformes ; seuls ces contrôles ont été évalués."
-
-
-def records(frame):
-    return json.loads(frame.to_json(orient="records", date_format="iso", force_ascii=False))

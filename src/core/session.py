@@ -1,7 +1,10 @@
 """Mémoïsation propre à la session : un calcul n'est refait que si ses entrées changent."""
+
+
 import json
 
 import streamlit as st
+
 
 MAX_ENTRIES = 12
 
@@ -21,3 +24,19 @@ def cached(fn, data, *params):
         # La référence à `data` empêche la réutilisation de son id par un autre objet.
         store[key] = (data, fn(data, *params))
     return store[key][1]
+
+
+def invalidate_cleaning():
+    for key in ("cleaned", "preview", "rejects", "log", "config", "decision", "decision_reason"):
+        st.session_state.pop(key, None)
+
+
+def reset_dashboard(roles, dayfirst=None):
+    """Nouveaux rôles ou format de date : les graphiques et filtres existants ne sont plus valides."""
+    state = st.session_state
+    state.viz_roles = roles
+    if dayfirst is not None:
+        state.viz_dayfirst = dayfirst
+    state.viz_charts = []
+    state.viz_filters = []
+    state.viz_revision = state.get("viz_revision", 0) + 1

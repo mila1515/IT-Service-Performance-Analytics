@@ -1,14 +1,13 @@
-import unittest
 import io
 import json
+import unittest
 from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
-
 SCRIPT = '''
 import pandas as pd
-from src.dashboard import dashboard
+from src.expert.dashboard import dashboard
 dashboard(pd.DataFrame({"group": ["a", "a", "b"], "category": ["x", "y", "x"],
                         "hours": [1., 3., 8.], "cost": [2., 5., 7.],
                         "date_ouverture": ["2026-01-01", "2026-02-01", "2026-03-01"]}))
@@ -45,8 +44,9 @@ class DashboardTests(unittest.TestCase):
 
     def test_all_suggested_chart_types_render(self):
         app = AppTest.from_string(SCRIPT, default_timeout=20).run()
-        from src.visualization import infer_roles, suggestions
         import pandas as pd
+        from src.core.roles import infer_roles
+        from src.etape4_visualiser.graphiques import suggestions
         roles = infer_roles(pd.DataFrame({"group": ["a"], "category": ["x"], "hours": [1.], "cost": [2.], "date_ouverture": ["2026-01-01"]}))
         seen = set()
         for index, spec in enumerate(suggestions(roles)):
@@ -119,7 +119,7 @@ class DashboardTests(unittest.TestCase):
     def test_high_cardinality_filters_keep_all_rows_by_default(self):
         script = """
 import pandas as pd
-from src.dashboard import dashboard
+from src.expert.dashboard import dashboard
 dashboard(pd.DataFrame({"ref": [f"R{i:05d}" for i in range(1200)], "groupe": [f"g{i % 60}" for i in range(1200)],
                         "petit": ["a", "b"] * 600}))
 """
@@ -144,7 +144,7 @@ dashboard(pd.DataFrame({"ref": [f"R{i:05d}" for i in range(1200)], "groupe": [f"
     def test_large_histogram_and_box_use_all_values(self):
         script = '''
 import pandas as pd
-from src.dashboard import dashboard
+from src.expert.dashboard import dashboard
 dashboard(pd.DataFrame({"hours": range(6000)}))
 '''
         app = AppTest.from_string(script, default_timeout=20).run()

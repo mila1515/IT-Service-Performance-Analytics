@@ -5,8 +5,9 @@ import zipfile
 
 import pandas as pd
 
-from src.reporting import project_archive
-from src.quality import initial_dictionary, pipeline, records
+from src.core.dictionnaire import initial_dictionary, records
+from src.etape3_corriger.pipeline import pipeline
+from src.expert.rapport_projet import project_archive
 
 
 class ReportingTests(unittest.TestCase):

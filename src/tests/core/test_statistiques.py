@@ -1,7 +1,10 @@
 import unittest
+
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from src.analysis import clean, statistics
+
+from src.core.statistiques import statistics
+from src.etape3_corriger.pipeline import clean
 
 
 class CleaningTests(unittest.TestCase):

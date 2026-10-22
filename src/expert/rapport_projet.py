@@ -1,9 +1,12 @@
 """Archive portable sans écriture sur les fichiers sources."""
+
+
 import io
 import json
 import zipfile
 
-from src.visualization import apply_filters, chart_data, prepare
+from src.etape4_visualiser.graphiques import apply_filters, chart_data
+from src.etape4_visualiser.preparation import prepare
 
 
 def project_archive(source_bytes, cleaned, rejects, report, versions):

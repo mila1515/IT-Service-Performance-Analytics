@@ -1,4 +1,6 @@
 """Éditeur de dashboard : suggestions, filtres et disposition en grille."""
+
+
 import json
 import uuid
 
@@ -6,28 +8,26 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from src.session_cache import cached
-from src.visualization import (
-    AGGREGATIONS, KINDS, PERIODS, ROLES, apply_filters, chart_data,
-    infer_roles, prepare, suggestions, validate_configuration,
+from src.core.roles import ROLES, infer_roles
+from src.core.session import cached, reset_dashboard
+from src.etape4_visualiser.graphiques import (
+    AGGREGATIONS,
+    KINDS,
+    PERIODS,
+    apply_filters,
+    chart_data,
+    suggestions,
 )
+from src.etape4_visualiser.preparation import prepare
+from src.expert.configuration import validate_configuration
 
 FILTER_MODES = ["Retenir les valeurs choisies", "Exclure les valeurs choisies"]
+
 # Au-delà, exclusion par défaut avec une sélection vide (toutes les lignes gardées).
 FILTER_KEEP_ALL_LIMIT = 50
+
 # Au-delà, la liste déroulante devient trop lourde : saisie libre des valeurs.
 FILTER_LIST_LIMIT = 1000
-
-
-def reset_dashboard(roles, dayfirst=None):
-    """Nouveaux rôles ou format de date : les graphiques et filtres existants ne sont plus valides."""
-    state = st.session_state
-    state.viz_roles = roles
-    if dayfirst is not None:
-        state.viz_dayfirst = dayfirst
-    state.viz_charts = []
-    state.viz_filters = []
-    state.viz_revision = state.get("viz_revision", 0) + 1
 
 
 def filter_editor(data, roles, prefix, initial=None):

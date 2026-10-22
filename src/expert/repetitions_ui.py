@@ -1,13 +1,14 @@
 """Exploration facultative des répétitions pour tout domaine métier."""
-import uuid
+
+
 import json
+import uuid
 
 import streamlit as st
 
-from src.quality import normalize_missing, records
-from src.quality_ui import invalidate_cleaning
-from src.repetitions import inspect_repetitions
-from src.session_cache import cached
+from src.core.dictionnaire import normalize_missing, records
+from src.core.session import cached, invalidate_cleaning
+from src.expert.repetitions import inspect_repetitions
 
 
 def repetition_editor(raw):

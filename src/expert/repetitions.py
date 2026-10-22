@@ -1,8 +1,9 @@
 """Diagnostic générique des clés répétées, sans transformation des données."""
+
+
 import json
 
 import pandas as pd
-
 
 SUMMARY_COLUMNS = ["Groupe", "Valeurs de la clé", "Lignes", "Doublons stricts en excès",
                    "Clés de ligne répétées", "Groupes avec différences", "Détails incomplets",

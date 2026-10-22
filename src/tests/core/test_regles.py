@@ -3,7 +3,9 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from src.quality import audit, compare_audits, initial_dictionary, pipeline, recommendation, records
+from src.core.dictionnaire import initial_dictionary, records
+from src.core.regles import audit, compare_audits, recommendation
+from src.etape3_corriger.pipeline import pipeline
 
 
 class QualityTests(unittest.TestCase):

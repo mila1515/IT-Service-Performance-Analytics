@@ -3,8 +3,8 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from src.diagnostics import diagnose
-from src.quality import initial_dictionary, records
+from src.core.dictionnaire import initial_dictionary, records
+from src.etape2_comprendre.diagnostic import diagnose
 
 
 class DiagnosticTests(unittest.TestCase):
