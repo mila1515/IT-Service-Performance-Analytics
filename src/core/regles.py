@@ -1,4 +1,8 @@
-"""Contrôles qualité et traitements avec références aux enregistrements sources."""
+"""Contrôles qualité avec références aux enregistrements sources.
+
+Utilisé par le mode expert léger (règles simples : remplie, unique, entre deux bornes) et par
+l'ancienne interface experte (tous les contrôles, priorités P1/P2/P3, seuils).
+"""
 
 
 import json
@@ -8,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from src.core.dictionnaire import convert, normalize_missing
+from src.core.texte import nombre_lisible
 
 CHECKS = ["Obligatoire", "Unique", "Intervalle", "Catégories autorisées", "Format", "Ordre des dates"]
 
@@ -69,6 +74,9 @@ def audit(data, dictionary, rules):
         elif kind == "Intervalle":
             numbers = convert(values, "Nombre")
             bad = present & ~numbers.between(rule["low"], rule["high"])
+            if rule.get("ignore_text"):
+                # Mode expert léger : un texte non numérique a déjà sa propre carte, il n'est pas compté ici.
+                bad &= numbers.notna()
         elif kind == "Catégories autorisées":
             bad = present & ~values.astype("string").isin(rule["values"])
         elif kind == "Format":
@@ -131,3 +139,27 @@ def recommendation(audit_after, row_count):
     if not failed.empty:
         return "GO avec réserves", "Des contrôles P2/P3 restent non conformes."
     return "GO", "Tous les contrôles définis sont conformes ; seuls ces contrôles ont été évalués."
+
+
+def _controle(colonne, kind, libelle):
+    # Priorité et seuil fixes : dans le mode expert léger, toute ligne qui ne respecte pas est signalée.
+    return {"id": libelle, "column": colonne, "kind": kind, "priority": "P2", "threshold": 0.}
+
+
+def regles_simples(regles):
+    """Règles du mode expert léger → contrôles pour `audit` (l'identifiant est le libellé lisible).
+
+    `regles` : {colonne: {"remplie": bool, "unique": bool, "bornes": [minimum, maximum] ou None}}.
+    """
+    controles = []
+    for colonne, regle in regles.items():
+        if regle.get("remplie"):
+            controles.append(_controle(colonne, "Obligatoire", f"{colonne} : doit être remplie"))
+        if regle.get("unique"):
+            controles.append(_controle(colonne, "Unique", f"{colonne} : valeurs uniques"))
+        if regle.get("bornes"):
+            bas, haut = sorted(float(b) for b in regle["bornes"])
+            controle = _controle(colonne, "Intervalle", f"{colonne} : entre {nombre_lisible(bas)} et {nombre_lisible(haut)}")
+            controles.append({**controle, "low": bas, "high": haut, "ignore_text": True})
+    return controles
+

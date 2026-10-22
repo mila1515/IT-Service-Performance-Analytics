@@ -14,6 +14,7 @@ import pandas as pd
 from src.config import MARQUEURS_POSSIBLES
 from src.core.dates import parse_dates
 from src.core.dictionnaire import convert, normalize_missing
+from src.core.regles import audit
 from src.core.statistiques import duplicate_rows, numeric_columns
 from src.core.texte import nombre_lisible, pluriel
 
@@ -28,10 +29,16 @@ OPTIONS = {
                  ("une", "Garder une seule ligne", "Les copies sont mises de côté, avec la raison")],
     "dates": [("jour", "Jour d'abord", "05/03 = 5 mars"),
               ("mois", "Mois d'abord", "05/03 = 3 mai")],
+    # Mode expert léger.
+    "regles": [("garder", "Garder et signaler", "Les lignes restent ; le rapport le mentionne"),
+               ("ecarter", "Écarter ces lignes", "Elles sont mises de côté, avec la raison")],
+    "espaces": [("garder", "Laisser tel quel", "Aucun changement"),
+                ("supprimer", "Supprimer les espaces en trop", "Au début et à la fin des textes")],
 }
 
 
-DEFAUTS = {"marqueurs": "garder", "texte": "garder", "vides": "laisser", "doublons": "garder"}
+DEFAUTS = {"marqueurs": "garder", "texte": "garder", "vides": "laisser", "doublons": "garder",
+           "regles": "garder", "espaces": "garder"}
 
 
 TITRES = {
@@ -47,6 +54,12 @@ TITRES = {
                  "Vous seul pouvez le savoir."),
     "dates": ("Des dates à lire dans le bon ordre",
               "« 05/03 » peut vouloir dire 5 mars ou 3 mai. Il faut choisir un seul sens pour toute la colonne."),
+    "regles": ("Règles non respectées",
+               "Ce sont les règles cochées à l'étape Comprendre. Une ligne qui ne les respecte pas n'est pas forcément "
+               "fausse : vérifiez-la avant de l'écarter."),
+    "espaces": ("Espaces en trop",
+                "« A » et « A » suivi d'un espace sont comptés comme deux valeurs différentes. Supprimer les espaces "
+                "au début et à la fin des textes évite ce piège."),
 }
 
 
@@ -151,11 +164,58 @@ def _point_dates(normalized, dictionary):
     return lignes
 
 
-def detecter_points(raw, dictionary, choix, diagnostic):
+def verifier_regles(raw, dico, controles):
+    """Pour chaque contrôle (`regles_simples`), les numéros de ligne (à partir de 1) qui ne le respectent pas."""
+    if not controles:
+        return {}
+    _, details = audit(raw, dico, controles)
+    return {c["id"]: sorted(int(n) for n in details.loc[details["ID règle"] == c["id"], "Enregistrement source"])
+            for c in controles}
+
+
+def _point_regles(resultats):
+    lignes = []
+    for regle, numeros in resultats.items():
+        if numeros:
+            exemple = ", ".join(map(str, numeros[:5])) + (" …" if len(numeros) > 5 else "")
+            texte = (f"{regle} — {pluriel(len(numeros), 'ligne ne respecte pas', 'lignes ne respectent pas')} "
+                     f"({'ligne' if len(numeros) == 1 else 'lignes'} {exemple})")
+            lignes.append({"cle": regle, "texte": texte, "options": OPTIONS["regles"], "defaut": DEFAUTS["regles"],
+                           "numeros": numeros})
+    return lignes
+
+
+def _avec_espaces(series):
+    """Masque des textes avec un espace au début ou à la fin (les cases d'espaces seuls sont déjà vides)."""
+    texte = series.astype("string")
+    nettoye = texte.str.strip()
+    return (texte.ne(nettoye) & nettoye.ne("")).fillna(False)
+
+
+def compter_espaces(raw):
+    """Nombre de textes avec des espaces en trop, toutes colonnes de texte confondues."""
+    total = 0
+    for col in raw.select_dtypes(include=["object", "string"]):
+        # Test sur les valeurs distinctes : rapide sur les gros fichiers.
+        effectifs = raw[col].value_counts()
+        total += int(effectifs[_avec_espaces(effectifs.index.to_series()).to_numpy()].sum())
+    return total
+
+
+def _point_espaces(raw):
+    nombre = compter_espaces(raw)
+    if not nombre:
+        return []
+    return [{"cle": "espaces", "texte": f"{pluriel(nombre, 'valeur')} avec des espaces au début ou à la fin",
+             "options": OPTIONS["espaces"], "defaut": DEFAUTS["espaces"]}]
+
+
+def detecter_points(raw, dictionary, choix, diagnostic, controles=None, expert=False):
     """Cartes à afficher, dans l'ordre du parcours. `diagnostic` : résultat de `diagnose(..., ignore_markers=True)`.
 
     Chaque carte : {type, titre, pourquoi, lignes}, chaque ligne : {cle, texte, options, defaut}.
     Les cases vides tiennent compte des choix déjà faits sur les codes et les textes.
+    Mode expert : règles non respectées (`controles`, voir `regles_simples`) et espaces en trop.
     """
     dico, politiques = dictionnaire_selon_choix(dictionary, choix, diagnostic["suspects"])
     familles = {
@@ -165,12 +225,18 @@ def detecter_points(raw, dictionary, choix, diagnostic):
         "doublons": _point_doublons(raw),
         "dates": _point_dates(diagnostic["normalized"], dictionary),
     }
+    if expert:
+        familles["regles"] = _point_regles(verifier_regles(raw, dico, controles or []))
+        familles["espaces"] = _point_espaces(raw)
     return [{"type": t, "titre": TITRES[t][0], "pourquoi": TITRES[t][1], "lignes": lignes}
             for t, lignes in familles.items() if lignes]
 
 
-def exemples(raw, diagnostic, type_, cle, limite=5):
-    """Quelques lignes concernées par un point, numérotées comme dans le fichier (à partir de 1)."""
+def exemples(raw, diagnostic, type_, cle, limite=5, numeros=None):
+    """Quelques lignes concernées par un point, numérotées comme dans le fichier (à partir de 1).
+
+    `numeros` : pour une règle, les lignes qui ne la respectent pas (`verifier_regles`).
+    """
     normalized = diagnostic["normalized"]
     if type_ == "marqueurs":
         suspects = diagnostic["suspects"]
@@ -183,6 +249,11 @@ def exemples(raw, diagnostic, type_, cle, limite=5):
         masque = normalized[cle].isna()
     elif type_ == "doublons":
         masque = raw.duplicated(keep=False)
+    elif type_ == "regles":
+        masque = pd.Series(raw.index.isin([n - 1 for n in numeros or []]), index=raw.index)
+    elif type_ == "espaces":
+        textes = raw.select_dtypes(include=["object", "string"])
+        masque = textes.apply(_avec_espaces).any(axis=1) if len(textes.columns) else pd.Series(False, index=raw.index)
     else:
         masque = normalized[cle].notna()
     lignes = raw.loc[masque.fillna(False)].head(limite)

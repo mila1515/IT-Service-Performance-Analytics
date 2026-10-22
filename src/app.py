@@ -11,7 +11,7 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.core.session import ETAPES, aller, initialiser
+from src.core.session import ETAPES, MODES, aller, initialiser
 from src.etape1_importer.ecran import ecran_importer
 from src.etape2_comprendre.colonnes import dictionnaire_propose
 from src.etape2_comprendre.ecran import ecran_comprendre
@@ -31,6 +31,9 @@ with st.container(horizontal=True, vertical_alignment="center", horizontal_align
     st.markdown("**Analyse simple** · audit qualité avant l'analyse métier")
     st.segmented_control("Étapes", ETAPES, key="etape", required=True, label_visibility="collapsed",
                          format_func=lambda e: f"{ICONES[e]} {ETAPES.index(e) + 1} · {e}")
+    st.segmented_control("Mode", list(MODES), key="mode", required=True, label_visibility="collapsed",
+                         format_func=MODES.get,
+                         help="Mode expert : règles simples par colonne, espaces en trop et filtre avant les graphiques.")
 
 if etat.etape != "Importer" and etat.get("raw") is None:
     st.info("Importez d'abord un fichier CSV.", icon=":material/upload_file:")

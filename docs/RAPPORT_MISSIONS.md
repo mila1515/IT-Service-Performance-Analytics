@@ -737,3 +737,28 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 - Le rendu sur téléphone n'a pas été testé.
 - Le champ « objectif » du rapport du mode expert reste vide (décision D2 : exports inchangés).
 
+---
+
+## Mode expert léger (2026-10-22)
+
+**Demande :** un mode expert clair, avec seulement ce qui est utile à un analyste junior, choisi par deux boutons « Mode simple » / « Mode expert ». Sans P1/P2/P3, JSON, expressions régulières ni GO/NO-GO. Maquette validée (deuxième rangée de la maquette).
+
+**Réalisé (4 ajouts, uniquement visibles en mode expert) :**
+
+| Étape | Ajout | Moteur réutilisé |
+|---|---|---|
+| Comprendre | Règles à cocher sur chaque carte : doit être remplie, valeurs uniques (identifiants), entre deux bornes (nombres) ; résultat immédiat | `audit` (contrôles Obligatoire, Unique, Intervalle) via `regles_simples` |
+| Corriger | Carte « Règles non respectées » : garder et signaler / écarter ; les lignes signalées sont notées dans le journal et le rapport | `pipeline` (règles mises en rejet) |
+| Corriger | Carte « Espaces en trop », seulement s'il y en a | `pipeline(trim=True)` |
+| Visualiser | Filtre avant les graphiques : garder / exclure des valeurs d'une catégorie, période ; les fichiers téléchargés ne changent pas | `apply_filters` |
+
+**Choix à signaler :**
+- Pour la règle « entre deux bornes », un texte non numérique (« abc ») n'est pas compté comme hors limites. Il a déjà sa propre carte « texte dans des nombres » ; le compter deux fois aurait été déroutant. Une option `ignore_text` du contrôle « Intervalle » le permet ; l'ancienne interface experte garde son comportement.
+- La carte « Espaces en trop » n'apparaît que si le fichier en contient (même logique que les autres points). La maquette la montrait toujours.
+- Dans la doc et le code, l'ancienne interface (`src/expert/`) s'appelle désormais « ancienne interface experte (archive) », pour ne pas la confondre avec le nouveau bouton « Mode expert ».
+
+**Vérifications :**
+- **92 tests OK**, dont 11 nouveaux : 8 côté moteur (`test_expert.py`), 3 sur l'interface (`ModeExpertTests`).
+- **Test navigateur** : 11 étapes réussies, dont E1 à E3 pour le mode expert (règle cochée, lignes écartées, filtre « 4 / 5 lignes retenues » sans changement des fichiers téléchargés).
+- **Docker** reconstruit sur http://localhost:8503 ; le même test navigateur y réussit.
+

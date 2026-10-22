@@ -3,7 +3,8 @@
 Seul module de `core/` qui dépend de Streamlit : le cache et l'état servent à toutes les étapes.
 Clés du parcours simple : `source` (fichier importé), `lecture` (options), `raw`, `dictionary`,
 `choix` (décisions de l'étape Corriger), `validation` (résultat validé), `graphiques_ajoutes`,
-`notes`, `etape` (étape affichée). Les fonctions `invalidate_cleaning` et `reset_dashboard`
+`notes`, `etape` (étape affichée), `mode` (simple ou expert), `regles` (règles du mode expert),
+`filtre` (filtre du mode expert à l'étape 4). Les fonctions `invalidate_cleaning` et `reset_dashboard`
 servent au mode expert.
 """
 import json
@@ -14,8 +15,10 @@ import streamlit as st
 MAX_ENTRIES = 12
 ETAPES = ["Importer", "Comprendre", "Corriger", "Visualiser"]
 # Effacées quand le fichier ou ses options de lecture changent ; le fichier et les options restent.
-CLES_ANALYSE = ("raw", "ids_texte", "dictionary", "choix", "validation", "graphiques_ajoutes", "notes", "session_cache")
-PREFIXES_WIDGETS_ANALYSE = ("w_choix_", "w_role_", "w_ajout_", "w_notes")
+CLES_ANALYSE = ("raw", "ids_texte", "dictionary", "choix", "validation", "graphiques_ajoutes", "notes", "session_cache",
+                "regles", "filtre")
+PREFIXES_WIDGETS_ANALYSE = ("w_choix_", "w_role_", "w_ajout_", "w_notes", "w_regle_", "w_filtre_")
+MODES = {"simple": "Mode simple", "expert": "Mode expert"}
 
 
 def cached(fn, data, *params):
@@ -42,12 +45,20 @@ def initialiser():
     etat.setdefault("choix", {})
     etat.setdefault("graphiques_ajoutes", [])
     etat.setdefault("etape", ETAPES[0])
+    etat.setdefault("mode", "simple")
+    etat.setdefault("regles", {})
+
+
+def mode_expert():
+    """Vrai si l'utilisateur a choisi le mode expert (règles simples, espaces, filtre)."""
+    return st.session_state.get("mode") == "expert"
 
 
 def travail_en_cours():
     """Vrai si l'utilisateur a déjà fait des choix, validé, modifié un rôle ou ajouté un graphique."""
     etat = st.session_state
-    return bool(etat.get("choix") or etat.get("graphiques_ajoutes") or etat.get("roles_modifies") or "validation" in etat)
+    return bool(etat.get("choix") or etat.get("graphiques_ajoutes") or etat.get("roles_modifies") or etat.get("regles")
+                or "validation" in etat)
 
 
 def reinitialiser_analyse():

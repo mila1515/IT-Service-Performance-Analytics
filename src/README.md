@@ -32,6 +32,24 @@ python -m streamlit run src/app.py
    ligne d'origine et raison), rapport qualité (Markdown), archive ZIP avec le fichier d'origine
    inchangé et le journal.
 
+## Mode simple / Mode expert
+
+Deux boutons en haut de l'écran. **Mode simple** (par défaut) : le parcours ci-dessus.
+**Mode expert** : quatre ajouts seulement, pensés pour un analyste junior.
+
+1. **Comprendre** : sur chaque carte, des règles simples à cocher — « doit être remplie »,
+   « valeurs uniques » (identifiants), « valeurs entre deux bornes » (nombres). Le résultat
+   s'affiche aussitôt (lignes qui ne respectent pas).
+2. **Corriger** : une carte « Règles non respectées » : garder et signaler, ou écarter les lignes.
+   Une règle non respectée n'est pas forcément une erreur ; les textes non numériques ne sont
+   pas comptés dans les bornes (ils ont déjà leur propre carte).
+3. **Corriger** : une carte « Espaces en trop » quand des textes en ont (« A » et « A␣ »).
+4. **Visualiser** : un filtre avant les graphiques (garder ou exclure des valeurs d'une
+   catégorie, choisir une période). Il ne change pas les données téléchargées.
+
+Le rapport qualité indique alors chaque règle vérifiée. Volontairement absents : priorités
+P1/P2/P3, seuils en %, expressions régulières, clés composées, configuration JSON, GO/NO-GO.
+
 Règles constantes : le fichier d'origine n'est jamais modifié ; chaque traitement repart de
 lui ; moyenne et médiane seulement pour les nombres, « Inconnu » seulement pour les
 catégories ; aucune règle métier ni colonne propre à un domaine ; le rapport ne certifie pas
@@ -78,7 +96,7 @@ src/
   etape2_comprendre/     fiches de colonnes, diagnostic, détection des points + écran
   etape3_corriger/       pipeline, application des choix, résultat, journal + écran
   etape4_visualiser/     préparation, graphiques de contrôle, exports + écran
-  expert/                mode expert gardé à côté (voir plus bas)
+  expert/                ancienne interface experte, gardée comme archive (voir plus bas)
   tests/                 tests en miroir ; tests/navigateur/ : parcours dans Chromium
 ```
 
@@ -97,9 +115,10 @@ Excel ni de base de données. Les graphiques servent au contrôle, pas aux concl
 La première arrivée sur les étapes 2 et 3 prend quelques secondes sur un gros fichier
 (environ 5 s pour 141 712 lignes × 36 colonnes) ; ensuite chaque interaction prend ~0,3 s.
 
-## Mode expert (gardé à côté)
+## Ancienne interface experte (archive)
 
-L'ancienne interface complète en 6 étapes reste disponible, hors du parcours simple :
+À ne pas confondre avec le bouton « Mode expert » ci-dessus. L'ancienne interface complète en
+6 étapes reste disponible à part, pour mémoire :
 dictionnaire détaillé, règles de qualité P1/P2/P3 rejouées avant/après, diagnostic des
 répétitions, dashboard configurable (filtres, disposition, configuration JSON), décision GO /
 NO-GO. Code et tests dans `src/expert/` et `src/tests/expert/`.

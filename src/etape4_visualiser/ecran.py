@@ -10,10 +10,12 @@ from functools import partial
 import streamlit as st
 
 from src.core.dessins import dessiner
-from src.core.session import aller, cached
+from src.config import LIBELLE_MANQUANT
+from src.core.session import aller, cached, mode_expert
 from src.etape2_comprendre.ecran import points_courants
 from src.etape3_corriger.correction import decisions, phrases_journal
 from src.etape4_visualiser.controles import comparaison, distribution, evolution, graphiques_controle, repartition
+from src.etape4_visualiser.graphiques import apply_filters
 from src.etape4_visualiser.export import archive_projet, csv_bytes, rapport_qualite, rejets_lisibles
 from src.etape4_visualiser.preparation import prepare
 
@@ -96,8 +98,8 @@ def _section_export(validation):
         etat.notes = notes
         source = etat.source
         rapport = partial(rapport_qualite, source["nom"], etat.raw.shape, source["empreinte"],
-                          decisions(points_courants(), validation["choix"]), phrases_journal(validation["log"]),
-                          validation["resultat"], notes)
+                          decisions(points_courants(), validation["choix"]), phrases_journal(validation["log"], validation.get("regles_signalees", ())),
+                          validation["resultat"], notes, validation.get("regles_verifiees"))
         base = source["nom"].rsplit(".", 1)[0]
         with st.container(horizontal=True):
             # Fichiers générés au clic seulement : aucun coût à chaque interaction.
@@ -114,6 +116,64 @@ def _section_export(validation):
                                type="primary", icon=":material/folder_zip:", on_click="ignore")
 
 
+def _filtre_categorie(data, colonnes):
+    colonne = st.selectbox("Colonne à filtrer", colonnes, key="w_filtre_colonne")
+    mode = st.segmented_control("Mode du filtre", ["garder", "exclure"], default="garder", required=True,
+                                format_func={"garder": "Garder", "exclure": "Exclure"}.get, key="w_filtre_mode")
+    valeurs = data[colonne].astype("string").value_counts().index.tolist()
+    options = valeurs + ([LIBELLE_MANQUANT] if data[colonne].isna().any() else [])
+    # Sélection de départ qui garde toutes les lignes, quel que soit le mode.
+    defaut = options if mode == "garder" else []
+    cle = f"w_filtre_valeurs_{colonne}_{mode}"
+    if len(options) <= 30:
+        choisies = st.pills("Valeurs", options, selection_mode="multi", default=defaut, key=cle)
+    else:
+        choisies = st.multiselect("Valeurs", options, default=defaut, key=cle)
+    manquantes = LIBELLE_MANQUANT in choisies
+    spec = {"column": colonne, "type": "Catégorie", "values": [v for v in choisies if v != LIBELLE_MANQUANT],
+            "missing": manquantes if mode == "garder" else not manquantes, "exclude": mode == "exclure"}
+    resume = f"{colonne} : {'garder' if mode == 'garder' else 'exclure'} {', '.join(choisies) or 'aucune valeur'}"
+    return spec, resume
+
+
+def _filtre_dates(data, colonne):
+    dates = data[colonne].dropna()
+    debut, fin = dates.min().date(), dates.max().date()
+    periode = st.date_input(f"Période ({colonne})", value=(debut, fin), min_value=debut, max_value=fin,
+                            format="DD/MM/YYYY", key=f"w_filtre_dates_{colonne}")
+    if len(periode) != 2 or tuple(periode) == (debut, fin):
+        return None, None
+    spec = {"column": colonne, "type": "Date", "low": periode[0].isoformat(), "high": periode[1].isoformat(), "missing": False}
+    return spec, f"{colonne} : du {periode[0]:%d/%m/%Y} au {periode[1]:%d/%m/%Y}"
+
+
+def _filtre(data, roles):
+    """Mode expert : filtre sur une catégorie et une période. Retourne les lignes retenues (graphiques seulement)."""
+    categories = [c for c, r in roles.items() if r == "Catégorie"]
+    dates = [c for c, r in roles.items() if r == "Date" and data[c].notna().any()]
+    if not categories and not dates:
+        return data
+    specs, resumes = [], []
+    with st.container(border=True):
+        st.subheader("Filtrer avant de regarder", anchor=False)
+        gauche, droite = st.columns(2)
+        if categories:
+            with gauche:
+                spec, resume = _filtre_categorie(data, categories)
+                specs.append(spec)
+                resumes.append(resume)
+        if dates:
+            with droite:
+                spec, resume = _filtre_dates(data, dates[0])
+                if spec:
+                    specs.append(spec)
+                    resumes.append(resume)
+        retenues = apply_filters(data, specs)
+        st.markdown(f"**{len(retenues):,} / {len(data):,} lignes retenues**".replace(",", " "))
+        st.caption(f"Filtre actif : {' · '.join(resumes)}. Le filtre ne change pas les données téléchargées.")
+    return retenues
+
+
 def ecran_visualiser():
     """Écran de l'étape 4."""
     etat = st.session_state
@@ -128,6 +188,8 @@ def ecran_visualiser():
     roles = _roles(validation)
     dayfirst = {col: valeur == "jour" for col, valeur in validation["choix"].get("dates", {}).items()}
     data, ignorees = cached(prepare, validation["cleaned"], roles, dayfirst)
+    if mode_expert():
+        data = _filtre(data, roles)
     graphiques = [(g, None) for g in graphiques_controle(data, roles, ignorees)]
     graphiques += [(g, i) for i, spec in enumerate(etat.graphiques_ajoutes)
                    if (g := _graphique_ajoute(data, roles, spec, ignorees)) is not None]

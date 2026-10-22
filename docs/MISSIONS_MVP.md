@@ -152,7 +152,8 @@ Commence par la MISSION 1. Ne code rien avant d'avoir lu les fichiers et exécut
 | 6. Règles de qualité | Terminée : avant/après décomposé (exclusions / résolutions / nouvelles) ; 54 tests OK | [Mission 6](RAPPORT_MISSIONS.md#mission-6--règles-de-qualité--rapport) |
 | Nettoyage et restructuration | Terminée : code mort retiré, rangement par étape, Docker renommé | [Nettoyage](RAPPORT_MISSIONS.md#mission-de-nettoyage--étapes-0-et-1--état-de-départ-et-audit-lecture-seule) |
 | Refonte : outil simple en 4 étapes | Terminée : Importer → Comprendre → Corriger → Visualiser ; mode expert gardé à côté ; 81 tests OK ; test navigateur et Docker réussis | [Refonte](RAPPORT_MISSIONS.md#refonte--outil-simple-en-4-étapes--réalisation-2026-10-22) |
-| 7. Répétitions | Gardée dans le mode expert (hors parcours simple) — à décider | — |
+| Mode expert léger | Terminé : boutons Mode simple / Mode expert ; règles simples, carte des règles, espaces en trop, filtre ; 92 tests OK ; navigateur et Docker réussis | [Mode expert léger](RAPPORT_MISSIONS.md#mode-expert-léger-2026-10-22) |
+| 7. Répétitions | Dans l'ancienne interface experte (archive) — à décider | — |
 
 Tous les rapports sont regroupés dans un seul fichier : [RAPPORT_MISSIONS.md](RAPPORT_MISSIONS.md).
 

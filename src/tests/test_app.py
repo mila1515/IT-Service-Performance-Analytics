@@ -115,5 +115,52 @@ class ParcoursSimpleTests(unittest.TestCase):
         self.assertEqual(app.session_state.choix, {})
 
 
+class ModeExpertTests(unittest.TestCase):
+    def ouvrir(self):
+        app = AppTest.from_file(APP, default_timeout=60)
+        self.upload = patch("streamlit.file_uploader", return_value=fichier(EXEMPLE.read_bytes(), "exemple.csv"))
+        self.upload.start()
+        self.addCleanup(self.upload.stop)
+        app.run()
+        app.session_state["etape"] = "Comprendre"
+        return app.run()
+
+    def test_simple_mode_by_default_has_no_rules(self):
+        app = self.ouvrir()
+        self.assertEqual(app.session_state.mode, "simple")
+        self.assertFalse([c for c in app.checkbox if c.key and c.key.startswith("w_regle_")])
+
+    def test_rule_is_checked_then_handled_and_reported(self):
+        app = self.ouvrir()
+        app.segmented_control(key="mode").set_value("expert").run()
+        app.checkbox(key="w_regle_0_unique").check().run()
+        self.assertFalse(app.exception)
+        self.assertIn("2 lignes ne respectent pas (lignes 4, 6)", textes(app.markdown))
+        self.assertEqual(next(m.value for m in app.metric if m.label == "Points à vérifier"), "5")
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        self.assertIn("Règles non respectées", textes(app.subheader))
+        cle = next(c.key for c in app.segmented_control if c.label.startswith("id : valeurs uniques"))
+        app.segmented_control(key=cle).set_value("ecarter").run()
+        self.assertEqual(next(m.value for m in app.metric if m.label == "Lignes gardées"), "5 / 7")
+        self.assertIn("règle non respectée (id : valeurs uniques)", textes(app.warning))
+        bouton(app, "Valider et voir les graphiques").click().run()
+        self.assertEqual(app.session_state.validation["regles_verifiees"], {"id : valeurs uniques": [4, 6]})
+
+    def test_filter_changes_charts_not_downloads(self):
+        app = self.ouvrir()
+        app.segmented_control(key="mode").set_value("expert").run()
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        bouton(app, "Valider et voir les graphiques").click().run()
+        self.assertIn("7 / 7 lignes retenues", textes(app.markdown))
+        app.segmented_control(key="w_filtre_mode").set_value("exclure").run()
+        cle = next(p.key for p in app.get("button_group") if (p.key or "").startswith("w_filtre_valeurs_"))
+        app.button_group(key=cle).set_value(["A"]).run()
+        self.assertFalse(app.exception)
+        self.assertIn("4 / 7 lignes retenues", textes(app.markdown))
+        self.assertEqual(len(app.session_state.validation["cleaned"]), 7)
+
+
 if __name__ == "__main__":
     unittest.main()

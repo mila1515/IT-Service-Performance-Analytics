@@ -8,11 +8,13 @@ import hashlib
 
 import streamlit as st
 
+from src.core.regles import regles_simples
 from src.core.session import aller, cached
 from src.core.texte import nombre_lisible, pour_affichage
-from src.etape2_comprendre.ecran import diagnostic_courant, points_courants
+from src.etape2_comprendre.ecran import diagnostic_courant, points_courants, regles_actives, resultats_regles
 from src.etape2_comprendre.points import exemples
-from src.etape3_corriger.correction import choix_complets, executer, phrases_journal, plan_nettoyage, resume_resultat
+from src.etape3_corriger.correction import (choix_complets, executer, phrases_journal, plan_nettoyage, regles_signalees,
+                                            resume_resultat)
 
 
 def _cle_widget(type_, cle):
@@ -32,7 +34,10 @@ def _corriger(raw, plan):
 
 def _valider(plan, complets):
     etat = st.session_state
-    etat.validation = {"choix": complets, "plan": plan, **cached(_corriger, etat.raw, plan)}
+    resultats = resultats_regles()
+    etat.validation = {"choix": complets, "plan": plan, "regles_verifiees": resultats,
+                       "regles_signalees": regles_signalees(resultats, complets),
+                       **cached(_corriger, etat.raw, plan)}
     aller("Visualiser")
 
 
@@ -47,11 +52,11 @@ def _ligne(point, ligne, choisi, diagnostic):
     volet = st.expander("Voir les lignes concernées", key=f"{cle_widget}_lignes", on_change="rerun")
     if volet.open:
         with volet:
-            lignes = exemples(st.session_state.raw, diagnostic, point["type"], ligne["cle"])
+            lignes = exemples(st.session_state.raw, diagnostic, point["type"], ligne["cle"], numeros=ligne.get("numeros"))
             st.dataframe(pour_affichage(lignes, numeroter=False), alt=f"Exemples de lignes concernées : {ligne['texte']}")
 
 
-def _resultat(corrige):
+def _resultat(corrige, signalees):
     resultat = corrige["resultat"]
     with st.container(border=True):
         st.subheader("Résultat de vos choix", anchor=False)
@@ -71,7 +76,7 @@ def _resultat(corrige):
                        "la raison. Un problème qui disparaît parce que sa ligne est écartée n'a pas été réparé.\n\n" + motifs,
                        title="Écarter n'est pas corriger", icon=":material/info:")
         st.markdown("**Noté automatiquement dans le journal**")
-        st.markdown("\n".join(f"- {phrase}" for phrase in phrases_journal(corrige["log"])))
+        st.markdown("\n".join(f"- {phrase}" for phrase in phrases_journal(corrige["log"], signalees)))
 
 
 def ecran_corriger():
@@ -86,18 +91,21 @@ def ecran_corriger():
     diagnostic = diagnostic_courant()
     for point in points:
         with st.container(border=True):
-            st.subheader(point["titre"], anchor=False)
+            with st.container(horizontal=True, vertical_alignment="center"):
+                st.subheader(point["titre"], anchor=False)
+                if point["type"] in ("regles", "espaces"):
+                    st.badge("Mode expert", color="blue", icon=":material/tune:")
             st.caption(point["pourquoi"])
             for ligne in point["lignes"]:
                 _ligne(point, ligne, complets[point["type"]][ligne["cle"]], diagnostic)
 
-    plan = plan_nettoyage(etat.dictionary, complets, diagnostic["suspects"])
+    plan = plan_nettoyage(etat.dictionary, complets, diagnostic["suspects"], regles_simples(regles_actives()))
     try:
         corrige = cached(_corriger, etat.raw, plan)
     except ValueError as exc:
         st.error(f"Ces choix ne peuvent pas être appliqués : {exc}", icon=":material/error:")
         return
-    _resultat(corrige)
+    _resultat(corrige, regles_signalees(resultats_regles(), complets))
     validation = etat.get("validation")
     if validation and validation["choix"] != complets:
         st.info("Vos choix ont changé depuis la dernière validation. Validez de nouveau pour mettre à jour les graphiques.",

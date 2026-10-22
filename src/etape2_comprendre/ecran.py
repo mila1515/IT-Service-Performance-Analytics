@@ -1,17 +1,19 @@
 """Étape 2 (Comprendre) : ce que contient le fichier, colonne par colonne, et les points à vérifier.
 
-Entrées en session : `raw`, `dictionary`, `choix`. Rien n'est modifié ici, sauf le rôle d'une
-colonne si l'utilisateur le corrige (« Cette colonne contient… »).
+Entrées en session : `raw`, `dictionary`, `choix`, `mode`, `regles`. Rien n'est modifié ici, sauf le
+rôle d'une colonne si l'utilisateur le corrige (« Cette colonne contient… ») et, en mode expert,
+les règles simples cochées sur les cartes (doit être remplie, valeurs uniques, entre deux bornes).
 """
 import pandas as pd
 import streamlit as st
 
 from src.core.dessins import mini_repartition, periodes
-from src.core.session import aller, cached
+from src.core.regles import regles_simples
+from src.core.session import aller, cached, mode_expert
 from src.core.texte import nombre_lisible, pluriel
 from src.etape2_comprendre.colonnes import resume_colonnes
 from src.etape2_comprendre.diagnostic import diagnose
-from src.etape2_comprendre.points import detecter_points
+from src.etape2_comprendre.points import detecter_points, dictionnaire_selon_choix, verifier_regles
 
 ROLES = {"Identifiant": "des identifiants", "Catégorie": "des catégories", "Mesure": "des nombres", "Date": "des dates"}
 
@@ -22,15 +24,86 @@ def diagnostic_courant():
     return cached(diagnose, etat.raw, etat.dictionary, True)
 
 
+def regles_actives():
+    """Règles du mode expert à appliquer (aucune en mode simple)."""
+    return st.session_state.regles if mode_expert() else {}
+
+
 def points_courants():
-    """Points à vérifier selon les données, les rôles et les choix déjà faits."""
+    """Points à vérifier selon les données, les rôles, les choix déjà faits et le mode."""
     etat = st.session_state
-    return cached(_detecter, etat.raw, etat.dictionary, etat.choix)
+    return cached(_detecter, etat.raw, etat.dictionary, etat.choix, regles_actives(), mode_expert())
 
 
-def _detecter(raw, dictionary, choix):
+def _detecter(raw, dictionary, choix, regles, expert):
     # Le diagnostic ne dépend pas des choix : il reste mémorisé quand seuls les choix changent.
-    return detecter_points(raw, dictionary, choix, cached(diagnose, raw, dictionary, True))
+    return detecter_points(raw, dictionary, choix, cached(diagnose, raw, dictionary, True), regles_simples(regles), expert)
+
+
+def _verifier(raw, dictionary, choix, regles):
+    # Les codes déjà reconnus comme manquants à l'étape Corriger comptent comme des cases vides.
+    dico, _ = dictionnaire_selon_choix(dictionary, choix, cached(diagnose, raw, dictionary, True)["suspects"])
+    return verifier_regles(raw, dico, regles_simples(regles))
+
+
+def resultats_regles():
+    """Lignes qui ne respectent pas chaque règle active (vide en mode simple)."""
+    etat = st.session_state
+    regles = regles_actives()
+    return cached(_verifier, etat.raw, etat.dictionary, etat.choix, regles) if regles else {}
+
+
+def _changer_regle(colonne, type_, cle_widget, bornes=None):
+    etat = st.session_state
+    regle = dict(etat.regles.get(colonne, {}))
+    if type_ == "bornes":
+        regle["bornes"] = list(bornes) if etat[cle_widget] else None
+    else:
+        regle[type_] = etat[cle_widget]
+    etat.regles = {**etat.regles, colonne: regle}
+
+
+def _changer_borne(colonne, position, cle_widget):
+    etat = st.session_state
+    regle = dict(etat.regles.get(colonne, {}))
+    bornes = list(regle.get("bornes") or [0., 0.])
+    bornes[position] = float(etat[cle_widget])
+    etat.regles = {**etat.regles, colonne: {**regle, "bornes": bornes}}
+
+
+def _resultat_regle(controle, resultats):
+    numeros = resultats.get(controle["id"], [])
+    if not numeros:
+        st.badge("Respectée par toutes les lignes", color="green", icon=":material/check:")
+        return
+    exemple = ", ".join(map(str, numeros[:5])) + (" …" if len(numeros) > 5 else "")
+    _alerte(f"{pluriel(len(numeros), 'ligne ne respecte pas', 'lignes ne respectent pas')} "
+            f"({'ligne' if len(numeros) == 1 else 'lignes'} {exemple})")
+
+
+def _regles(fiche, index, resultats):
+    """Section « Règles à vérifier » d'une carte (mode expert)."""
+    colonne, role = fiche["colonne"], fiche["role"]
+    regle = st.session_state.regles.get(colonne, {})
+    st.markdown("**Règles à vérifier**")
+    types = [("remplie", "Doit être remplie")] + ([("unique", "Valeurs uniques")] if role == "Identifiant" else [])
+    for type_, libelle in types:
+        cle = f"w_regle_{index}_{type_}"
+        st.checkbox(libelle, value=bool(regle.get(type_)), key=cle, on_change=_changer_regle, args=(colonne, type_, cle))
+        if regle.get(type_):
+            _resultat_regle(regles_simples({colonne: {type_: True}})[0], resultats)
+    if role == "Mesure" and fiche.get("nombres"):
+        cle = f"w_regle_{index}_bornes"
+        defaut = (fiche["minimum"], fiche["maximum"])
+        st.checkbox("Valeurs entre deux bornes", value=bool(regle.get("bornes")), key=cle,
+                    on_change=_changer_regle, args=(colonne, "bornes", cle, defaut))
+        if regle.get("bornes"):
+            gauche, droite = st.columns(2)
+            for colonne_ecran, position, libelle in ((gauche, 0, "Minimum"), (droite, 1, "Maximum")):
+                cle_borne = f"w_regle_{index}_borne_{position}"
+                colonne_ecran.number_input(libelle, value=float(regle["bornes"][position]), key=cle_borne,
+                                           on_change=_changer_borne, args=(colonne, position, cle_borne))
+            _resultat_regle(regles_simples({colonne: {"bornes": regle["bornes"]}})[0], resultats)
 
 
 def _changer_role(colonne, cle_widget):
@@ -46,7 +119,7 @@ def _alerte(texte):
     st.badge(texte, color="orange", icon=":material/warning:")
 
 
-def _carte(fiche, index):
+def _carte(fiche, index, resultats=None):
     with st.container(border=True, height="stretch"):
         with st.container(horizontal=True, vertical_alignment="center"):
             st.markdown(f"**{fiche['colonne']}**")
@@ -82,6 +155,8 @@ def _carte(fiche, index):
         cle = f"w_role_{index}"
         st.selectbox("Cette colonne contient", list(ROLES.values()), index=list(ROLES).index(role), key=cle,
                      on_change=_changer_role, args=(fiche["colonne"], cle))
+        if resultats is not None:
+            _regles(fiche, index, resultats)
 
 
 def ecran_comprendre():
@@ -99,11 +174,17 @@ def ecran_comprendre():
     st.subheader(f"Vos {pluriel(len(etat.raw.columns), 'colonne')}", anchor=False)
     dayfirst = {cle: valeur == "jour" for cle, valeur in etat.choix.get("dates", {}).items()}
     fiches = cached(resume_colonnes, etat.raw, etat.dictionary, dayfirst)
+    resultats = None
+    if mode_expert():
+        st.info("Cochez sur chaque carte ce que la colonne doit respecter, d'après ce que vous savez du métier. "
+                "Une règle non respectée n'est pas forcément une erreur : les lignes concernées se traitent à l'étape Corriger.",
+                title="Mode expert : règles simples", icon=":material/rule:")
+        resultats = cached(_verifier, etat.raw, etat.dictionary, etat.choix, etat.regles)
     for debut in range(0, len(fiches), 2):
         colonnes = st.columns(2)
         for colonne, (index, fiche) in zip(colonnes, enumerate(fiches[debut:debut + 2], start=debut)):
             with colonne:
-                _carte(fiche, index)
+                _carte(fiche, index, resultats)
 
     st.subheader("À vérifier avant d'analyser", anchor=False)
     if points:

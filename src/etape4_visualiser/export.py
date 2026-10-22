@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from src.core.texte import nombre_lisible
+from src.core.texte import nombre_lisible, pluriel
 from src.etape3_corriger.correction import motif_lisible
 
 LIMITES = ("Les vérifications portent sur la forme des données : codes de valeur manquante, textes dans des "
@@ -40,8 +40,11 @@ def rejets_lisibles(rejects):
     return resultat
 
 
-def rapport_qualite(nom_fichier, dimensions, empreinte, decisions, journal, resultat, notes=""):
-    """Rapport en Markdown : le fichier, les points vérifiés et décisions, ce qui a été fait, le résultat, les limites."""
+def rapport_qualite(nom_fichier, dimensions, empreinte, decisions, journal, resultat, notes="", regles_verifiees=None):
+    """Rapport en Markdown : le fichier, les points vérifiés et décisions, ce qui a été fait, le résultat, les limites.
+
+    `regles_verifiees` (mode expert) : règle → numéros des lignes qui ne la respectent pas.
+    """
     lignes, colonnes = dimensions
     texte = [f"# Rapport qualité — {nom_fichier}", "",
              f"Produit le {datetime.now(timezone.utc):%d/%m/%Y à %H:%M} (UTC).", "",
@@ -64,6 +67,11 @@ def rapport_qualite(nom_fichier, dimensions, empreinte, decisions, journal, resu
     if resultat["ecartees"]:
         texte += ["", "Les lignes écartées ne sont pas effacées : elles sont dans le fichier des lignes écartées, avec leur raison. "
                       "Un problème qui disparaît parce que sa ligne est écartée n'a pas été réparé."]
+    if regles_verifiees:
+        texte += ["", "## Règles vérifiées (mode expert)", ""]
+        texte += [f"- {regle} : " + (f"{pluriel(len(n), 'ligne ne respecte pas', 'lignes ne respectent pas')}" if n
+                                    else "respectée par toutes les lignes") for regle, n in regles_verifiees.items()]
+        texte.append("Une règle non respectée n'est pas forcément une erreur : elle signale un écart avec ce qui était attendu.")
     texte += ["", "## Ce que ce rapport ne garantit pas", "", LIMITES]
     if notes.strip():
         texte += ["", "## Notes", "", notes.strip()]

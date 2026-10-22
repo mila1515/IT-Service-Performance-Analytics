@@ -16,16 +16,20 @@ from src.etape3_corriger.pipeline import pipeline
 REGLES_VIDES = {"laisser": "Conserver", "mediane": "Médiane", "inconnu": "Inconnu", "ecarter": "Supprimer les lignes"}
 
 
-def plan_nettoyage(dictionary, choix, suspects):
+def plan_nettoyage(dictionary, choix, suspects, controles=()):
     """Traduit les choix en paramètres de `pipeline`, sans toucher au dictionnaire reçu.
 
     `suspects` : tableau des codes repérés par `diagnose` (colonnes « Colonne », « Valeur à vérifier »).
-    Retourne {dictionary, missing_rules, deduplicate, conversion_policies}.
+    `controles` : règles du mode expert (`regles_simples`) ; seules celles marquées « écarter » rejettent.
+    Retourne {dictionary, missing_rules, deduplicate, conversion_policies, quality_rules, reject_rule_ids, trim}.
     """
     dico, politiques = dictionnaire_selon_choix(dictionary, choix, suspects)
     regles = {col: REGLES_VIDES[decision] for col, decision in choix.get("vides", {}).items()}
     return {"dictionary": dico, "missing_rules": regles,
-            "deduplicate": choix.get("doublons", {}).get("doublons") == "une", "conversion_policies": politiques}
+            "deduplicate": choix.get("doublons", {}).get("doublons") == "une", "conversion_policies": politiques,
+            "quality_rules": list(controles),
+            "reject_rule_ids": [regle for regle, decision in choix.get("regles", {}).items() if decision == "ecarter"],
+            "trim": choix.get("espaces", {}).get("espaces") == "supprimer"}
 
 
 def choix_complets(points, choix):
@@ -52,8 +56,9 @@ def decisions(points, choix):
 
 def executer(raw, plan):
     """Applique un plan de `plan_nettoyage` sur une copie du brut. Retourne (données corrigées, lignes écartées, journal)."""
-    return pipeline(raw, plan["dictionary"], [], plan["missing_rules"], deduplicate=plan["deduplicate"],
-                    conversion_policies=plan["conversion_policies"],
+    return pipeline(raw, plan["dictionary"], plan.get("quality_rules", []), plan["missing_rules"],
+                    deduplicate=plan["deduplicate"], conversion_policies=plan["conversion_policies"],
+                    reject_rule_ids=plan.get("reject_rule_ids"), trim=plan.get("trim", False),
                     justification="Choix faits à l'étape Corriger ; actions consignées automatiquement.")
 
 
@@ -65,6 +70,10 @@ def motif_lisible(motif):
         return f"{motif.removeprefix('Conversion impossible : ').split(' → ')[0]} : texte au lieu d'un nombre"
     if motif == "Doublon strict après transformations":
         return "copie identique d'une autre ligne"
+    for kind in ("Obligatoire", "Unique", "Intervalle"):
+        # Rejet par une règle du mode expert : « <libellé de la règle> : <type> ».
+        if motif.endswith(f" : {kind}"):
+            return f"règle non respectée ({motif.removesuffix(f' : {kind}')})"
     return motif
 
 
@@ -90,8 +99,17 @@ def resume_resultat(raw, plan, cleaned, rejects):
             "moyennes": moyennes}
 
 
-def phrases_journal(log):
-    """Entrées du journal du moteur → phrases simples, dans l'ordre."""
+def regles_signalees(resultats, choix):
+    """Règles non respectées dont les lignes sont gardées : [(règle, nombre de lignes)]."""
+    return [(regle, len(numeros)) for regle, numeros in resultats.items()
+            if numeros and choix.get("regles", {}).get(regle) != "ecarter"]
+
+
+def phrases_journal(log, signalees=()):
+    """Entrées du journal du moteur → phrases simples, dans l'ordre.
+
+    `signalees` : règles du mode expert non respectées mais gardées (`regles_signalees`).
+    """
     phrases = []
     for entry in log:
         action, col, n = entry["Action"], entry["Colonne"], entry["Cellules / lignes"]
@@ -107,4 +125,8 @@ def phrases_journal(log):
             phrases.append(f"{pluriel(n, 'ligne mise', 'lignes mises')} de côté : {motif_lisible(action.removeprefix('Mise en rejet : '))}")
         elif action.startswith("Conversion en "):
             phrases.append(f"{col} : traitée comme des nombres")
+        elif action == "Espaces de début / fin supprimés":
+            phrases.append(f"{col} : espaces en trop supprimés ({pluriel(n, 'valeur')})")
+    phrases += [f"{regle} — {pluriel(n, 'ligne signalée', 'lignes signalées')}, gardée{'s' if n > 1 else ''}"
+                for regle, n in signalees]
     return phrases or ["Aucun changement : les données restent telles qu'importées."]

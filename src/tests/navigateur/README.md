@@ -2,7 +2,7 @@
 
 Parcours complet dans Chromium : import, mauvais séparateur, exploration, corrections, distinction
 écarter/corriger, graphiques, clic sur chaque téléchargement (fichiers relus), avertissement en cas
-de changement d'option. Non lancé par `unittest` (il faut un serveur et Chromium).
+de changement d'option, puis le mode expert (règle cochée, carte des règles, filtre). Non lancé par `unittest` (il faut un serveur et Chromium).
 
 ```powershell
 python -m pip install playwright ; python -m playwright install chromium
