@@ -23,14 +23,14 @@ dans l'image. Importer le CSV depuis l'interface.
 
 ```powershell
 docker compose ps
-docker compose logs --tail 50 itservice
+docker compose logs --tail 50 analyse
 docker compose down
 ```
 
 Pour utiliser un autre port disponible :
 
 ```powershell
-$env:ITSERVICE_PORT = "8504"
+$env:ANALYSE_PORT = "8504"
 docker compose up -d --build
 ```
 
