@@ -641,3 +641,26 @@ Les fichiers qui gardent leur contenu principal sont déplacés avec `git mv` : 
 - Docker.
 
 Les noms des nouveaux fichiers sont en français ; les noms des fonctions restent ceux du code existant. L'étape 4 du cahier (classe de plan de nettoyage, découpage des fonctions longues, constantes) viendra **après** les déplacements, pour qu'aucun commit ne mélange déplacement et réécriture.
+
+---
+
+## Refonte pour analystes débutants — maquette (2026-10-22)
+
+**Constat de l'utilisatrice :** la plateforme est trop compliquée et fatigante pour un analyste junior ou en apprentissage ; on ne sait pas clairement quoi faire, ni pour l'analyse ni pour les graphiques.
+
+**Décisions :**
+- Outil simple et compréhensible pour un analyste débutant.
+- Le « mode expert » est laissé de côté pour le moment : dictionnaire détaillé, règles personnalisées, répétitions, configuration JSON.
+- La décision formelle GO / GO avec réserves / NO-GO est retirée (jugée inadaptée).
+- La restructuration du nettoyage (étape 3) est **en pause** : le code sera rangé directement selon le nouveau parcours une fois la maquette validée.
+
+**Maquette cliquable** (4 écrans, vraies valeurs d'`exemple.csv`) : https://claude.ai/artifact/Y8ZtYetYmmA4G96anE1ZcQ
+
+| Écran | Contenu |
+|---|---|
+| 1 · Importer | Fichier, confirmation « 7 lignes, 4 colonnes », aperçu ; options de lecture derrière « Le tableau ne ressemble pas à votre fichier ? » |
+| 2 · Comprendre | 3 chiffres clés ; une carte par colonne (rôle en mots simples, % rempli, mini-graphique, point à vérifier, rôle modifiable) ; liste des 4 points à vérifier ; un « bon réflexe » pédagogique |
+| 3 · Corriger | Une carte par problème : explication, lignes concernées, 2 ou 3 choix en un clic (par défaut : ne rien changer). Résultat recalculé en direct (lignes gardées / écartées, cases vides, montant moyen avant → après), message « Écarter n'est pas corriger », journal automatique |
+| 4 · Visualiser et exporter | 3 graphiques prêts avec titres clairs et une phrase « À retenir » (y compris les mises en garde : moyenne sur 1 valeur, volume ≠ performance) ; ajout guidé par une question ; 3 téléchargements ; notes facultatives |
+
+Le moteur actuel (calculs, rejets tracés, comparaison exclusion / correction) est réutilisé tel quel : seuls le parcours et les écrans changent.
