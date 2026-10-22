@@ -664,3 +664,5 @@ Les noms des nouveaux fichiers sont en français ; les noms des fonctions resten
 | 4 · Visualiser et exporter | 3 graphiques prêts avec titres clairs et une phrase « À retenir » (y compris les mises en garde : moyenne sur 1 valeur, volume ≠ performance) ; ajout guidé par une question ; 3 téléchargements ; notes facultatives |
 
 Le moteur actuel (calculs, rejets tracés, comparaison exclusion / correction) est réutilisé tel quel : seuls le parcours et les écrans changent.
+
+**Maquette validée (2026-10-22).** Rôle de l'outil précisé par l'utilisatrice : les 4 étapes servent à **auditer et préparer la qualité des données avant de commencer l'analyse métier**. L'outil livre des données fiables et la trace de ce qui a été vérifié et décidé ; l'analyse métier se fait ensuite.
