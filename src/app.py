@@ -1,8 +1,8 @@
 """Analyse simple : auditer et préparer la qualité d'un fichier CSV avant l'analyse métier.
 
 Lancer depuis la racine : python -m streamlit run src/app.py
-Parcours en 4 étapes, une par dossier : etape1_importer → etape2_comprendre → etape3_corriger
-→ etape4_visualiser. Ce fichier ne contient que la navigation ; l'ancienne interface complète
+Parcours en 5 étapes, une par dossier : etape1_importer → etape2_comprendre → etape3_corriger
+→ etape4_visualiser → etape5_analyser. Ce fichier ne contient que la navigation ; l'ancienne interface complète
 reste disponible à côté (src/expert/app_expert.py).
 """
 import sys
@@ -17,11 +17,14 @@ from src.etape2_comprendre.colonnes import dictionnaire_propose
 from src.etape2_comprendre.ecran import ecran_comprendre
 from src.etape3_corriger.ecran import ecran_corriger
 from src.etape4_visualiser.ecran import ecran_visualiser
+from src.etape5_analyser.ecran import ecran_analyser
 
-ECRANS = {"Importer": ecran_importer, "Comprendre": ecran_comprendre, "Corriger": ecran_corriger, "Visualiser": ecran_visualiser}
+ECRANS = {"Importer": ecran_importer, "Comprendre": ecran_comprendre, "Corriger": ecran_corriger, "Visualiser": ecran_visualiser,
+          "Analyser": ecran_analyser}
 LOGO = Path(__file__).parent / "assets" / "logo.svg"
 ICONES = {"Importer": ":material/upload_file:", "Comprendre": ":material/visibility:",
-          "Corriger": ":material/build:", "Visualiser": ":material/bar_chart:"}
+          "Corriger": ":material/build:", "Visualiser": ":material/bar_chart:",
+          "Analyser": ":material/insights:"}
 
 st.set_page_config(page_title="Analyse simple", page_icon=":material/fact_check:", layout="wide",
                    initial_sidebar_state="collapsed")

@@ -156,6 +156,7 @@ Commence par la MISSION 1. Ne code rien avant d'avoir lu les fichiers et exécut
 | Un seul parcours | Terminé : couleurs plus douces ; boutons de mode retirés ; règles facultatives dans le parcours ; type changé par l'étiquette ; Filtrage à l'étape 4 ; 92 tests OK ; navigateur réussi | [Un seul parcours](RAPPORT_MISSIONS.md#un-seul-parcours--règles-facultatives-et-filtrage-2026-10-22) |
 | Design Sarcelle qualité | Terminé : couleurs sarcelle, cartes blanches, logo, couleurs de graphiques vérifiées ; 95 tests OK ; navigateur et Docker réussis | [Design](RAPPORT_MISSIONS.md#design--sarcelle-qualité--et-logo-2026-10-23) |
 | Rapport complet | Terminé : rapport HTML avec graphiques, tableau des colonnes, pistes de lecture, filtre ; 2 défauts de validation corrigés ; 100 tests OK ; navigateur et Docker réussis | [Rapport complet](RAPPORT_MISSIONS.md#rapport-complet-avec-graphiques-et-pistes-de-lecture-2026-10-23) |
+| Étape 5 Analyser | Terminée : comparer des groupes, délai, évolution, constats calculés, exports Power BI et Jupyter ; testée sur 4 domaines ; 115 tests OK ; navigateur réussi | [Analyser](RAPPORT_MISSIONS.md#étape-5--analyser--2026-10-23) |
 | 7. Répétitions | Terminée (version légère) : volet « Pourquoi … se répète ? » sur les cartes Identifiant, lecture seule ; 95 tests OK ; navigateur réussi, aussi sur le fichier réel | [Mission 7](RAPPORT_MISSIONS.md#mission-7--répétitions-version-légère-2026-10-22) |
 
 Tous les rapports sont regroupés dans un seul fichier : [RAPPORT_MISSIONS.md](RAPPORT_MISSIONS.md).

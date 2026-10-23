@@ -180,5 +180,50 @@ class ReglesEtFiltrageTests(unittest.TestCase):
         self.assertEqual(len(app.session_state.validation["cleaned"]), 7)
 
 
+class AnalyserTests(unittest.TestCase):
+    def ouvrir_valide(self, contenu, nom):
+        app = AppTest.from_file(APP, default_timeout=60)
+        self.upload = patch("streamlit.file_uploader", return_value=fichier(contenu, nom))
+        self.upload.start()
+        self.addCleanup(self.upload.stop)
+        app.run()
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        bouton(app, "Valider et voir les graphiques").click().run()
+        bouton(app, "Étape suivante : analyser").click().run()
+        self.assertEqual(app.session_state.etape, "Analyser")
+        return app
+
+    def test_needs_a_validation_first(self):
+        app = AppTest.from_file(APP, default_timeout=60)
+        with patch("streamlit.file_uploader", return_value=fichier(EXEMPLE.read_bytes(), "exemple.csv")):
+            app.run()
+            app.session_state["etape"] = "Analyser"
+            app.run()
+        self.assertIn("Validez d'abord vos corrections", textes(app.info))
+
+    def test_sample_counts_each_identifier_once_and_explains_missing_sections(self):
+        app = self.ouvrir_valide(EXEMPLE.read_bytes(), "exemple.csv")
+        self.assertFalse(app.exception)
+        case = app.checkbox(key="w_analyse_une_fois_id")
+        self.assertTrue(case.value)
+        self.assertIn("« A » compte 2 id distincts", textes(app.markdown))
+        self.assertIn("compte le plus d'id distincts", textes(app.markdown))
+        self.assertIn("Mesurer un délai : il faut deux colonnes de type Date.", textes(app.info))
+        self.assertEqual(len(app.get("download_button")), 2)
+        case.uncheck().run()
+        self.assertIn("« A » compte 3 lignes", textes(app.markdown))
+
+    def test_sales_file_offers_the_delay_with_french_dates(self):
+        app = self.ouvrir_valide((Path(__file__).parent / "fixtures" / "ventes.csv").read_bytes(), "ventes.csv")
+        self.assertFalse(app.exception)
+        self.assertEqual(app.selectbox(key="w_analyse_debut").value, "date_commande")
+        self.assertEqual(app.selectbox(key="w_analyse_fin").value, "date_livraison")
+        self.assertIn("Délais calculables", [m.label for m in app.metric])
+        app.segmented_control(key="w_analyse_statistique").set_value("mediane").run()
+        self.assertFalse(app.exception)
+        self.assertIn("ont moins de 20 lignes : trop peu pour comparer", textes(app.markdown))
+
+
 if __name__ == "__main__":
     unittest.main()

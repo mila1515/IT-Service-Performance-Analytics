@@ -47,6 +47,16 @@ def moyennes(donnees):
     return _barres_horizontales(donnees, "Moyenne", "Etiquette", "Couleur", "Moyenne")
 
 
+COULEURS_TYPE = {"valeur": COULEUR_PRINCIPALE, "autres": COULEUR_PRINCIPALE, "fragile": COULEUR_FRAGILE,
+                 "manquant": COULEUR_MANQUANT}
+
+
+def classement(donnees, titre_valeur):
+    """Barres horizontales classées : colonnes Groupe, Valeur, Etiquette, Type (valeur, fragile, manquant, autres)."""
+    donnees = donnees.assign(Couleur=[COULEURS_TYPE[t] for t in donnees["Type"]])
+    return _barres_horizontales(donnees, "Valeur", "Etiquette", "Couleur", titre_valeur)
+
+
 def histogramme(donnees, titre_x):
     """Répartition d'une mesure par classes de valeurs."""
     return alt.Chart(donnees).mark_bar(color=COULEUR_PRINCIPALE, cornerRadiusTopLeft=2, cornerRadiusTopRight=2).encode(
@@ -58,12 +68,12 @@ def histogramme(donnees, titre_x):
     ).properties(height=220, background=FOND)
 
 
-def periodes(donnees):
+def periodes(donnees, titre_y="Lignes"):
     """Nombre de lignes par période ; colonnes jusqu'à 36 périodes, courbe au-delà."""
     donnees = donnees.assign(Etiquette=[nombre_lisible(int(v)) for v in donnees["Lignes"]])
     x = alt.X("Période:N", sort=None, title=None, axis=alt.Axis(labelAngle=0 if len(donnees) <= PERIODES_ETIQUETEES else -45,
                                                                  ticks=False, domainColor=GRILLE))
-    y = alt.Y("Lignes:Q", title="Lignes", axis=alt.Axis(format="d", tickMinStep=1, gridColor=GRILLE, domain=False, ticks=False))
+    y = alt.Y("Lignes:Q", title=titre_y, axis=alt.Axis(format="d", tickMinStep=1, gridColor=GRILLE, domain=False, ticks=False))
     tooltip = [alt.Tooltip("Période:N"), alt.Tooltip("Etiquette:N", title="Lignes")]
     base = alt.Chart(donnees).encode(x=x, y=y, tooltip=tooltip)
     if len(donnees) > PERIODES_EN_COLONNES:

@@ -24,6 +24,9 @@ def _cle_widget(type_, cle):
 
 def _enregistrer(type_, cle, cle_widget):
     etat = st.session_state
+    if cle_widget not in etat:
+        # Clic relayé juste après un changement d'étape : le widget est déjà effacé, on l'ignore.
+        return
     etat.choix = {**etat.choix, type_: {**etat.choix.get(type_, {}), cle: etat[cle_widget]}}
 
 

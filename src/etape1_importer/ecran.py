@@ -47,6 +47,9 @@ def _nouveau_fichier(fichier):
 
 def _changer_lecture(option, cle_widget):
     etat = st.session_state
+    if cle_widget not in etat:
+        # Clic relayé juste après un changement d'étape : le widget est déjà effacé, on l'ignore.
+        return
     etat.lecture = {**etat.lecture, option: etat[cle_widget]}
     if reinitialiser_analyse():
         etat.avertissement = ("Les options de lecture ont changé : le fichier a été relu et vos choix ont été effacés. "

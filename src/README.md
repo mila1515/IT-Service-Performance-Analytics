@@ -12,7 +12,7 @@ python -m pip install -r src/requirements.txt
 python -m streamlit run src/app.py
 ```
 
-## Les 4 étapes
+## Les 5 étapes
 
 1. **Importer** : déposer le fichier ; nombre de lignes et de colonnes, aperçu. Aucune saisie
    obligatoire. Options de lecture (séparateur, encodage, décimales) repliées derrière « Le tableau
@@ -42,6 +42,16 @@ python -m streamlit run src/app.py
    chiffres (colonne peu remplie, moyenne tirée par quelques valeurs, valeur dominante, identifiant
    répété : compter les valeurs distinctes), et les graphiques de l'écran avec leur « À retenir ».
    Si le Filtrage est actif, le rapport le dit ; les données téléchargées, elles, ne sont pas filtrées.
+5. **Analyser** : premières questions métier sur les données corrigées, sans IA. L'utilisateur
+   choisit les colonnes, l'outil calcule, classe et décrit (« Ce que montrent les chiffres ») ; il ne
+   donne jamais de cause. Trois analyses, proposées selon les types de colonnes :
+   - **Comparer des groupes** (une Catégorie) : nombre, moyenne ou médiane d'un nombre ;
+   - **Mesurer un délai** (deux Dates) : délai médian global et par groupe ;
+   - **Évolution dans le temps** (une Date) : nombre par jour, mois ou année, pour tous ou une valeur.
+   Si une colonne Identifiant se répète, « Compter chaque … une seule fois (sa dernière ligne) » est
+   coché par défaut. Les groupes de moins de 20 éléments sont signalés « trop peu pour comparer ».
+   Passerelles : **export Power BI** (données corrigées, délai calculé, dictionnaire des colonnes) et
+   **notebook Jupyter** (généré à partir d'un modèle, il recharge les données et refait les analyses).
 
 ## Options facultatives
 
@@ -96,7 +106,7 @@ Les sessions restent en mémoire : exporter le projet avant d'arrêter ou de
 
 ```
 src/
-  app.py                 navigation entre les 4 étapes (point d'entrée)
+  app.py                 navigation entre les 5 étapes (point d'entrée)
   config.py              constantes (seuils, couleurs, limites d'affichage)
   .streamlit/config.toml thème « Sarcelle qualité » (couleur principale, fond, texte)
   assets/logo.svg        logo affiché dans la barre du haut
@@ -106,6 +116,7 @@ src/
   etape2_comprendre/     fiches de colonnes, diagnostic, détection des points + écran
   etape3_corriger/       pipeline, application des choix, résultat, journal + écran
   etape4_visualiser/     préparation, graphiques de contrôle, exports + écran
+  etape5_analyser/       comparer, délai, évolution, exports Power BI et Jupyter + écran
   expert/                ancienne interface experte, gardée comme archive (voir plus bas)
   tests/                 tests en miroir ; tests/navigateur/ : parcours dans Chromium
 ```

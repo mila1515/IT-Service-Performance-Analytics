@@ -231,4 +231,7 @@ def ecran_visualiser():
                 _carte(graphique, numero, retirer)
     _section_ajout(roles)
     _section_export(validation, [g for g, _ in graphiques], filtre, dayfirst)
-    st.button("Retour aux corrections", icon=":material/arrow_back:", on_click=aller, args=("Corriger",))
+    with st.container(horizontal=True, horizontal_alignment="distribute"):
+        st.button("Retour aux corrections", icon=":material/arrow_back:", on_click=aller, args=("Corriger",))
+        st.button("Étape suivante : analyser", type="primary", icon=":material/arrow_forward:", icon_position="right",
+                  on_click=aller, args=("Analyser",))

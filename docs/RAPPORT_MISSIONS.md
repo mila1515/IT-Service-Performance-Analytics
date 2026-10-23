@@ -871,3 +871,32 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 
 **Vérifications :** 100 tests OK (dont `test_rapport.py`) ; test navigateur réussi en local et sur Docker (téléchargement du HTML avec ses graphiques) ; rapport généré sur le fichier réel en 5 à 9 s, 80 Ko.
 
+---
+
+## Étape 5 « Analyser » (2026-10-23)
+
+**Demande :** pouvoir commencer l'interprétation métier dans l'outil (quel groupe a le plus d'éléments, quelle équipe a les délais les plus longs), sans IA, sur n'importe quel fichier, avec des passerelles vers Power BI et Jupyter. Maquette validée avec les vrais chiffres du fichier d'incidents.
+
+**Réalisé :**
+
+| Partie | Ce que fait l'outil | Types nécessaires |
+|---|---|---|
+| Compter une fois par identifiant | Case cochée par défaut si l'identifiant se répète : une ligne par valeur (la dernière) | Identifiant (facultatif) |
+| Comparer des groupes | Classement et graphique ; nombre, moyenne ou médiane d'un nombre ; constats : poids du premier groupe et rapport à la médiane des groupes, concentration de la moitié, valeurs manquantes, groupes de moins de 20 | Catégorie |
+| Mesurer un délai | Délai médian global et par groupe ; délais courts en heures ou minutes ; fin avant début et dates manquantes ignorées et comptées ; constats : plus long, plus court, groupes au-dessus de la médiane, groupe lourd qui tire la médiane | 2 Dates |
+| Évolution | Nombre par période, pour tous ou une valeur d'un groupe ; constats : période la plus chargée, concentration sur 3 périodes, périodes presque vides | Date |
+| Export Power BI (ZIP) | Données corrigées typées, colonne de délai calculée, dictionnaire des colonnes, mode d'emploi | — |
+| Notebook Jupyter (ZIP) | Notebook généré à partir d'un modèle et les données ; recharge les données avec les bons types et refait les analyses choisies | — |
+
+**Sur le fichier réel (24 918 incidents) :** « Group 70 compte 9 444 incidents (38 %), soit 100 fois la médiane des groupes » ; « 3 groupes, dont « Non renseignée », concentrent la moitié des incidents » ; « Les 3 mois les plus chargés (mars, avr., mai 2016) regroupent 98 % des incidents » ; « 10 mois comptent chacun moins de 1 % : vérifiez si les données couvrent toute la période ». Arrivée sur l'étape : 6,6 s ; changement de réglage : environ 2 s ; préparation du notebook ou de l'export : environ 15 s (écriture du CSV de 141 712 lignes, même coût que « Données corrigées » à l'étape 4).
+
+**Choix à signaler :**
+- Aucune cause n'est donnée et le mot « retard » n'est jamais utilisé : l'outil ne connaît pas les objectifs.
+- La date de fin proposée par défaut est la dernière colonne de date du fichier ; l'utilisateur la change si besoin.
+- Les noms de colonnes sont libres : élision automatique (« d'id »), et dans le notebook ils sont écrits comme des chaînes Python, jamais comme du code (test avec un nom de colonne piégé).
+- Un graphique de comptage ne colore pas les petits groupes en clair ; ce marquage est réservé aux moyennes et médianes calculées sur peu de valeurs.
+
+**Défaut corrigé en route :** un clic relayé juste après un changement d'étape pouvait viser une case déjà effacée (erreur `KeyError` sur `w_regle_0_remplie`). Les cinq fonctions déclenchées par un widget ignorent désormais ce cas. L'attente du test navigateur a aussi été rendue plus fiable.
+
+**Vérifications :** 115 tests OK, dont `test_calculs.py` et `test_exports.py` (le notebook généré est exécuté) et des essais sur trois fichiers d'autres domaines (ventes, élèves, capteurs) ; test navigateur de 14 étapes réussi deux fois de suite.
+

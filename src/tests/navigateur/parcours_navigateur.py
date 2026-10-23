@@ -29,8 +29,12 @@ class Parcours:
         self.resultats = []
 
     def fin_execution(self, timeout=180000):
-        """Attend que Streamlit ait fini de réexécuter le script."""
-        self.page.wait_for_timeout(300)
+        """Attend que Streamlit ait commencé (si besoin), puis fini de réexécuter le script."""
+        try:
+            self.page.wait_for_function(
+                "() => document.querySelector('[data-testid=\"stStatusWidget\"]')?.innerText?.includes('Running')", timeout=1500)
+        except Exception:  # noqa: BLE001 — réexécution trop courte pour être vue : rien à attendre
+            pass
         self.page.wait_for_function(
             "() => !document.querySelector('[data-testid=\"stStatusWidget\"]')?.innerText?.includes('Running')", timeout=timeout)
 
@@ -224,6 +228,21 @@ def parcours_regles_filtrage(p, url):
         assert "Graphiques filtrés" in contenu.decode("utf-8"), "le filtre doit être indiqué dans le rapport"
         return texte
     t.etape("E3. Filtrage : graphiques filtrés, téléchargements inchangés", filtre)
+
+    def analyser():
+        t.bouton("Étape suivante : analyser").click()
+        t.voir("Analyser vos données")
+        t.fin_execution()
+        t.voir("Ce que montrent les chiffres")
+        nom, contenu = t.telecharger("Notebook Jupyter (ZIP)")
+        with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
+            assert {"analyse.ipynb", "donnees_corrigees.csv"} <= set(archive.namelist())
+            assert json.loads(archive.read("analyse.ipynb"))["nbformat"] == 4
+        nom, contenu = t.telecharger("Export pour Power BI (ZIP)")
+        with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
+            assert "dictionnaire_colonnes.csv" in archive.namelist()
+        return nom
+    t.etape("E4. Analyser : constats, notebook Jupyter et export Power BI", analyser)
     page.close()
     return t.resultats
 

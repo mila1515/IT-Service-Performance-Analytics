@@ -59,6 +59,9 @@ def resultats_regles():
 
 def _changer_regle(colonne, type_, cle_widget, bornes=None):
     etat = st.session_state
+    if cle_widget not in etat:
+        # Clic relayé juste après un changement d'étape : le widget est déjà effacé, on l'ignore.
+        return
     regle = dict(etat.regles.get(colonne, {}))
     if type_ == "bornes":
         regle["bornes"] = list(bornes) if etat[cle_widget] else None
@@ -69,6 +72,9 @@ def _changer_regle(colonne, type_, cle_widget, bornes=None):
 
 def _changer_borne(colonne, position, cle_widget):
     etat = st.session_state
+    if cle_widget not in etat:
+        # Clic relayé juste après un changement d'étape : le widget est déjà effacé, on l'ignore.
+        return
     regle = dict(etat.regles.get(colonne, {}))
     bornes = list(regle.get("bornes") or [0., 0.])
     bornes[position] = float(etat[cle_widget])
@@ -113,6 +119,9 @@ def _regles(fiche, index, resultats):
 
 def _changer_role(colonne, cle_widget):
     etat = st.session_state
+    if cle_widget not in etat:
+        # Clic relayé juste après un changement d'étape : le widget est déjà effacé, on l'ignore.
+        return
     role = next(r for r, libelle in ROLES.items() if libelle == etat[cle_widget])
     etat.dictionary = [dict(d, **({"Rôle": role} if d["Colonne"] == colonne else {})) for d in etat.dictionary]
     etat.roles_modifies = True

@@ -12,11 +12,11 @@ import streamlit as st
 
 
 MAX_ENTRIES = 12
-ETAPES = ["Importer", "Comprendre", "Corriger", "Visualiser"]
+ETAPES = ["Importer", "Comprendre", "Corriger", "Visualiser", "Analyser"]
 # Effacées quand le fichier ou ses options de lecture changent ; le fichier et les options restent.
 CLES_ANALYSE = ("raw", "ids_texte", "dictionary", "choix", "validation", "graphiques_ajoutes", "notes", "session_cache",
                 "regles")
-PREFIXES_WIDGETS_ANALYSE = ("w_choix_", "w_role_", "w_ajout_", "w_notes", "w_regle_", "w_filtre_", "w_repet_")
+PREFIXES_WIDGETS_ANALYSE = ("w_choix_", "w_role_", "w_ajout_", "w_notes", "w_regle_", "w_filtre_", "w_repet_", "w_analyse_")
 
 
 def cached(fn, data, *params):
