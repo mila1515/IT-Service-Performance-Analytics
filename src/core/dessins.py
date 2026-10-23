@@ -1,9 +1,9 @@
 """Dessin des graphiques (Altair) à partir des descriptions produites par `etape4_visualiser.controles`.
 
 Utilisé par l'étape 2 (mini-graphiques des colonnes) et l'étape 4 (graphiques de contrôle).
-Règles : une seule couleur pour les valeurs, un gris pour « non renseignée », un bleu moyen
-pour une moyenne fragile ; chaque barre porte sa valeur écrite, pour ne jamais distinguer par la
-couleur seule. Couleurs validées (contraste ≥ 3:1 sur fond clair).
+Règles : une seule couleur pour les valeurs, un gris pour « non renseignée », la même couleur
+plus claire pour une moyenne fragile ; chaque barre porte sa valeur écrite, pour ne jamais distinguer par la
+couleur seule. Couleurs validées (contraste et daltonisme) ; fond transparent, pour s'afficher sur les cartes blanches.
 """
 import altair as alt
 import pandas as pd
@@ -11,8 +11,9 @@ import pandas as pd
 from src.config import COULEUR_FRAGILE, COULEUR_MANQUANT, COULEUR_PRINCIPALE
 from src.core.texte import nombre_lisible
 
-ENCRE = "#1B1F24"
-GRILLE = "#E3E6EB"
+ENCRE = "#1E2A38"
+GRILLE = "#E1E6EA"
+FOND = "transparent"
 # Au-delà, les étiquettes au-dessus des colonnes se chevaucheraient.
 PERIODES_ETIQUETEES = 12
 PERIODES_EN_COLONNES = 36
@@ -27,7 +28,7 @@ def _barres_horizontales(donnees, valeur, etiquette, couleur, titre_valeur):
         color=alt.Color(f"{couleur}:N", scale=None, legend=None),
         tooltip=[alt.Tooltip("Groupe:N", title="Groupe"), alt.Tooltip(f"{etiquette}:N", title=titre_valeur)])
     textes = base.mark_text(align="left", dx=6, color=ENCRE, fontSize=13).encode(text=f"{etiquette}:N")
-    return (barres + textes).properties(height=hauteur)
+    return (barres + textes).properties(height=hauteur, background=FOND)
 
 
 def repartition(donnees):
@@ -39,7 +40,7 @@ def repartition(donnees):
 
 
 def moyennes(donnees):
-    """Moyenne par groupe ; une moyenne calculée sur trop peu de valeurs est en bleu moyen et le dit."""
+    """Moyenne par groupe ; une moyenne calculée sur trop peu de valeurs est plus claire et le dit."""
     donnees = donnees.assign(
         Etiquette=[f"{nombre_lisible(float(m))} · {nombre_lisible(int(n))} val." for m, n in zip(donnees["Moyenne"], donnees["Valeurs"])],
         Couleur=[COULEUR_FRAGILE if f else COULEUR_PRINCIPALE for f in donnees["Fragile"]])
@@ -54,7 +55,7 @@ def histogramme(donnees, titre_x):
         y=alt.Y("Lignes:Q", title="Lignes", axis=alt.Axis(format="d", tickMinStep=1, gridColor=GRILLE, domain=False, ticks=False)),
         tooltip=[alt.Tooltip("Début:Q", title="De", format=",.2f"), alt.Tooltip("Fin:Q", title="À", format=",.2f"),
                  alt.Tooltip("Lignes:Q", title="Lignes")],
-    ).properties(height=220)
+    ).properties(height=220, background=FOND)
 
 
 def periodes(donnees):
@@ -66,11 +67,11 @@ def periodes(donnees):
     tooltip = [alt.Tooltip("Période:N"), alt.Tooltip("Etiquette:N", title="Lignes")]
     base = alt.Chart(donnees).encode(x=x, y=y, tooltip=tooltip)
     if len(donnees) > PERIODES_EN_COLONNES:
-        return base.mark_line(color=COULEUR_PRINCIPALE, strokeWidth=2).properties(height=240)
+        return base.mark_line(color=COULEUR_PRINCIPALE, strokeWidth=2).properties(height=240, background=FOND)
     graphique = base.mark_bar(color=COULEUR_PRINCIPALE, cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
     if len(donnees) <= PERIODES_ETIQUETEES:
         graphique += base.mark_text(dy=-8, color=ENCRE, fontSize=13).encode(text="Etiquette:N")
-    return graphique.properties(height=240)
+    return graphique.properties(height=240, background=FOND)
 
 
 def dessiner(graphique):

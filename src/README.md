@@ -92,7 +92,8 @@ Les sessions restent en mémoire : exporter le projet avant d'arrêter ou de
 src/
   app.py                 navigation entre les 4 étapes (point d'entrée)
   config.py              constantes (seuils, couleurs, limites d'affichage)
-  .streamlit/config.toml thème
+  .streamlit/config.toml thème « Sarcelle qualité » (couleur principale, fond, texte)
+  assets/logo.svg        logo affiché dans la barre du haut
   core/                  commun : lecture, dictionnaire, rôles, dates, statistiques, règles,
                          textes, dessin des graphiques, session (seul module Streamlit)
   etape1_importer/       écran d'import

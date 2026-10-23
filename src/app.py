@@ -19,16 +19,19 @@ from src.etape3_corriger.ecran import ecran_corriger
 from src.etape4_visualiser.ecran import ecran_visualiser
 
 ECRANS = {"Importer": ecran_importer, "Comprendre": ecran_comprendre, "Corriger": ecran_corriger, "Visualiser": ecran_visualiser}
+LOGO = Path(__file__).parent / "assets" / "logo.svg"
 ICONES = {"Importer": ":material/upload_file:", "Comprendre": ":material/visibility:",
           "Corriger": ":material/build:", "Visualiser": ":material/bar_chart:"}
 
 st.set_page_config(page_title="Analyse simple", page_icon=":material/fact_check:", layout="wide",
                    initial_sidebar_state="collapsed")
+# Le thème ne colore pas les conteneurs : cartes (clé « carte_… ») et chiffres clés en blanc sur le fond teinté.
+st.html("<style>[class*='st-key-carte_'], [data-testid='stMetric'] { background-color: #FFFFFF; }</style>")
 initialiser()
 etat = st.session_state
 
 with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
-    st.markdown("**Analyse simple** · audit qualité avant l'analyse métier")
+    st.image(str(LOGO), width=300)
     st.segmented_control("Étapes", ETAPES, key="etape", required=True, label_visibility="collapsed",
                          format_func=lambda e: f"{ICONES[e]} {ETAPES.index(e) + 1} · {e}")
 

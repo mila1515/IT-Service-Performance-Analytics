@@ -167,7 +167,7 @@ def _type(fiche, index):
 
 
 def _carte(fiche, index, resultats):
-    with st.container(border=True, height="stretch"):
+    with st.container(border=True, height="stretch", key=f"carte_colonne_{index}"):
         with st.container(horizontal=True, vertical_alignment="center"):
             st.markdown(f"**{fiche['colonne']}**")
             _type(fiche, index)

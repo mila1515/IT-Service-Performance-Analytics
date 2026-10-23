@@ -39,8 +39,8 @@ def _graphique_ajoute(data, roles, spec, ignorees):
     return distribution(data, colonne, ignorees.get(colonne, 0)) if roles[colonne] == "Mesure" else repartition(data, colonne)
 
 
-def _carte(graphique, retirer=None):
-    with st.container(border=True, height="stretch"):
+def _carte(graphique, numero, retirer=None):
+    with st.container(border=True, height="stretch", key=f"carte_graphique_{numero}"):
         with st.container(horizontal=True, vertical_alignment="center"):
             st.markdown(f"**{graphique['titre']}**")
             if retirer is not None:
@@ -61,7 +61,7 @@ def _ajouter(spec):
 
 
 def _section_ajout(roles):
-    with st.container(border=True):
+    with st.container(border=True, key="carte_ajout"):
         st.subheader("Ajouter un graphique", anchor=False)
         question = st.segmented_control("Que voulez-vous voir ?", list(QUESTIONS), key="w_ajout_question",
                                         format_func=lambda q: QUESTIONS[q][0])
@@ -89,7 +89,7 @@ def _section_ajout(roles):
 
 def _section_export(validation):
     etat = st.session_state
-    with st.container(border=True):
+    with st.container(border=True, key="carte_export"):
         st.subheader("Télécharger votre travail", anchor=False)
         st.caption("Rien n'est enregistré en ligne : téléchargez avant de fermer la page. Votre fichier d'origine n'a pas été modifié.")
         notes = st.text_area("Ce que je retiens (facultatif)", value=etat.get("notes", ""), key="w_notes",
@@ -157,7 +157,7 @@ def _filtre(data, roles):
                      "seulement. Les fichiers téléchargés ne changent pas."):
         return data
     specs, resumes = [], []
-    with st.container(border=True):
+    with st.container(border=True, key="carte_filtrage"):
         gauche, droite = st.columns(2)
         if categories:
             with gauche:
@@ -197,9 +197,10 @@ def ecran_visualiser():
     if not graphiques:
         st.info("Aucun graphique de contrôle possible : indiquez au moins une catégorie, un nombre ou une date à l'étape Comprendre.")
     for debut in range(0, len(graphiques), 2):
-        for colonne, (graphique, retirer) in zip(st.columns(2), graphiques[debut:debut + 2]):
+        for colonne, numero in zip(st.columns(2), range(debut, min(debut + 2, len(graphiques)))):
+            graphique, retirer = graphiques[numero]
             with colonne:
-                _carte(graphique, retirer)
+                _carte(graphique, numero, retirer)
     _section_ajout(roles)
     _section_export(validation)
     st.button("Retour aux corrections", icon=":material/arrow_back:", on_click=aller, args=("Corriger",))

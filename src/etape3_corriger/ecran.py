@@ -57,7 +57,7 @@ def _ligne(point, ligne, choisi, diagnostic):
 
 def _resultat(corrige, signalees):
     resultat = corrige["resultat"]
-    with st.container(border=True):
+    with st.container(border=True, key="carte_resultat"):
         st.subheader("Résultat de vos choix", anchor=False)
         with st.container(horizontal=True):
             st.metric("Lignes gardées", f"{nombre_lisible(resultat['gardees'])} / {nombre_lisible(resultat['total'])}")
@@ -88,7 +88,7 @@ def ecran_corriger():
     complets = choix_complets(points, etat.choix)
     diagnostic = diagnostic_courant()
     for point in points:
-        with st.container(border=True):
+        with st.container(border=True, key=f"carte_point_{point['type']}"):
             st.subheader(point["titre"], anchor=False, help=point["pourquoi"])
             for ligne in point["lignes"]:
                 _ligne(point, ligne, complets[point["type"]][ligne["cle"]], diagnostic)

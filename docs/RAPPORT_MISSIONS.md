@@ -817,3 +817,26 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 - **95 tests OK**, dont 3 nouveaux (`test_repetitions.py`) et l'ouverture du volet dans `test_app.py`.
 - **Test navigateur** : 13 étapes sur l'exemple, dont E0b (volet des répétitions), et le parcours complet sur le fichier réel réussis.
 
+---
+
+## Design « Sarcelle qualité » et logo (2026-10-23)
+
+**Demande :** un design moins neutre, avec des couleurs adaptées à un outil d'analyse professionnel, un logo, et des couleurs de graphiques bien visibles. Maquette avec trois ambiances (Bleu confiance, Indigo analyse, Sarcelle qualité) : l'option C est retenue.
+
+**Réalisé :**
+
+| Élément | Avant | Après |
+|---|---|---|
+| Couleur principale (boutons, étape en cours, choix sélectionné) | bleu `#1F5FD1` | sarcelle `#0B6F71` |
+| Fond de page | gris-bleu `#F2F4F8` | sarcelle très clair `#F1F5F5` |
+| Cartes et chiffres clés | même couleur que le fond | blanches, pour se détacher du fond |
+| Graphiques : valeurs fiables / moyennes fragiles / cases vides | `#1F5FD1` / `#6A8FDB` / `#8A919C` | `#0F8B8D` / `#62B2B4` / `#B4BAC2`, fond transparent |
+| En-tête | texte « Analyse simple · audit qualité… » | logo `src/assets/logo.svg` : carré sarcelle, trois barres et une coche, nom et sous-titre |
+
+**Choix à signaler :**
+- Les couleurs des graphiques ont été vérifiées avec un outil de contrôle : contraste sur fond blanc, et différence visible même pour les personnes daltoniennes. Le gris des cases vides a été éclairci pour se distinguer de la sarcelle ; il reste lisible parce que chaque barre affiche son libellé et sa valeur.
+- Le thème de Streamlit ne colore pas les cartes : chaque carte encadrée reçoit une clé `carte_…`, et une ligne de style dans `app.py` les rend blanches. Aucune autre règle de style n'est ajoutée.
+- Orange (alertes) et vert (confirmations) restent réservés aux messages et ne sont pas utilisés dans les graphiques.
+
+**Vérifications :** 95 tests OK ; test navigateur de 13 étapes réussi en local et sur Docker ; captures des 4 étapes comparées à la maquette.
+
