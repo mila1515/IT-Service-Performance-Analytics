@@ -840,3 +840,34 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 
 **Vérifications :** 95 tests OK ; test navigateur de 13 étapes réussi en local et sur Docker ; captures des 4 étapes comparées à la maquette.
 
+---
+
+## Rapport complet avec graphiques et pistes de lecture (2026-10-23)
+
+**Demande :** le rapport qualité ne contenait ni les graphiques, ni les statistiques des colonnes, ni le filtre appliqué. Il fallait un rapport qui reprenne tout ce qui est affiché, facile à lire et à interpréter, sans IA.
+
+**Réalisé :**
+
+| Élément | Contenu |
+|---|---|
+| Nouveau téléchargement « Rapport complet (HTML) » | À ouvrir dans le navigateur, imprimable en PDF, aux couleurs de l'outil, avec le logo |
+| En bref | Lignes et colonnes, lignes gardées et écartées, part des cases remplies, nombre de corrections, filtre, nombre de pistes de lecture |
+| Les colonnes (après corrections) | Type, % rempli, valeurs différentes, et selon le type : min / médiane / moyenne / max, période, valeur la plus fréquente, valeurs répétées |
+| Pistes de lecture | Phrases calculées à partir des chiffres seulement : colonne remplie à moins de 50 %, moyenne loin de la médiane (écart de plus de 50 %) ou médiane à 0, valeur qui représente plus de 50 % des lignes, identifiant répété dont les lignes changent (compter les valeurs distinctes), dates illisibles, plus de 5 % de lignes écartées |
+| Graphiques de contrôle | Les graphiques de l'écran (contrôle et ajoutés), dessinés à l'identique, avec leur « À retenir » ; le filtre éventuel est indiqué |
+| Rapport texte (Markdown) | Mêmes sections ; graphiques décrits par leur titre et « À retenir » |
+| Archive ZIP | Contient aussi `rapport_qualite.html` |
+
+**Outil :** `vl-convert-python` (ajouté à `src/requirements.txt`) transforme les graphiques Altair en images SVG. L'image Docker passe de 781 à 918 Mo (l'estimation de départ, 30 Mo, était trop basse).
+
+**Défauts corrigés en route :**
+- Le rapport calculait la liste des points avec les choix *actuels* de l'écran et non avec les choix *validés* : il pouvait afficher « « ? » → Garder tel quel » suivi de cases vides comptant ces « ? ». Il utilise désormais les choix validés.
+- Sur un gros fichier, cliquer « Valider » avant la fin du recalcul de l'écran enregistrait le choix précédent. La validation relit maintenant les choix au moment du clic (test de non-régression ajouté).
+- Dans le rapport texte, la phrase sous les règles vérifiées était collée à la liste.
+
+**Choix à signaler :**
+- Les pistes de lecture ne donnent jamais de cause métier. Une première version disait « une ligne décrit sans doute un état ou une mise à jour » ; c'était faux pour `caller_id` (un demandeur a plusieurs incidents), la phrase a été rendue neutre.
+- Tout le texte issu du fichier est échappé dans le HTML : un nom de colonne ou une note contenant du code ne s'exécute pas.
+
+**Vérifications :** 100 tests OK (dont `test_rapport.py`) ; test navigateur réussi en local et sur Docker (téléchargement du HTML avec ses graphiques) ; rapport généré sur le fichier réel en 5 à 9 s, 80 Ko.
+

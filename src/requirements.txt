@@ -1,3 +1,4 @@
 pandas>=3.0,<4
 streamlit>=1.57,<2
 altair>=5,<7
+vl-convert-python>=1.9,<2

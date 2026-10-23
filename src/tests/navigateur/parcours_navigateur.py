@@ -130,12 +130,18 @@ def parcours_exemple(p, url):
         nom, contenu = t.telecharger("Lignes écartées (CSV)")
         assert contenu.decode("utf-8-sig").startswith("Ligne d'origine,Raison"), contenu[:80]
         details.append(f"{nom} ({len(contenu)} o)")
-        nom, contenu = t.telecharger("Rapport qualité")
+        nom, contenu = t.telecharger("Rapport qualité (texte)")
         assert "Écarter" in contenu.decode("utf-8") or "écartées" in contenu.decode("utf-8")
         details.append(f"{nom} ({len(contenu)} o)")
+        nom, contenu = t.telecharger("Rapport complet (HTML)")
+        page_rapport = contenu.decode("utf-8")
+        assert page_rapport.count("<svg") >= 4, "graphiques absents du rapport HTML"
+        assert "<h2>Pistes de lecture</h2>" in page_rapport and "<h2>Les colonnes (après corrections)</h2>" in page_rapport
+        details.append(f"{nom} ({len(contenu)} o, {page_rapport.count('<svg') - 1} graphiques)")
         nom, contenu = t.telecharger("Tout le projet (ZIP)")
         with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
             assert archive.read("fichier_origine/exemple.csv") == EXEMPLE.read_bytes(), "fichier d'origine modifié"
+            assert "rapport_qualite.html" in archive.namelist()
             json.loads(archive.read("journal.json"))
         details.append(f"{nom} ({len(contenu)} o, fichier d'origine identique)")
         return " · ".join(details)
@@ -213,8 +219,9 @@ def parcours_regles_filtrage(p, url):
         assert texte.startswith("4 / 5"), texte
         nom, contenu = t.telecharger("Données corrigées (CSV)")
         assert contenu.decode("utf-8-sig").count("\n") == 6, "le filtre ne doit pas changer les données téléchargées"
-        nom, contenu = t.telecharger("Rapport qualité")
+        nom, contenu = t.telecharger("Rapport qualité (texte)")
         assert "Règles vérifiées" in contenu.decode("utf-8")
+        assert "Graphiques filtrés" in contenu.decode("utf-8"), "le filtre doit être indiqué dans le rapport"
         return texte
     t.etape("E3. Filtrage : graphiques filtrés, téléchargements inchangés", filtre)
     page.close()

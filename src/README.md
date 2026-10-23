@@ -34,8 +34,14 @@ python -m streamlit run src/app.py
    une phrase « À retenir » (règles générales : valeur la plus fréquente, moyenne fragile sous
    3 valeurs, volume ≠ performance, textes ignorés signalés) ; ajout guidé par une question ;
    téléchargements générés au clic : données corrigées (CSV), lignes écartées (CSV, numéro de
-   ligne d'origine et raison), rapport qualité (Markdown), archive ZIP avec le fichier d'origine
-   inchangé et le journal.
+   ligne d'origine et raison), **rapport complet (HTML)**, rapport qualité (texte Markdown),
+   archive ZIP avec le fichier d'origine inchangé, les deux rapports et le journal.
+   Le rapport complet contient : une synthèse « En bref », le tableau des colonnes après
+   corrections (remplissage, valeurs différentes, min / médiane / moyenne / max, période), les
+   décisions et le résultat, les règles vérifiées, des **pistes de lecture** calculées à partir des
+   chiffres (colonne peu remplie, moyenne tirée par quelques valeurs, valeur dominante, identifiant
+   répété : compter les valeurs distinctes), et les graphiques de l'écran avec leur « À retenir ».
+   Si le Filtrage est actif, le rapport le dit ; les données téléchargées, elles, ne sont pas filtrées.
 
 ## Options facultatives
 

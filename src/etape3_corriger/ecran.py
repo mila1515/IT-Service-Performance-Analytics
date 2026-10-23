@@ -32,12 +32,27 @@ def _corriger(raw, plan):
     return {"cleaned": cleaned, "rejects": rejects, "log": log, "resultat": resume_resultat(raw, plan, cleaned, rejects)}
 
 
-def _valider(plan, complets):
+def _choix_et_plan():
+    """Points, choix complets, diagnostic et plan de nettoyage, d'après les choix en session."""
     etat = st.session_state
+    points = points_courants()
+    complets = choix_complets(points, etat.choix)
+    diagnostic = diagnostic_courant()
+    return points, complets, diagnostic, plan_nettoyage(etat.dictionary, complets, diagnostic["suspects"],
+                                                        regles_simples(regles_actives()))
+
+
+def _valider():
+    # Relu au clic : sur un gros fichier, l'affichage peut ne pas avoir fini d'intégrer le dernier choix.
+    etat = st.session_state
+    _, complets, _, plan = _choix_et_plan()
+    try:
+        corrige = cached(_corriger, etat.raw, plan)
+    except ValueError:
+        return
     resultats = resultats_regles()
     etat.validation = {"choix": complets, "plan": plan, "regles_verifiees": resultats,
-                       "regles_signalees": regles_signalees(resultats, complets),
-                       **cached(_corriger, etat.raw, plan)}
+                       "regles_signalees": regles_signalees(resultats, complets), **corrige}
     aller("Visualiser")
 
 
@@ -81,19 +96,16 @@ def _resultat(corrige, signalees):
 def ecran_corriger():
     """Écran de l'étape 3."""
     etat = st.session_state
-    points = points_courants()
+    points, complets, diagnostic, plan = _choix_et_plan()
     total = sum(len(p["lignes"]) for p in points)
     st.title("Corriger les points à vérifier" if total else "Aucun point à vérifier", anchor=False)
     st.caption("Choisissez pour chaque point. Par défaut, rien n'est changé.")
-    complets = choix_complets(points, etat.choix)
-    diagnostic = diagnostic_courant()
     for point in points:
         with st.container(border=True, key=f"carte_point_{point['type']}"):
             st.subheader(point["titre"], anchor=False, help=point["pourquoi"])
             for ligne in point["lignes"]:
                 _ligne(point, ligne, complets[point["type"]][ligne["cle"]], diagnostic)
 
-    plan = plan_nettoyage(etat.dictionary, complets, diagnostic["suspects"], regles_simples(regles_actives()))
     try:
         corrige = cached(_corriger, etat.raw, plan)
     except ValueError as exc:
@@ -108,4 +120,4 @@ def ecran_corriger():
     with st.container(horizontal=True, horizontal_alignment="distribute"):
         st.button("Retour à la compréhension", icon=":material/arrow_back:", on_click=aller, args=("Comprendre",))
         st.button("Valider et voir les graphiques", type="primary", icon=":material/arrow_forward:", icon_position="right",
-                  on_click=_valider, args=(plan, complets))
+                  on_click=_valider)

@@ -32,10 +32,10 @@ def regles_actives():
     return st.session_state.regles
 
 
-def points_courants():
-    """Points à vérifier selon les données, les rôles, les choix déjà faits et les règles cochées."""
+def points_courants(choix=None):
+    """Points à vérifier selon les données, les rôles, les choix (ceux de l'écran par défaut) et les règles cochées."""
     etat = st.session_state
-    return cached(_detecter, etat.raw, etat.dictionary, etat.choix, etat.regles)
+    return cached(_detecter, etat.raw, etat.dictionary, etat.choix if choix is None else choix, etat.regles)
 
 
 def _detecter(raw, dictionary, choix, regles):

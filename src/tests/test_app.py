@@ -67,6 +67,15 @@ class ParcoursSimpleTests(unittest.TestCase):
         self.assertEqual(app.session_state.dictionary[1]["Rôle"], "Identifiant")
         self.assertFalse(app.exception)
 
+    def test_validate_uses_the_last_choice_even_before_the_screen_is_redrawn(self):
+        app = self.ouvrir()
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        # Choix enregistré, mais l'écran n'a pas encore été redessiné (gros fichier) quand on valide.
+        app.session_state["choix"] = {"marqueurs": {"?": "manquant"}}
+        bouton(app, "Valider et voir les graphiques").click().run()
+        self.assertEqual(app.session_state.validation["choix"]["marqueurs"], {"?": "manquant"})
+
     def test_default_choices_change_nothing(self):
         app = self.ouvrir()
         app.session_state["etape"] = "Corriger"
@@ -106,7 +115,7 @@ class ParcoursSimpleTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertIn("À retenir", textes(app.markdown))
         self.assertIn("1 texte ignoré", textes(app.caption))
-        self.assertEqual(len(app.get("download_button")), 4)
+        self.assertEqual(len(app.get("download_button")), 5)
         app.segmented_control(key="w_ajout_question").set_value("repartition").run()
         bouton(app, "Ajouter ce graphique").click().run()
         self.assertEqual(len(app.session_state.graphiques_ajoutes), 1)

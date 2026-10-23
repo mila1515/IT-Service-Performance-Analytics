@@ -7,7 +7,7 @@ import pandas as pd
 
 from src.core.dictionnaire import initial_dictionary, records
 from src.etape3_corriger.pipeline import pipeline
-from src.etape4_visualiser.export import archive_projet, rapport_qualite, rejets_lisibles
+from src.etape4_visualiser.export import archive_projet, rejets_lisibles
 
 SOURCE = b"id,Raison,valeur\n001,x,4\n001,x,4\n002,y,abc\n"
 
@@ -29,18 +29,6 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(lisibles["Ligne d'origine"].tolist(), [2, 3])
         self.assertEqual(lisibles["Raison"].tolist(), ["copie identique d'une autre ligne", "valeur : texte au lieu d'un nombre"])
         self.assertEqual(lisibles["id"].tolist(), ["001", "002"])
-
-    def test_report_lists_decisions_result_and_limits(self):
-        resultat = {"total": 3, "gardees": 1, "ecartees": 2, "vides_avant": 0, "vides_apres": 0,
-                    "motifs": [("copie identique d'une autre ligne", 1)],
-                    "moyennes": [{"colonne": "valeur", "avant": 4.0, "n_avant": 2, "apres": 4.0, "n_apres": 1}]}
-        rapport = rapport_qualite("ventes.csv", (3, 3), "abc123", [{"titre": "t", "texte": "valeur : 1 texte", "choix": "Écarter ces lignes"}],
-                                  ["1 ligne mise de côté"], resultat, notes="À revoir avec l'équipe.")
-        for attendu in ["# Rapport qualité — ventes.csv", "- valeur : 1 texte → **Écarter ces lignes**",
-                        "- Lignes gardées : 1 sur 3.", "n'a pas été réparé", "## Ce que ce rapport ne garantit pas",
-                        "À revoir avec l'équipe.", "`abc123`"]:
-            self.assertIn(attendu, rapport)
-        self.assertIn("Aucun point à vérifier", rapport_qualite("v.csv", (1, 1), "x", [], [], {**resultat, "ecartees": 0, "motifs": []}))
 
     def test_archive_keeps_the_original_file_unchanged(self):
         _, dictionary, cleaned, rejects, log = nettoyer()

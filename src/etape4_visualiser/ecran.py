@@ -1,7 +1,7 @@
 """Étape 4 (Visualiser et exporter) : contrôler en graphiques que les données corrigées sont plausibles, puis les remettre.
 
 Entrées en session : `validation` (résultat validé à l'étape 3), `graphiques_ajoutes`, `notes`.
-Sorties : téléchargements (données corrigées, lignes écartées, rapport qualité, archive).
+Sorties : téléchargements (données corrigées, lignes écartées, rapport complet HTML, rapport texte, archive).
 Les graphiques servent au contrôle avant l'analyse métier, pas à en tirer des conclusions.
 """
 from datetime import datetime, timezone
@@ -12,12 +12,16 @@ import streamlit as st
 from src.core.dessins import dessiner
 from src.config import LIBELLE_MANQUANT
 from src.core.session import aller, cached
+from src.etape2_comprendre.colonnes import resume_colonnes
 from src.etape2_comprendre.ecran import points_courants
+from src.etape2_comprendre.repetitions import variations
 from src.etape3_corriger.correction import decisions, phrases_journal
 from src.etape4_visualiser.controles import comparaison, distribution, evolution, graphiques_controle, repartition
 from src.etape4_visualiser.graphiques import apply_filters
-from src.etape4_visualiser.export import archive_projet, csv_bytes, rapport_qualite, rejets_lisibles
+from src.etape4_visualiser.export import archive_projet, csv_bytes, rejets_lisibles
+from src.etape4_visualiser.interpretations import interpretations
 from src.etape4_visualiser.preparation import prepare
+from src.etape4_visualiser.rapport import rapport_html, rapport_markdown
 
 QUESTIONS = {
     "repartition": ("Comment se répartit une colonne", "Ex. : combien de lignes par catégorie"),
@@ -87,7 +91,17 @@ def _section_ajout(roles):
             st.caption("Aucune colonne compatible : vérifiez les rôles à l'étape Comprendre.")
 
 
-def _section_export(validation):
+def _contenu_rapport(base, validation, graphiques, filtre, dayfirst):
+    """Tout ce que montre le rapport ; calculé au clic sur un téléchargement (parcourt tout le fichier)."""
+    cleaned, dictionnaire = validation["cleaned"], validation["plan"]["dictionary"]
+    fiches = resume_colonnes(cleaned, dictionnaire, dayfirst)
+    repetitions = {f["colonne"]: variations(cleaned, f["colonne"]) for f in fiches
+                   if f["role"] == "Identifiant" and f["repetees"]}
+    return {**base, "produit_le": datetime.now(timezone.utc), "fiches": fiches, "graphiques": graphiques,
+            "filtre": filtre, "interpretations": interpretations(fiches, repetitions, validation["resultat"])}
+
+
+def _section_export(validation, graphiques, filtre, dayfirst):
     etat = st.session_state
     with st.container(border=True, key="carte_export"):
         st.subheader("Télécharger votre travail", anchor=False)
@@ -97,9 +111,12 @@ def _section_export(validation):
                                          "si les lignes identiques sont de vraies lignes.")
         etat.notes = notes
         source = etat.source
-        rapport = partial(rapport_qualite, source["nom"], etat.raw.shape, source["empreinte"],
-                          decisions(points_courants(), validation["choix"]), phrases_journal(validation["log"], validation.get("regles_signalees", ())),
-                          validation["resultat"], notes, validation.get("regles_verifiees"))
+        base_rapport = {"nom": source["nom"], "lignes": etat.raw.shape[0], "colonnes": etat.raw.shape[1],
+                        "empreinte": source["empreinte"], "decisions": decisions(points_courants(validation["choix"]), validation["choix"]),
+                        "journal": phrases_journal(validation["log"], validation.get("regles_signalees", ())),
+                        "resultat": validation["resultat"], "notes": notes,
+                        "regles_verifiees": validation.get("regles_verifiees") or {}}
+        contenu = partial(_contenu_rapport, base_rapport, validation, graphiques, filtre, dayfirst)
         base = source["nom"].rsplit(".", 1)[0]
         with st.container(horizontal=True):
             # Fichiers générés au clic seulement : aucun coût à chaque interaction.
@@ -107,11 +124,13 @@ def _section_export(validation):
                                f"{base}_corrige.csv", "text/csv", icon=":material/table:", on_click="ignore")
             st.download_button("Lignes écartées (CSV)", lambda: csv_bytes(rejets_lisibles(validation["rejects"])),
                                f"{base}_lignes_ecartees.csv", "text/csv", icon=":material/playlist_remove:", on_click="ignore")
-            st.download_button("Rapport qualité", lambda: rapport().encode("utf-8"), f"{base}_rapport_qualite.md",
-                               "text/markdown", icon=":material/description:", on_click="ignore")
+            st.download_button("Rapport complet (HTML)", lambda: rapport_html(contenu()).encode("utf-8"),
+                               f"{base}_rapport_qualite.html", "text/html", icon=":material/insert_chart:", on_click="ignore",
+                               help="Le rapport avec les graphiques et les pistes de lecture, à ouvrir dans le navigateur.")
+            st.download_button("Rapport qualité (texte)", lambda: rapport_markdown(contenu()).encode("utf-8"),
+                               f"{base}_rapport_qualite.md", "text/markdown", icon=":material/description:", on_click="ignore")
             st.download_button("Tout le projet (ZIP)",
-                               lambda: archive_projet(source["contenu"], source["nom"], validation["cleaned"], validation["rejects"],
-                                                      rapport(), validation["choix"], validation["log"], validation["plan"]["dictionary"]),
+                               lambda: _archive(source, validation, contenu()),
                                f"{base}_projet_{datetime.now(timezone.utc):%Y%m%d}.zip", "application/zip",
                                type="primary", icon=":material/folder_zip:", on_click="ignore")
 
@@ -147,15 +166,24 @@ def _filtre_dates(data, colonne):
     return spec, f"{colonne} : du {periode[0]:%d/%m/%Y} au {periode[1]:%d/%m/%Y}"
 
 
+def _archive(source, validation, contenu):
+    return archive_projet(source["contenu"], source["nom"], validation["cleaned"], validation["rejects"],
+                          rapport_markdown(contenu), validation["choix"], validation["log"], validation["plan"]["dictionary"],
+                          rapport_html(contenu))
+
+
 def _filtre(data, roles):
-    """Filtrage facultatif sur une catégorie et une période. Retourne les lignes retenues (graphiques seulement)."""
+    """Filtrage facultatif sur une catégorie et une période (graphiques seulement).
+
+    Retourne (lignes retenues, None) sans filtre, ou (lignes retenues, {texte, retenues, total}).
+    """
     categories = [c for c, r in roles.items() if r == "Catégorie"]
     dates = [c for c, r in roles.items() if r == "Date" and data[c].notna().any()]
     if not categories and not dates:
-        return data
+        return data, None
     if not st.toggle("Filtrage", key="w_filtre_actif", help="Regarder les graphiques sur une partie des lignes "
                      "seulement. Les fichiers téléchargés ne changent pas."):
-        return data
+        return data, None
     specs, resumes = [], []
     with st.container(border=True, key="carte_filtrage"):
         gauche, droite = st.columns(2)
@@ -173,7 +201,7 @@ def _filtre(data, roles):
         retenues = apply_filters(data, specs)
         st.markdown(f"**{len(retenues):,} / {len(data):,} lignes retenues**".replace(",", " "))
         st.caption(f"Filtre actif : {' · '.join(resumes)}. Le filtre ne change pas les données téléchargées.")
-    return retenues
+    return retenues, {"texte": " · ".join(resumes), "retenues": len(retenues), "total": len(data)}
 
 
 def ecran_visualiser():
@@ -190,7 +218,7 @@ def ecran_visualiser():
     roles = _roles(validation)
     dayfirst = {col: valeur == "jour" for col, valeur in validation["choix"].get("dates", {}).items()}
     data, ignorees = cached(prepare, validation["cleaned"], roles, dayfirst)
-    data = _filtre(data, roles)
+    data, filtre = _filtre(data, roles)
     graphiques = [(g, None) for g in graphiques_controle(data, roles, ignorees)]
     graphiques += [(g, i) for i, spec in enumerate(etat.graphiques_ajoutes)
                    if (g := _graphique_ajoute(data, roles, spec, ignorees)) is not None]
@@ -202,5 +230,5 @@ def ecran_visualiser():
             with colonne:
                 _carte(graphique, numero, retirer)
     _section_ajout(roles)
-    _section_export(validation)
+    _section_export(validation, [g for g, _ in graphiques], filtre, dayfirst)
     st.button("Retour aux corrections", icon=":material/arrow_back:", on_click=aller, args=("Corriger",))
