@@ -91,17 +91,46 @@ def _section_ajout(roles):
             st.caption("Aucune colonne compatible : vérifiez les rôles à l'étape Comprendre.")
 
 
-def _contenu_rapport(base, validation, graphiques, filtre, dayfirst):
+def _dayfirst(validation):
+    return {col: valeur == "jour" for col, valeur in validation["choix"].get("dates", {}).items()}
+
+
+def _graphiques_sans_filtre(validation, ajoutes):
+    roles = _roles(validation)
+    data, ignorees = prepare(validation["cleaned"], roles, _dayfirst(validation))
+    return graphiques_controle(data, roles, ignorees) + [
+        g for spec in ajoutes if (g := _graphique_ajoute(data, roles, spec, ignorees)) is not None]
+
+
+def _contenu_rapport(base, validation, graphiques, filtre, ajoutes):
     """Tout ce que montre le rapport ; calculé au clic sur un téléchargement (parcourt tout le fichier)."""
     cleaned, dictionnaire = validation["cleaned"], validation["plan"]["dictionary"]
-    fiches = resume_colonnes(cleaned, dictionnaire, dayfirst)
+    if graphiques is None:
+        graphiques = _graphiques_sans_filtre(validation, ajoutes)
+    fiches = resume_colonnes(cleaned, dictionnaire, _dayfirst(validation))
     repetitions = {f["colonne"]: variations(cleaned, f["colonne"]) for f in fiches
                    if f["role"] == "Identifiant" and f["repetees"]}
     return {**base, "produit_le": datetime.now(timezone.utc), "fiches": fiches, "graphiques": graphiques,
             "filtre": filtre, "interpretations": interpretations(fiches, repetitions, validation["resultat"])}
 
 
-def _section_export(validation, graphiques, filtre, dayfirst):
+def contenu_rapport(validation, graphiques=None, filtre=None):
+    """Contenu du rapport : figé à l'affichage (décisions, notes, analyses de l'étape 5), calculé au clic.
+
+    Retourne une fonction sans argument. Sans `graphiques` (rapport demandé hors de l'étape 4), les
+    graphiques de contrôle sont recalculés sans filtre.
+    """
+    etat = st.session_state
+    source = etat.source
+    base = {"nom": source["nom"], "lignes": etat.raw.shape[0], "colonnes": etat.raw.shape[1],
+            "empreinte": source["empreinte"], "decisions": decisions(points_courants(validation["choix"]), validation["choix"]),
+            "journal": phrases_journal(validation["log"], validation.get("regles_signalees", ())),
+            "resultat": validation["resultat"], "notes": etat.get("notes", ""),
+            "regles_verifiees": validation.get("regles_verifiees") or {}, "analyses": list(etat.get("analyses") or [])}
+    return partial(_contenu_rapport, base, validation, graphiques, filtre, list(etat.graphiques_ajoutes))
+
+
+def _section_export(validation, graphiques, filtre):
     etat = st.session_state
     with st.container(border=True, key="carte_export"):
         st.subheader("Télécharger votre travail", anchor=False)
@@ -111,12 +140,7 @@ def _section_export(validation, graphiques, filtre, dayfirst):
                                          "si les lignes identiques sont de vraies lignes.")
         etat.notes = notes
         source = etat.source
-        base_rapport = {"nom": source["nom"], "lignes": etat.raw.shape[0], "colonnes": etat.raw.shape[1],
-                        "empreinte": source["empreinte"], "decisions": decisions(points_courants(validation["choix"]), validation["choix"]),
-                        "journal": phrases_journal(validation["log"], validation.get("regles_signalees", ())),
-                        "resultat": validation["resultat"], "notes": notes,
-                        "regles_verifiees": validation.get("regles_verifiees") or {}}
-        contenu = partial(_contenu_rapport, base_rapport, validation, graphiques, filtre, dayfirst)
+        contenu = contenu_rapport(validation, graphiques, filtre)
         base = source["nom"].rsplit(".", 1)[0]
         with st.container(horizontal=True):
             # Fichiers générés au clic seulement : aucun coût à chaque interaction.
@@ -216,8 +240,7 @@ def ecran_visualiser():
     st.caption("Ces graphiques servent à contrôler que les données corrigées sont plausibles avant l'analyse métier. "
                f"Ils portent sur les {validation['resultat']['gardees']:,} lignes gardées.".replace(",", " "))
     roles = _roles(validation)
-    dayfirst = {col: valeur == "jour" for col, valeur in validation["choix"].get("dates", {}).items()}
-    data, ignorees = cached(prepare, validation["cleaned"], roles, dayfirst)
+    data, ignorees = cached(prepare, validation["cleaned"], roles, _dayfirst(validation))
     data, filtre = _filtre(data, roles)
     graphiques = [(g, None) for g in graphiques_controle(data, roles, ignorees)]
     graphiques += [(g, i) for i, spec in enumerate(etat.graphiques_ajoutes)
@@ -230,7 +253,7 @@ def ecran_visualiser():
             with colonne:
                 _carte(graphique, numero, retirer)
     _section_ajout(roles)
-    _section_export(validation, [g for g, _ in graphiques], filtre, dayfirst)
+    _section_export(validation, [g for g, _ in graphiques], filtre)
     with st.container(horizontal=True, horizontal_alignment="distribute"):
         st.button("Retour aux corrections", icon=":material/arrow_back:", on_click=aller, args=("Corriger",))
         st.button("Étape suivante : analyser", type="primary", icon=":material/arrow_forward:", icon_position="right",

@@ -900,3 +900,23 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 
 **Vérifications :** 115 tests OK, dont `test_calculs.py` et `test_exports.py` (le notebook généré est exécuté) et des essais sur trois fichiers d'autres domaines (ventes, élèves, capteurs) ; test navigateur de 14 étapes réussi deux fois de suite.
 
+---
+
+## Analyses de l'étape 5 dans le rapport complet (2026-10-23)
+
+**Demande :** reprendre dans le rapport complet les analyses faites à l'étape Analyser.
+
+**Réalisé :**
+- À chaque affichage, l'étape 5 enregistre un résumé de chaque analyse (`resumes.py`) : réglages en une ligne, données du graphique, tableau des 10 premiers groupes, constats et phrase de prudence.
+- Le rapport (HTML et texte) ajoute une section « Analyses » après les graphiques de contrôle ; « En bref » indique combien d'analyses sont incluses, ou qu'aucune ne l'est.
+- Bouton « Rapport complet (HTML) » aussi à l'étape 5. Depuis cette étape, les graphiques de contrôle sont recalculés sans filtre (le filtre n'existe qu'à l'étape 4).
+- Une nouvelle validation à l'étape Corriger efface les résumés : le rapport ne décrit jamais des analyses faites sur d'anciennes données (test ajouté).
+- Respect du sens des dépendances : l'étape 4 n'importe pas l'étape 5 ; elle affiche les résumés que l'étape 5 a laissés en session.
+
+**Choix à signaler :**
+- Pour un comptage, le tableau n'a pas de colonne « Effectif » (identique au nombre).
+- Une analyse sans constat affiche « Rien de particulier à signaler » (par exemple un groupe unique : avec la dernière ligne de chaque incident, `incident_state` vaut toujours « Closed »).
+- Sur le fichier réel, le rapport demandé depuis l'étape 5 prend environ 24 s (il recalcule aussi les graphiques de contrôle et les fiches des colonnes sur 141 712 lignes), pour 134 Ko.
+
+**Vérifications :** 119 tests OK (dont `AnalysesDansLeRapportTests` et l'effacement après validation) ; test navigateur réussi (rapport téléchargé depuis l'étape 5 avec sa section « Analyses ») ; rapport vérifié visuellement sur le fichier réel.
+

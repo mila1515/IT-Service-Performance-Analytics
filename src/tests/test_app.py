@@ -210,9 +210,19 @@ class AnalyserTests(unittest.TestCase):
         self.assertIn("« A » compte 2 id distincts", textes(app.markdown))
         self.assertIn("compte le plus d'id distincts", textes(app.markdown))
         self.assertIn("Mesurer un délai : il faut deux colonnes de type Date.", textes(app.info))
-        self.assertEqual(len(app.get("download_button")), 2)
+        self.assertEqual(len(app.get("download_button")), 3)
+        self.assertEqual([a["titre"] for a in app.session_state.analyses],
+                         ["Comparer des groupes : categorie", "Évolution dans le temps : date_commande"])
         case.uncheck().run()
         self.assertIn("« A » compte 3 lignes", textes(app.markdown))
+
+    def test_a_new_validation_forgets_the_previous_analyses(self):
+        app = self.ouvrir_valide(EXEMPLE.read_bytes(), "exemple.csv")
+        self.assertTrue(app.session_state.analyses)
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        bouton(app, "Valider et voir les graphiques").click().run()
+        self.assertNotIn("analyses", app.session_state)
 
     def test_sales_file_offers_the_delay_with_french_dates(self):
         app = self.ouvrir_valide((Path(__file__).parent / "fixtures" / "ventes.csv").read_bytes(), "ventes.csv")

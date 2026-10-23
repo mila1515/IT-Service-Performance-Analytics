@@ -3,7 +3,8 @@
 Seul module de `core/` qui dépend de Streamlit : le cache et l'état servent à toutes les étapes.
 Clés du parcours simple : `source` (fichier importé), `lecture` (options), `raw`, `dictionary`,
 `choix` (décisions de l'étape Corriger), `validation` (résultat validé), `graphiques_ajoutes`,
-`notes`, `etape` (étape affichée), `regles` (règles cochées à l'étape Comprendre).
+`notes`, `etape` (étape affichée), `regles` (règles cochées à l'étape Comprendre), `analyses`
+(résumés de l'étape Analyser, repris par le rapport complet).
 Les fonctions `invalidate_cleaning` et `reset_dashboard` servent à l'ancienne interface experte.
 """
 import json
@@ -15,7 +16,7 @@ MAX_ENTRIES = 12
 ETAPES = ["Importer", "Comprendre", "Corriger", "Visualiser", "Analyser"]
 # Effacées quand le fichier ou ses options de lecture changent ; le fichier et les options restent.
 CLES_ANALYSE = ("raw", "ids_texte", "dictionary", "choix", "validation", "graphiques_ajoutes", "notes", "session_cache",
-                "regles")
+                "regles", "analyses")
 PREFIXES_WIDGETS_ANALYSE = ("w_choix_", "w_role_", "w_ajout_", "w_notes", "w_regle_", "w_filtre_", "w_repet_", "w_analyse_")
 
 

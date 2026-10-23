@@ -56,6 +56,8 @@ def _valider():
     resultats = resultats_regles()
     etat.validation = {"choix": complets, "plan": plan, "regles_verifiees": resultats,
                        "regles_signalees": regles_signalees(resultats, complets), **corrige}
+    # Les analyses de l'étape 5 portaient sur l'ancienne validation.
+    etat.pop("analyses", None)
     aller("Visualiser")
 
 

@@ -93,7 +93,9 @@ def dessiner(graphique):
         return moyennes(donnees)
     if graphique["genre"] == "histogramme":
         return histogramme(donnees, graphique["titre"].removeprefix("Répartition de "))
-    return periodes(donnees)
+    if graphique["genre"] == "classement":
+        return classement(donnees, graphique.get("titre_valeur", "Valeur"))
+    return periodes(donnees, graphique.get("titre_y", "Lignes"))
 
 
 def mini_repartition(frequences):

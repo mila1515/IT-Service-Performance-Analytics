@@ -52,6 +52,9 @@ python -m streamlit run src/app.py
    coché par défaut. Les groupes de moins de 20 éléments sont signalés « trop peu pour comparer ».
    Passerelles : **export Power BI** (données corrigées, délai calculé, dictionnaire des colonnes) et
    **notebook Jupyter** (généré à partir d'un modèle, il recharge les données et refait les analyses).
+   Les analyses affichées sont reprises dans le **rapport complet** (section « Analyses » : réglages,
+   graphique, tableau des 10 premiers groupes, constats), téléchargeable aussi depuis cette étape.
+   Une nouvelle validation à l'étape Corriger les efface : il faut rouvrir l'étape 5.
 
 ## Options facultatives
 

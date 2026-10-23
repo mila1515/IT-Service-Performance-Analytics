@@ -1,7 +1,8 @@
 """Étape 5 (Analyser) : comparer des groupes, mesurer un délai, suivre une évolution, puis continuer ailleurs.
 
 Entrées en session : `validation` (données corrigées, types). Rien n'est modifié : l'utilisateur
-choisit les colonnes, l'outil calcule et décrit. Sorties : export Power BI et notebook Jupyter.
+choisit les colonnes, l'outil calcule et décrit. Sorties : `analyses` (résumés repris par le rapport
+complet), export Power BI, notebook Jupyter et rapport complet.
 """
 import streamlit as st
 
@@ -9,13 +10,16 @@ from src.config import LIBELLE_MANQUANT
 from src.core.dessins import classement, periodes
 from src.core.session import aller, cached
 from src.core.texte import nombre_lisible
+from src.etape4_visualiser.ecran import contenu_rapport
 from src.etape4_visualiser.preparation import prepare
+from src.etape4_visualiser.rapport import rapport_html
 from src.etape5_analyser.calculs import (STATISTIQUES, comparer, de, delais, duree, duree_lisible, evolution,
                                          sections_possibles, une_ligne_par, unite_comptee)
 from src.etape5_analyser.exports import export_jupyter, export_power_bi, nom_colonne_delai
+from src.etape5_analyser.resumes import (PRUDENCE_COMPARER, PRUDENCE_EVOLUTION, prudence_delai, resume_comparaison,
+                                         resume_delai, resume_evolution)
 
 AUCUN = "(aucun)"
-PRUDENCE = "Une comparaison montre une différence, pas sa cause."
 
 
 def _par_type(roles, role):
@@ -45,7 +49,7 @@ def _identifiant(data, roles):
     return colonne if une_fois else None
 
 
-def _section_comparer(unites, roles, unite):
+def _section_comparer(unites, roles, unite, resumes):
     with st.container(border=True, key="carte_analyse_comparer"):
         st.subheader("Comparer des groupes", anchor=False)
         categories, mesures = _par_type(roles, "Catégorie"), _par_type(roles, "Mesure")
@@ -65,11 +69,12 @@ def _section_comparer(unites, roles, unite):
                 st.caption(f"{min(len(resultat['tableau']), 10)} premiers groupes sur {len(resultat['tableau'])}"
                            + (" · plus clair : moins de 20 valeurs" if statistique != "nombre" else ""))
         with droite:
-            _constats("comparer", resultat["constats"], PRUDENCE)
+            _constats("comparer", resultat["constats"], PRUDENCE_COMPARER)
+    resumes.append(resume_comparaison(resultat, groupe, statistique, mesure, unite))
     return groupe, statistique, mesure
 
 
-def _section_delai(unites, roles, unite, groupe_defaut):
+def _section_delai(unites, roles, unite, groupe_defaut, resumes):
     with st.container(border=True, key="carte_analyse_delai"):
         st.subheader("Mesurer un délai", anchor=False)
         dates, categories = _par_type(roles, "Date"), _par_type(roles, "Catégorie")
@@ -98,12 +103,12 @@ def _section_delai(unites, roles, unite, groupe_defaut):
                 st.altair_chart(classement(resultat["graphique"], "Délai médian"), alt=f"Délai médian par {groupe}")
                 st.caption(f"Délai médian par groupe · « · n » = nombre de {unite} du groupe")
         with droite:
-            _constats("delai", resultat["constats"], "L'outil ne dit pas « en retard » : il ne connaît pas vos objectifs de délai."
-                      + (" Le délai est calculé une fois par élément (sa dernière ligne)." if unite != "lignes" else ""))
+            _constats("delai", resultat["constats"], prudence_delai(unite))
+    resumes.append(resume_delai(resultat, debut, fin, groupe, unite_temps, unite))
     return debut, fin, unite_temps
 
 
-def _section_evolution(unites, roles, unite):
+def _section_evolution(unites, roles, unite, resumes):
     with st.container(border=True, key="carte_analyse_evolution"):
         st.subheader("Évolution dans le temps", anchor=False)
         dates, categories = _par_type(roles, "Date"), _par_type(roles, "Catégorie")
@@ -123,13 +128,15 @@ def _section_evolution(unites, roles, unite):
         with gauche:
             st.altair_chart(periodes(resultat["donnees"], unite.capitalize()), alt=f"Nombre {de(unite)} par {resultat['unite']}")
         with droite:
-            _constats("evolution", resultat["constats"], "Un volume plus élevé n'indique pas une meilleure ou une moins bonne performance.")
+            _constats("evolution", resultat["constats"], PRUDENCE_EVOLUTION)
+    resumes.append(resume_evolution(resultat, date, None if groupe == AUCUN else groupe, valeur, unite))
     return date
 
 
-def _section_exports(data, roles, nom, reglages):
+def _section_exports(data, roles, nom, reglages, validation):
     with st.container(border=True, key="carte_analyse_exports"):
         st.subheader("Continuer l'analyse dans un autre outil", anchor=False)
+        contenu = contenu_rapport(validation)
         avec_delai = bool(reglages.get("debut") and reglages.get("fin"))
         colonne = nom_colonne_delai(reglages["debut"], reglages["fin"], reglages["unite_temps"]) if avec_delai else None
         base = nom.rsplit(".", 1)[0]
@@ -138,8 +145,13 @@ def _section_exports(data, roles, nom, reglages):
             delai = (colonne, duree(data, reglages["debut"], reglages["fin"], reglages["unite_temps"])) if avec_delai else None
             return export_power_bi(data, roles, delai)
 
-        gauche, droite = st.columns(2)
-        with gauche, st.container(border=True, key="carte_analyse_powerbi"):
+        gauche, milieu, droite = st.columns(3)
+        with gauche, st.container(border=True, key="carte_analyse_rapport"):
+            st.markdown("**Rapport complet**")
+            st.caption("Le rapport qualité avec, en plus, les analyses ci-dessus : graphiques, tableaux et constats.")
+            st.download_button("Rapport complet (HTML)", lambda: rapport_html(contenu()).encode("utf-8"),
+                               f"{base}_rapport_qualite.html", "text/html", icon=":material/insert_chart:", on_click="ignore")
+        with milieu, st.container(border=True, key="carte_analyse_powerbi"):
             st.markdown("**Power BI**")
             st.caption("Les données corrigées prêtes à importer"
                        + (f", avec la colonne {colonne} déjà calculée" if avec_delai else "")
@@ -178,15 +190,18 @@ def ecran_analyser():
     unite = unite_comptee(identifiant)
     reglages = {"identifiant": identifiant, "groupe": None, "statistique": None, "mesure": None,
                 "debut": None, "fin": None, "unite_temps": "jours", "date": None}
+    resumes = []
     if possibles["comparer"]:
-        reglages["groupe"], reglages["statistique"], reglages["mesure"] = _section_comparer(unites, roles, unite)
+        reglages["groupe"], reglages["statistique"], reglages["mesure"] = _section_comparer(unites, roles, unite, resumes)
     else:
         st.info("Comparer des groupes : il faut une colonne de type Catégorie.", icon=":material/info:")
     if possibles["delai"]:
-        reglages["debut"], reglages["fin"], reglages["unite_temps"] = _section_delai(unites, roles, unite, reglages["groupe"])
+        reglages["debut"], reglages["fin"], reglages["unite_temps"] = _section_delai(unites, roles, unite, reglages["groupe"], resumes)
     else:
         st.info("Mesurer un délai : il faut deux colonnes de type Date.", icon=":material/info:")
     if possibles["evolution"]:
-        reglages["date"] = _section_evolution(unites, roles, unite)
-    _section_exports(data, roles, etat.source["nom"], reglages)
+        reglages["date"] = _section_evolution(unites, roles, unite, resumes)
+    # Reprises par le rapport complet ; effacées à chaque nouvelle validation (étape Corriger).
+    etat.analyses = resumes
+    _section_exports(data, roles, etat.source["nom"], reglages, validation)
     st.button("Retour aux graphiques de contrôle", icon=":material/arrow_back:", on_click=aller, args=("Visualiser",))

@@ -10,6 +10,8 @@ from src.etape4_visualiser.controles import graphiques_controle
 from src.etape4_visualiser.interpretations import interpretations
 from src.etape4_visualiser.preparation import prepare
 from src.etape4_visualiser.rapport import rapport_html, rapport_markdown, synthese
+from src.etape5_analyser.calculs import comparer, delais, evolution
+from src.etape5_analyser.resumes import resume_comparaison, resume_delai, resume_evolution
 
 EXEMPLE = Path(__file__).parents[1] / "fixtures" / "exemple.csv"
 RESULTAT = {"total": 7, "gardees": 7, "ecartees": 0, "vides_avant": 1, "vides_apres": 1, "motifs": [],
@@ -27,7 +29,7 @@ def contenu(**modifs):
             "decisions": [{"titre": "t", "texte": "montant : 1 case vide (14,3 %)", "choix": "Laisser vide"}],
             "resultat": RESULTAT, "notes": "", "regles_verifiees": {"id : valeurs uniques": [4, 6]}, "fiches": fiches,
             "graphiques": graphiques_controle(data, roles, ignorees), "filtre": None,
-            "interpretations": interpretations(fiches, {"id": variations(raw, "id")}, RESULTAT)}
+            "interpretations": interpretations(fiches, {"id": variations(raw, "id")}, RESULTAT), "analyses": []}
     return {**base, **modifs}
 
 
@@ -60,6 +62,43 @@ class RapportTests(unittest.TestCase):
         self.assertIn("Graphiques filtrés : categorie : exclure A (4 / 7 lignes).", synthese(donnees))
         self.assertIn("Les données téléchargées ne sont pas filtrées.", rapport_markdown(donnees))
         self.assertIn("Les données téléchargées ne sont pas filtrées.", rapport_html(donnees))
+
+
+def analyses_ventes():
+    """Les trois analyses de l'étape 5 sur le fichier de ventes, résumées comme à l'écran."""
+    raw, _ = lire_avec_identifiants((EXEMPLE.parent / "ventes.csv").read_bytes())
+    roles = {d["Colonne"]: d["Rôle"] for d in dictionnaire_propose(raw)}
+    data, _ = prepare(raw, roles, True)
+    data = data.assign(magasin=data["magasin"].replace({"Lille": "<b>Lille</b>"}))
+    return [resume_comparaison(comparer(data, "magasin"), "magasin", "nombre", None, "lignes"),
+            resume_delai(delais(data, "date_commande", "date_livraison", "magasin"), "date_commande", "date_livraison",
+                         "magasin", "jours", "lignes"),
+            resume_evolution(evolution(data, "date_commande"), "date_commande", None, None, "lignes")]
+
+
+class AnalysesDansLeRapportTests(unittest.TestCase):
+    def test_without_analyses_the_summary_says_so(self):
+        self.assertIn("Étape Analyser : aucune analyse incluse", " ".join(synthese(contenu())))
+        self.assertNotIn("## Analyses", rapport_markdown(contenu()))
+
+    def test_analyses_appear_with_settings_table_and_findings(self):
+        donnees = contenu(analyses=analyses_ventes())
+        self.assertIn("3 analyses de l'étape Analyser incluses.", synthese(donnees))
+        texte = rapport_markdown(donnees)
+        self.assertLess(texte.index("## Graphiques de contrôle"), texte.index("## Analyses"))
+        for attendu in ["### Comparer des groupes : magasin", "### Mesurer un délai : date_commande → date_livraison",
+                        "### Évolution dans le temps : date_commande", "| magasin | Nombre | Part |",
+                        "**Ce que montrent les chiffres :**", "Une comparaison montre une différence, pas sa cause."]:
+            self.assertIn(attendu, texte)
+
+    def test_html_draws_each_analysis_and_escapes_group_names(self):
+        donnees = contenu(analyses=analyses_ventes())
+        page = rapport_html(donnees)
+        dessinees = sum(1 for a in donnees["analyses"] if a["donnees"] is not None and len(a["donnees"]))
+        self.assertEqual(page.count("<svg"), len(donnees["graphiques"]) + dessinees + 1)
+        self.assertIn("<h2>Analyses</h2>", page)
+        self.assertNotIn("<b>Lille</b>", page)
+        self.assertIn("&lt;b&gt;Lille&lt;/b&gt;", page)
 
 
 class InterpretationsTests(unittest.TestCase):

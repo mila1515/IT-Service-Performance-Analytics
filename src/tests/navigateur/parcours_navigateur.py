@@ -241,8 +241,11 @@ def parcours_regles_filtrage(p, url):
         nom, contenu = t.telecharger("Export pour Power BI (ZIP)")
         with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
             assert "dictionnaire_colonnes.csv" in archive.namelist()
+        nom, contenu = t.telecharger("Rapport complet (HTML)")
+        page_rapport = contenu.decode("utf-8")
+        assert "<h2>Analyses</h2>" in page_rapport and "Comparer des groupes : categorie" in page_rapport
         return nom
-    t.etape("E4. Analyser : constats, notebook Jupyter et export Power BI", analyser)
+    t.etape("E4. Analyser : constats, notebook, Power BI et rapport avec les analyses", analyser)
     page.close()
     return t.resultats
 
