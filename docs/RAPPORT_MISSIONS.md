@@ -962,3 +962,20 @@ Mémoire du conteneur : 50 Mo au repos, **pic d'environ 4,3 Go** pendant le rapp
 
 **Limites :** avec 7,6 Go dans Docker, un seul onglet à la fois pour un fichier de cette taille. Au-delà de 400 Mo, le refus est affiché par Streamlit, en anglais : il ne peut pas être traduit.
 
+---
+
+## Écran d'import allégé (2026-10-23)
+
+**Demande :** un écran d'import plus propre et reposant, avec très peu de texte. Maquette validée (version allégée).
+
+**Réalisé :**
+- Titre « Importer un fichier » et une seule zone de dépôt centrée : icône, « Glissez un fichier CSV ici », bouton « Choisir un fichier », ligne « CSV · 400 Mo maximum · l'original n'est jamais modifié » (taille lue dans la configuration).
+- Retirés : la phrase d'introduction, la ligne sur la taille répétée et le bandeau bleu « Déposez un fichier pour commencer ».
+- « Essayer avec un exemple » charge `src/assets/exemple.csv` (7 lignes), aussi présent dans Docker.
+- Le conseil pour les gros fichiers n'apparaît qu'une fois un fichier de plus de 100 Mo chargé.
+- Messages d'information de tout l'outil en sarcelle au lieu du bleu (options `blueColor`, `blueBackgroundColor`, `blueTextColor` du thème).
+
+**À savoir :** la zone de dépôt de Streamlit n'a pas d'option pour ses textes ; « Upload » et « 400MB per file » sont remplacés par du style ciblé sur cette seule zone (clé `w_fichier`). Une future version de Streamlit pourrait demander un ajustement ; le test navigateur importe toujours par cette zone.
+
+**Vérifications :** 89 tests OK (bouton d'exemple, conseil au-delà du seuil) ; test navigateur réussi ; captures comparées à la maquette (alignement du bouton corrigé).
+

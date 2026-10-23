@@ -14,6 +14,10 @@ secondaryBackgroundColor = "#E3F2F2"
 textColor = "#1E2A38"
 borderColor = "#D9DEE5"
 linkColor = "#0B6F71"
+# Messages d'information (st.info) en sarcelle plutôt qu'en bleu.
+blueColor = "#0B6F71"
+blueBackgroundColor = "#E3F2F2"
+blueTextColor = "#0B6F71"
 font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
 headingFontWeights = 700
 baseRadius = "0.75rem"

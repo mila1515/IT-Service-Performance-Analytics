@@ -72,7 +72,7 @@ def parcours_exemple(p, url):
     page = p.new_page(viewport={"width": 1400, "height": 1200}, accept_downloads=True)
     t = Parcours(page)
     page.goto(url, wait_until="networkidle")
-    t.voir("Importer votre fichier")
+    t.voir("Importer un fichier")
 
     def importer():
         page.locator("input[type=file]").set_input_files(str(EXEMPLE))
@@ -167,7 +167,7 @@ def parcours_regles_filtrage(p, url):
     page = p.new_page(viewport={"width": 1400, "height": 1200}, accept_downloads=True)
     t = Parcours(page)
     page.goto(url, wait_until="networkidle")
-    t.voir("Importer votre fichier")
+    t.voir("Importer un fichier")
     page.locator("input[type=file]").set_input_files(str(EXEMPLE))
     t.voir("Fichier lu correctement")
     t.fin_execution()
@@ -260,7 +260,7 @@ def parcours_reel(p, url, csv):
     page = p.new_page(viewport={"width": 1400, "height": 1200}, accept_downloads=True)
     t = Parcours(page)
     page.goto(url, wait_until="networkidle")
-    t.voir("Importer votre fichier")
+    t.voir("Importer un fichier")
     t.etape(f"R1. Import ({csv.name})", lambda: (page.locator("input[type=file]").set_input_files(str(csv)), t.voir("Fichier lu correctement")))
     t.etape("R3. Explorer", lambda: (t.bouton("Étape suivante : comprendre mes données").click(), t.voir("À vérifier avant d'analyser")))
     t.etape("R. Réexécution à l'étape Explorer", lambda: page.keyboard.press("r"))

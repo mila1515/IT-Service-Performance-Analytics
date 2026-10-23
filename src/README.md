@@ -76,6 +76,11 @@ flowchart TB
 |---|---|---|
 | Nom du fichier, nombre de lignes et de colonnes, aperçu des 20 premières lignes | Rien d'obligatoire. Si le tableau semble mal découpé, les options de lecture (séparateur, encodage, décimale) sont dans « Le tableau ne ressemble pas à votre fichier ? » | Les données brutes, gardées telles quelles |
 
+- Une seule zone de dépôt, centrée et en français (« Glissez un fichier CSV ici », « Choisir un
+  fichier », taille maximale). « Essayer avec un exemple » charge un petit fichier de
+  démonstration (`assets/exemple.csv`) pour découvrir l'outil sans ses propres données.
+- Au-delà de 100 Mo, un conseil s'affiche : jusqu'à 30 secondes par étape, environ 4 Go de
+  mémoire, un seul onglet ouvert.
 - Les identifiants comme `001` sont lus en texte, pour garder leurs zéros.
 - Si une seule colonne est lue, un message explique que le séparateur est sans doute faux.
 - Changer une option après avoir fait des choix efface ces choix, avec un avertissement.
@@ -214,7 +219,7 @@ src/
   app.py                 navigation entre les 5 étapes (point d'entrée)
   config.py              constantes : seuils, couleurs, limites d'affichage
   .streamlit/config.toml thème « Sarcelle qualité »
-  assets/logo.svg        logo de la barre du haut et du rapport
+  assets/                logo (barre du haut et rapport), fichier d'exemple de l'import
   core/                  commun : lecture, dictionnaire, types, dates, statistiques, règles,
                          textes, dessin des graphiques, session (seul module Streamlit)
   etape1_importer/       écran d'import

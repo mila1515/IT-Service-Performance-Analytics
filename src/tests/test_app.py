@@ -42,6 +42,20 @@ class ParcoursSimpleTests(unittest.TestCase):
         self.assertNotIn("None", apercu.astype(str).to_numpy().ravel().tolist())
         self.assertFalse(app.text_input)
         self.assertFalse(app.text_area)
+        self.assertNotIn("Gros fichier", textes(app.info))
+
+    def test_example_button_loads_the_demo_file(self):
+        app = AppTest.from_file(APP, default_timeout=60).run()
+        self.assertFalse(app.info)
+        app.button(key="w_exemple").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state.source["nom"], "exemple.csv")
+        self.assertIn("7 lignes et 4 colonnes", textes(app.success))
+
+    def test_large_file_advice_only_above_the_threshold(self):
+        with patch("src.etape1_importer.ecran.GROS_FICHIER", 10):
+            app = self.ouvrir()
+        self.assertIn("Gros fichier", textes(app.info))
 
     def test_wrong_separator_is_explained_and_fixed(self):
         app = self.ouvrir(b"a;b\n1;x\n2;y\n")
