@@ -994,3 +994,12 @@ Mémoire du conteneur : 50 Mo au repos, **pic d'environ 4,3 Go** pendant le rapp
 
 **Vérifications :** 91 tests OK (notebook exécuté à côté du CSV de l'export, graphiques compris ; rapport Word relu : sections, tableaux, images) ; test navigateur réussi en local et sur Docker (téléchargements Word, CSV et notebook).
 
+---
+
+## Un seul dossier « données + notebook » (2026-10-23)
+
+**Demande :** au lieu de télécharger le notebook et le CSV séparément, les trouver ensemble en ouvrant un seul dossier.
+
+**Réalisé :** à l'étape 5, un seul bouton « Données + notebook (ZIP) » remplace « Export CSV (ZIP) » et « Notebook Jupyter (.ipynb) », et une seule carte « Données et notebook ». Une fois extrait, le dossier contient `donnees_corrigees.csv`, `analyse.ipynb` (qui lit le CSV posé à côté), `dictionnaire_colonnes.csv` et `LISEZMOI.txt`. Le notebook ne recopie pas les données. La carte « Rapport complet » (HTML et Word) ne change pas.
+
+**Vérifications :** 91 tests OK (notebook exécuté directement dans le dossier extrait, graphiques compris) ; test navigateur réussi en local et sur Docker.

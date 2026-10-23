@@ -1,4 +1,4 @@
-"""Export CSV et notebook Jupyter : contenu de l'archive ; le notebook généré s'exécute vraiment, à côté du CSV."""
+"""Dossier « données + notebook » : contenu du ZIP ; le notebook s'exécute vraiment dans le dossier extrait."""
 import importlib.util
 import io
 import json
@@ -15,7 +15,7 @@ from src.core.lecture import lire_avec_identifiants
 from src.etape2_comprendre.colonnes import dictionnaire_propose
 from src.etape4_visualiser.preparation import prepare
 from src.etape5_analyser.calculs import duree
-from src.etape5_analyser.exports import export_csv, nom_colonne_delai, notebook, notebook_ipynb
+from src.etape5_analyser.exports import export_donnees, nom_colonne_delai, notebook
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 REGLAGES = {"identifiant": "ref_commande", "groupe": "magasin", "statistique": "mediane", "mesure": "montant_ttc",
@@ -29,15 +29,14 @@ def ventes():
     return prepare(raw, roles, True)[0], roles
 
 
-def executer_notebook(ipynb, export):
-    """Extrait l'export CSV, y pose le notebook et exécute ses cellules de code, comme Jupyter le ferait.
+def executer_notebook(export):
+    """Extrait le ZIP et exécute les cellules de code du notebook dans ce dossier, comme Jupyter le ferait.
 
     Sans matplotlib, les cellules étiquetées « graphique » sont sautées.
     """
     with tempfile.TemporaryDirectory() as dossier, zipfile.ZipFile(io.BytesIO(export)) as archive:
         archive.extractall(dossier)
-        Path(dossier, "analyse.ipynb").write_bytes(ipynb)
-        cellules = json.loads(ipynb)["cells"]
+        cellules = json.loads(Path(dossier, "analyse.ipynb").read_text(encoding="utf-8"))["cells"]
         avant = os.getcwd()
         os.environ.setdefault("MPLBACKEND", "Agg")
         os.chdir(dossier)
@@ -56,12 +55,13 @@ def executer_notebook(ipynb, export):
 
 
 class ExportsTests(unittest.TestCase):
-    def test_csv_archive_has_data_with_delay_dictionary_and_instructions(self):
+    def test_one_folder_with_data_delay_dictionary_notebook_and_instructions(self):
         data, roles = ventes()
         colonne = nom_colonne_delai("date_commande", "date_livraison", "jours")
-        contenu = export_csv(data, roles, (colonne, duree(data, "date_commande", "date_livraison")))
+        contenu = export_donnees(data, roles, "ventes.csv", REGLAGES, (colonne, duree(data, "date_commande", "date_livraison")))
         with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
-            self.assertEqual(sorted(archive.namelist()), ["LISEZMOI.txt", "dictionnaire_colonnes.csv", "donnees_corrigees.csv"])
+            self.assertEqual(sorted(archive.namelist()),
+                             ["LISEZMOI.txt", "analyse.ipynb", "dictionnaire_colonnes.csv", "donnees_corrigees.csv"])
             donnees = pd.read_csv(archive.open("donnees_corrigees.csv"), dtype={"ref_commande": "string"})
             dictionnaire = pd.read_csv(archive.open("dictionnaire_colonnes.csv"))
             lisezmoi = archive.read("LISEZMOI.txt").decode("utf-8")
@@ -78,12 +78,12 @@ class ExportsTests(unittest.TestCase):
                         "## 6. Analyses de l'étape Analyser", "### Comparer des groupes", "### Mesurer un délai"]:
             self.assertIn(attendu, titres)
 
-    def test_generated_notebook_runs_next_to_the_csv_export(self):
+    def test_notebook_runs_in_the_extracted_folder(self):
         data, roles = ventes()
-        export = export_csv(data, roles)
-        ipynb = notebook_ipynb("ventes.csv", roles, REGLAGES)
-        self.assertNotIn(b"CMD000", ipynb)  # le notebook ne recopie pas les données
-        espace = executer_notebook(ipynb, export)
+        export = export_donnees(data, roles, "ventes.csv", REGLAGES)
+        with zipfile.ZipFile(io.BytesIO(export)) as archive:
+            self.assertNotIn(b"CMD000", archive.read("analyse.ipynb"))  # le notebook lit le CSV, il ne le recopie pas
+        espace = executer_notebook(export)
         self.assertEqual(len(espace["donnees"]), 60)
         self.assertEqual(espace["qualite"].loc["montant_ttc", "cases vides"], 0)
         self.assertEqual(len(espace["unites"]), 60)
@@ -96,7 +96,7 @@ class ExportsTests(unittest.TestCase):
         reglages = {"groupe": nom, "statistique": "moyenne", "mesure": "n"}
         cellules = notebook("f.csv", roles, reglages)["cells"]
         self.assertTrue(any(repr(nom) in c["source"] for c in cellules if c["cell_type"] == "code"))
-        espace = executer_notebook(notebook_ipynb("f.csv", roles, reglages), export_csv(data, roles))
+        espace = executer_notebook(export_donnees(data, roles, "f.csv", reglages))
         self.assertEqual(espace["comparaison"].loc["A", "mean"], 2.0)
 
 

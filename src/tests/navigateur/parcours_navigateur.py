@@ -245,16 +245,15 @@ def parcours_regles_filtrage(p, url):
         t.voir("Analyser vos données")
         t.fin_execution()
         t.voir("Ce que montrent les chiffres")
-        nom, contenu = t.telecharger("Notebook Jupyter (.ipynb)")
-        assert json.loads(contenu)["nbformat"] == 4 and nom.endswith(".ipynb")
-        nom, contenu = t.telecharger("Export CSV (ZIP)")
+        nom, contenu = t.telecharger("Données + notebook (ZIP)")
         with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
-            assert {"donnees_corrigees.csv", "dictionnaire_colonnes.csv"} <= set(archive.namelist())
+            assert {"donnees_corrigees.csv", "analyse.ipynb", "dictionnaire_colonnes.csv"} <= set(archive.namelist())
+            assert json.loads(archive.read("analyse.ipynb"))["nbformat"] == 4
         nom, contenu = t.telecharger("Rapport complet (HTML)")
         page_rapport = contenu.decode("utf-8")
         assert "<h2>Analyses</h2>" in page_rapport and "Comparer des groupes : categorie" in page_rapport
         return nom
-    t.etape("E4. Analyser : constats, notebook, export CSV et rapport avec les analyses", analyser)
+    t.etape("E4. Analyser : constats, dossier données + notebook, rapport avec les analyses", analyser)
     page.close()
     return t.resultats
 

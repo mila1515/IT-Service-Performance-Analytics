@@ -155,13 +155,16 @@ calcule, classe et décrit ce que montrent les chiffres, sans jamais donner de c
   lignes.
 - Un groupe de moins de 20 éléments est signalé « trop peu pour comparer ».
 - **Passerelles** :
-  - un **export CSV** (ZIP) : données corrigées typées, colonne de délai déjà calculée,
-    dictionnaire des colonnes, mode d'emploi. Pour Power BI, Excel ou un autre outil ; **extraire le
-    ZIP avant d'ouvrir les fichiers** (un fichier ouvert directement dans le ZIP n'est pas utilisable) ;
-  - un **notebook Jupyter** (`.ipynb` seul, sans copie des données) : à placer à côté du CSV de
-    l'export. Généré à partir d'un modèle, il suit les étapes d'une analyse : charger, aperçu (lignes,
-    colonnes, types), qualité (cases vides, doublons), statistiques (moyenne, médiane, minimum,
-    maximum, écart-type ; valeurs fréquentes), graphiques (matplotlib), puis les analyses choisies.
+  un seul téléchargement, **« Données + notebook (ZIP) »**. Une fois extrait (clic droit → Extraire
+  tout), le dossier contient :
+  - `donnees_corrigees.csv` : les données corrigées typées, avec la colonne de délai déjà calculée,
+    pour Power BI, Excel ou un autre outil ;
+  - `analyse.ipynb` : un notebook Jupyter, généré à partir d'un modèle, qui lit le CSV posé à côté et
+    suit les étapes d'une analyse : charger, aperçu (lignes, colonnes, types), qualité (cases vides,
+    doublons), statistiques (moyenne, médiane, minimum, maximum, écart-type ; valeurs fréquentes),
+    graphiques (matplotlib), puis les analyses choisies ;
+  - `dictionnaire_colonnes.csv` (type et format de chaque colonne) et `LISEZMOI.txt`.
+  Un fichier ouvert directement dans le ZIP, sans l'extraire, n'est pas utilisable.
 - Le **rapport complet** (HTML ou Word) se télécharge aussi depuis cette étape, avec les analyses incluses.
 
 ## Le rapport complet
@@ -243,8 +246,8 @@ src/
 
 - Tests (calculs et écrans) : `python -m unittest discover -s src/tests`, depuis la racine. Il y en
   a 91. Ils couvrent aussi trois fichiers d'autres domaines (`tests/fixtures/ventes.csv`,
-  `eleves.csv`, `capteurs.csv`) ; le notebook Jupyter généré y est réellement exécuté à côté du CSV
-  de l'export (ses graphiques aussi si matplotlib est installé), et le rapport Word est relu.
+  `eleves.csv`, `capteurs.csv`) ; le notebook Jupyter y est réellement exécuté dans le dossier extrait
+  du ZIP (ses graphiques aussi si matplotlib est installé), et le rapport Word est relu.
 - Parcours dans un vrai navigateur (14 étapes) : voir `src/tests/navigateur/README.md`.
 
 ## Limites à ce jour

@@ -1,9 +1,10 @@
-"""Étape 5 : continuer l'analyse ailleurs — export CSV (Power BI, Excel…) et notebook Jupyter.
+"""Étape 5 : continuer l'analyse ailleurs — un dossier avec les données corrigées et un notebook Jupyter.
 
 Entrées : données préparées (types de l'étape Comprendre), types des colonnes et réglages choisis
-à l'écran. Sorties : un ZIP (données corrigées, dictionnaire, mode d'emploi) et un notebook seul, qui
-lit le CSV de ce ZIP (pas de copie des données). Le notebook est écrit à partir d'un modèle (pas d'IA) ;
-les noms de colonnes y sont des chaînes Python (`repr`), jamais du code.
+à l'écran. Sortie : un ZIP qui, une fois extrait, donne un dossier prêt à l'emploi : données corrigées
+(CSV, pour Power BI, Excel…), dictionnaire, notebook qui lit le CSV posé à côté, mode d'emploi.
+Le notebook est écrit à partir d'un modèle (pas d'IA) ; les noms de colonnes y sont des chaînes
+Python (`repr`), jamais du code.
 """
 import io
 import json
@@ -16,6 +17,7 @@ from src.etape2_comprendre.colonnes import LIBELLES_ROLES
 from src.etape4_visualiser.export import csv_bytes
 
 FICHIER_DONNEES = "donnees_corrigees.csv"
+FICHIER_NOTEBOOK = "analyse.ipynb"
 FORMATS = {"Identifiant": "texte (les zéros au début sont gardés)", "Catégorie": "texte",
            "Mesure": "nombre décimal, point comme séparateur", "Date": "date et heure, format ISO (AAAA-MM-JJ HH:MM:SS)"}
 
@@ -41,21 +43,23 @@ def _avec_delai(data, delai):
     return data if delai is None else data.assign(**{delai[0]: delai[1].round(4)})
 
 
-def export_csv(data, roles, delai=None):
-    """ZIP : données corrigées (avec la colonne de délai si elle est calculée), dictionnaire, mode d'emploi."""
+def export_donnees(data, roles, nom_fichier, reglages, delai=None):
+    """ZIP : données corrigées (avec la colonne de délai si elle est calculée), dictionnaire, notebook, mode d'emploi."""
     tampon = io.BytesIO()
     with zipfile.ZipFile(tampon, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr(FICHIER_DONNEES, csv_bytes(_avec_delai(data, delai)))
         archive.writestr("dictionnaire_colonnes.csv", csv_bytes(dictionnaire_colonnes(data, roles, delai)))
+        archive.writestr(FICHIER_NOTEBOOK, json.dumps(notebook(nom_fichier, roles, reglages), ensure_ascii=False, indent=1))
         archive.writestr("LISEZMOI.txt",
                          "Commencez par extraire ce ZIP : clic droit > Extraire tout. Un fichier ouvert directement dans "
                          "le ZIP n'est pas utilisable.\n\n"
                          "donnees_corrigees.csv : les données après vos corrections (UTF-8, séparateur virgule).\n"
-                         "dictionnaire_colonnes.csv : le type et le format de chaque colonne.\n\n"
+                         "dictionnaire_colonnes.csv : le type et le format de chaque colonne.\n"
+                         "analyse.ipynb : le notebook Jupyter, qui lit donnees_corrigees.csv dans ce même dossier.\n\n"
                          "Power BI Desktop : Accueil > Obtenir les données > Texte/CSV > donnees_corrigees.csv ; "
                          "vérifiez les types dans Power Query avec le dictionnaire (les identifiants restent du texte).\n"
                          "Excel : Données > À partir d'un fichier texte/CSV (Excel s'arrête à 1 048 576 lignes).\n"
-                         "Jupyter : placez le notebook téléchargé à l'étape Analyser dans ce dossier.\n\n"
+                         "Jupyter (ou VS Code) : ouvrez analyse.ipynb dans ce dossier, puis exécutez les cellules.\n\n"
                          "Une case vide est une valeur manquante, pas un zéro.\n")
     return tampon.getvalue()
 
@@ -82,8 +86,7 @@ def _decouverte(nom_fichier, roles):
         _md(f"# Analyse de {nom_fichier}",
             "Notebook généré par l'outil « Analyse simple » à partir des données corrigées.",
             "",
-            "**Avant de commencer** : extrayez l'export CSV (clic droit > Extraire tout) et placez ce notebook dans le "
-            "même dossier que `donnees_corrigees.csv`."),
+            "Il lit `donnees_corrigees.csv`, dans le même dossier (le ZIP extrait par clic droit > Extraire tout)."),
         _md("## 1. Charger les données",
             "Les identifiants et les catégories sont lus comme du texte (les zéros au début sont gardés), les dates comme des dates."),
         _code("import pandas as pd", "",
@@ -189,7 +192,3 @@ def notebook(nom_fichier, roles, reglages):
                                             "language_info": {"name": "python"}},
             "nbformat": 4, "nbformat_minor": 5}
 
-
-def notebook_ipynb(nom_fichier, roles, reglages):
-    """Le notebook seul, en octets : il lit le CSV de l'export CSV, placé dans le même dossier."""
-    return json.dumps(notebook(nom_fichier, roles, reglages), ensure_ascii=False, indent=1).encode("utf-8")

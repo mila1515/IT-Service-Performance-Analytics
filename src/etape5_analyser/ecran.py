@@ -2,7 +2,7 @@
 
 Entrées en session : `validation` (données corrigées, types). Rien n'est modifié : l'utilisateur
 choisit les colonnes, l'outil calcule et décrit. Sorties : `analyses` (résumés repris par le rapport
-complet), export CSV (Power BI, Excel…), notebook Jupyter et rapport complet (HTML ou Word).
+complet), dossier « données + notebook » (ZIP) et rapport complet (HTML ou Word).
 """
 import streamlit as st
 
@@ -16,7 +16,7 @@ from src.etape4_visualiser.rapport import rapport_html
 from src.etape4_visualiser.rapport_word import rapport_word
 from src.etape5_analyser.calculs import (STATISTIQUES, comparer, de, delais, duree, duree_lisible, evolution,
                                          sections_possibles, une_ligne_par, unite_comptee)
-from src.etape5_analyser.exports import export_csv, nom_colonne_delai, notebook_ipynb
+from src.etape5_analyser.exports import export_donnees, nom_colonne_delai
 from src.etape5_analyser.resumes import (PRUDENCE_COMPARER, PRUDENCE_EVOLUTION, prudence_delai, resume_comparaison,
                                          resume_delai, resume_evolution)
 
@@ -143,11 +143,11 @@ def _section_exports(data, roles, nom, reglages, validation):
         colonne = nom_colonne_delai(reglages["debut"], reglages["fin"], reglages["unite_temps"]) if avec_delai else None
         base = nom.rsplit(".", 1)[0]
 
-        def csv_zip():
+        def dossier_zip():
             delai = (colonne, duree(data, reglages["debut"], reglages["fin"], reglages["unite_temps"])) if avec_delai else None
-            return export_csv(data, roles, delai)
+            return export_donnees(data, roles, nom, reglages, delai)
 
-        gauche, milieu, droite = st.columns(3)
+        gauche, droite = st.columns(2)
         with gauche, st.container(border=True, key="carte_analyse_rapport"):
             st.markdown("**Rapport complet**")
             st.caption("Le rapport qualité avec, en plus, les analyses ci-dessus : graphiques, tableaux et constats.")
@@ -157,20 +157,14 @@ def _section_exports(data, roles, nom, reglages, validation):
                                    on_click="ignore")
                 st.download_button("Rapport Word (.docx)", lambda: rapport_word(contenu()), f"{base}_rapport_qualite.docx",
                                    DOCX, icon=":material/description:", on_click="ignore")
-        with milieu, st.container(border=True, key="carte_analyse_csv"):
-            st.markdown("**Données en CSV**")
-            st.caption("Les données corrigées"
-                       + (f", avec la colonne {colonne} déjà calculée" if avec_delai else "")
-                       + ", et un dictionnaire des colonnes. Pour Power BI, Excel ou un autre outil : extrayez le ZIP avant "
-                         "d'ouvrir les fichiers.")
-            st.download_button("Export CSV (ZIP)", csv_zip, f"{base}_export_csv.zip", "application/zip",
-                               type="primary", icon=":material/table:", on_click="ignore")
-        with droite, st.container(border=True, key="carte_analyse_jupyter"):
-            st.markdown("**Jupyter**")
-            st.caption("Un notebook prêt à exécuter : aperçu, qualité, statistiques, graphiques, puis ces analyses. "
-                       "Placez-le à côté du CSV de l'export.")
-            st.download_button("Notebook Jupyter (.ipynb)", lambda: notebook_ipynb(nom, roles, reglages),
-                               f"{base}_analyse.ipynb", "application/x-ipynb+json", icon=":material/code:", on_click="ignore")
+        with droite, st.container(border=True, key="carte_analyse_donnees"):
+            st.markdown("**Données et notebook**")
+            st.caption("Un dossier prêt à l'emploi : les données corrigées en CSV"
+                       + (f" (avec la colonne {colonne} déjà calculée)" if avec_delai else "")
+                       + " pour Power BI ou Excel, et un notebook Jupyter qui les lit : aperçu, qualité, statistiques, "
+                         "graphiques, puis ces analyses. Extrayez le ZIP, puis ouvrez les fichiers du dossier.")
+            st.download_button("Données + notebook (ZIP)", dossier_zip, f"{base}_donnees_et_notebook.zip", "application/zip",
+                               type="primary", icon=":material/folder_zip:", on_click="ignore")
 
 
 def ecran_analyser():
