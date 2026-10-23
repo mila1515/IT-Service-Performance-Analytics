@@ -134,9 +134,12 @@ def parcours_exemple(p, url):
         nom, contenu = t.telecharger("Lignes écartées (CSV)")
         assert contenu.decode("utf-8-sig").startswith("Ligne d'origine,Raison"), contenu[:80]
         details.append(f"{nom} ({len(contenu)} o)")
-        nom, contenu = t.telecharger("Rapport qualité (texte)")
-        assert "Écarter" in contenu.decode("utf-8") or "écartées" in contenu.decode("utf-8")
-        details.append(f"{nom} ({len(contenu)} o)")
+        nom, contenu = t.telecharger("Rapport Word (.docx)")
+        with zipfile.ZipFile(io.BytesIO(contenu)) as docx:
+            texte_word = docx.read("word/document.xml").decode("utf-8")
+            images = [n for n in docx.namelist() if n.startswith("word/media/")]
+        assert "Points vérifiés et décisions" in texte_word and len(images) >= 4, "rapport Word incomplet"
+        details.append(f"{nom} ({len(contenu)} o, {len(images) - 1} graphiques)")
         nom, contenu = t.telecharger("Rapport complet (HTML)")
         page_rapport = contenu.decode("utf-8")
         assert page_rapport.count("<svg") >= 4, "graphiques absents du rapport HTML"
@@ -229,9 +232,11 @@ def parcours_regles_filtrage(p, url):
         assert texte.startswith("4 / 5"), texte
         nom, contenu = t.telecharger("Données corrigées (CSV)")
         assert contenu.decode("utf-8-sig").count("\n") == 6, "le filtre ne doit pas changer les données téléchargées"
-        nom, contenu = t.telecharger("Rapport qualité (texte)")
-        assert "Règles vérifiées" in contenu.decode("utf-8")
-        assert "Graphiques filtrés" in contenu.decode("utf-8"), "le filtre doit être indiqué dans le rapport"
+        nom, contenu = t.telecharger("Rapport Word (.docx)")
+        with zipfile.ZipFile(io.BytesIO(contenu)) as docx:
+            texte_word = docx.read("word/document.xml").decode("utf-8")
+        assert "Règles vérifiées" in texte_word
+        assert "Graphiques filtrés" in texte_word, "le filtre doit être indiqué dans le rapport"
         return texte
     t.etape("E3. Filtrage : graphiques filtrés, téléchargements inchangés", filtre)
 
@@ -240,18 +245,16 @@ def parcours_regles_filtrage(p, url):
         t.voir("Analyser vos données")
         t.fin_execution()
         t.voir("Ce que montrent les chiffres")
-        nom, contenu = t.telecharger("Notebook Jupyter (ZIP)")
+        nom, contenu = t.telecharger("Notebook Jupyter (.ipynb)")
+        assert json.loads(contenu)["nbformat"] == 4 and nom.endswith(".ipynb")
+        nom, contenu = t.telecharger("Export CSV (ZIP)")
         with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
-            assert {"analyse.ipynb", "donnees_corrigees.csv"} <= set(archive.namelist())
-            assert json.loads(archive.read("analyse.ipynb"))["nbformat"] == 4
-        nom, contenu = t.telecharger("Export pour Power BI (ZIP)")
-        with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
-            assert "dictionnaire_colonnes.csv" in archive.namelist()
+            assert {"donnees_corrigees.csv", "dictionnaire_colonnes.csv"} <= set(archive.namelist())
         nom, contenu = t.telecharger("Rapport complet (HTML)")
         page_rapport = contenu.decode("utf-8")
         assert "<h2>Analyses</h2>" in page_rapport and "Comparer des groupes : categorie" in page_rapport
         return nom
-    t.etape("E4. Analyser : constats, notebook, Power BI et rapport avec les analyses", analyser)
+    t.etape("E4. Analyser : constats, notebook, export CSV et rapport avec les analyses", analyser)
     page.close()
     return t.resultats
 

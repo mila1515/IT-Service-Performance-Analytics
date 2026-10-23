@@ -979,3 +979,18 @@ Mémoire du conteneur : 50 Mo au repos, **pic d'environ 4,3 Go** pendant le rapp
 
 **Vérifications :** 89 tests OK (bouton d'exemple, conseil au-delà du seuil) ; test navigateur réussi ; captures comparées à la maquette (alignement du bouton corrigé).
 
+---
+
+## Rapport Word, export CSV et notebook complet (2026-10-23)
+
+**Constats de l'utilisatrice :** le rapport texte (Markdown) ne s'ouvrait pas dans Word et n'avait pas de graphiques ; l'« export Power BI » ne contenait que des CSV ; l'export ouvert ne montrait rien ; le notebook recopiait le CSV (doublon) et commençait directement par la comparaison de groupes.
+
+**Diagnostic de « rien ne s'affiche » :** le ZIP était complet (CSV de 269 Mo). Windows, en ouvrant un fichier directement dans un ZIP, ne copie que ce fichier dans un dossier temporaire ; il faut d'abord « Extraire tout ». Un CSV de cette taille dépasse aussi la limite d'Excel (1 048 576 lignes) : Power BI ou « Données > À partir d'un fichier texte/CSV ».
+
+**Réalisé :**
+- **Rapport Word (.docx)** (`etape4_visualiser/rapport_word.py`, dépendance `python-docx`) : mêmes sections que le HTML, tableaux, graphiques en images PNG, logo, titres en sarcelle ; caractères de contrôle retirés. Bouton à l'étape 4 (à la place du rapport texte) et à l'étape 5. Le Markdown reste dans l'archive du projet. Vérifié en l'ouvrant dans Word (4 pages sur l'exemple).
+- **Export CSV (ZIP)** : nouveau nom du bouton et de la carte (« Données en CSV »), contenu identique ; le `LISEZMOI` commence par « extraire le ZIP » et donne les marches à suivre pour Power BI, Excel et Jupyter.
+- **Notebook Jupyter (.ipynb)** seul, sans copie du CSV : il lit le `donnees_corrigees.csv` de l'export. Contenu : 1. charger, 2. aperçu (lignes, colonnes, types), 3. qualité (cases vides en %, doublons), 4. statistiques (moyenne, médiane, minimum, maximum, écart-type ; valeurs fréquentes), 5. graphiques matplotlib (histogramme, barres, évolution), 6. les analyses de l'étape 5.
+
+**Vérifications :** 91 tests OK (notebook exécuté à côté du CSV de l'export, graphiques compris ; rapport Word relu : sections, tableaux, images) ; test navigateur réussi en local et sur Docker (téléchargements Word, CSV et notebook).
+

@@ -1,7 +1,7 @@
 """Étape 4 (Visualiser et exporter) : contrôler en graphiques que les données corrigées sont plausibles, puis les remettre.
 
 Entrées en session : `validation` (résultat validé à l'étape 3), `graphiques_ajoutes`, `notes`.
-Sorties : téléchargements (données corrigées, lignes écartées, rapport complet HTML, rapport texte, archive).
+Sorties : téléchargements (données corrigées, lignes écartées, rapport complet HTML, rapport Word, archive).
 Les graphiques servent au contrôle avant l'analyse métier, pas à en tirer des conclusions.
 """
 from datetime import datetime, timezone
@@ -22,7 +22,9 @@ from src.etape4_visualiser.export import archive_projet, csv_bytes, rejets_lisib
 from src.etape4_visualiser.interpretations import interpretations
 from src.etape4_visualiser.preparation import prepare
 from src.etape4_visualiser.rapport import rapport_html, rapport_markdown
+from src.etape4_visualiser.rapport_word import rapport_word
 
+DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 QUESTIONS = {
     "repartition": ("Comment se répartit une colonne", "Ex. : combien de lignes par catégorie"),
     "temps": ("Comment ça évolue dans le temps", "Ex. : nombre de lignes par mois"),
@@ -151,8 +153,9 @@ def _section_export(validation, graphiques, filtre):
             st.download_button("Rapport complet (HTML)", lambda: rapport_html(contenu()).encode("utf-8"),
                                f"{base}_rapport_qualite.html", "text/html", icon=":material/insert_chart:", on_click="ignore",
                                help="Le rapport avec les graphiques et les pistes de lecture, à ouvrir dans le navigateur.")
-            st.download_button("Rapport qualité (texte)", lambda: rapport_markdown(contenu()).encode("utf-8"),
-                               f"{base}_rapport_qualite.md", "text/markdown", icon=":material/description:", on_click="ignore")
+            st.download_button("Rapport Word (.docx)", lambda: rapport_word(contenu()), f"{base}_rapport_qualite.docx",
+                               DOCX, icon=":material/description:", on_click="ignore",
+                               help="Le même rapport, graphiques compris, à ouvrir dans Word.")
             st.download_button("Tout le projet (ZIP)",
                                lambda: _archive(source, validation, contenu()),
                                f"{base}_projet_{datetime.now(timezone.utc):%Y%m%d}.zip", "application/zip",

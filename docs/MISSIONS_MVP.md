@@ -161,6 +161,7 @@ Commence par la MISSION 1. Ne code rien avant d'avoir lu les fichiers et exécut
 | Suppression de l'archive experte | Terminé : `src/expert/` et le code qui ne servait qu'à lui retirés ; récupérable dans git (4179b84) | [Suppression](RAPPORT_MISSIONS.md#suppression-de-lancienne-interface-experte-2026-10-23) |
 | Fichiers jusqu'à 400 Mo | Terminé : limite relevée ; 264 Mo mesurés dans Docker (30 s au plus par étape, pic 4,3 Go) | [400 Mo](RAPPORT_MISSIONS.md#fichiers-jusquà-400-mo-2026-10-23) |
 | Écran d'import allégé | Terminé : zone de dépôt centrée en français, bouton d'exemple, conseil gros fichier, informations en sarcelle ; 89 tests OK ; navigateur réussi | [Import](RAPPORT_MISSIONS.md#écran-dimport-allégé-2026-10-23) |
+| Rapport Word, export CSV, notebook | Terminé : rapport .docx avec graphiques, « Export CSV », notebook seul et complet (aperçu, qualité, statistiques, graphiques, analyses) ; 91 tests OK ; navigateur et Docker réussis | [Word, CSV, notebook](RAPPORT_MISSIONS.md#rapport-word-export-csv-et-notebook-complet-2026-10-23) |
 | 7. Répétitions | Terminée (version légère) : volet « Pourquoi … se répète ? » sur les cartes Identifiant, lecture seule ; 95 tests OK ; navigateur réussi, aussi sur le fichier réel | [Mission 7](RAPPORT_MISSIONS.md#mission-7--répétitions-version-légère-2026-10-22) |
 
 Tous les rapports sont regroupés dans un seul fichier : [RAPPORT_MISSIONS.md](RAPPORT_MISSIONS.md).

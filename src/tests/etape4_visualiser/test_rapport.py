@@ -1,4 +1,5 @@
 """Rapport complet : sections, graphiques dessinés, texte échappé, filtre, pistes de lecture."""
+import io
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,6 +11,7 @@ from src.etape4_visualiser.controles import graphiques_controle
 from src.etape4_visualiser.interpretations import interpretations
 from src.etape4_visualiser.preparation import prepare
 from src.etape4_visualiser.rapport import rapport_html, rapport_markdown, synthese
+from src.etape4_visualiser.rapport_word import rapport_word
 from src.etape5_analyser.calculs import comparer, delais, evolution
 from src.etape5_analyser.resumes import resume_comparaison, resume_delai, resume_evolution
 
@@ -99,6 +101,21 @@ class AnalysesDansLeRapportTests(unittest.TestCase):
         self.assertIn("<h2>Analyses</h2>", page)
         self.assertNotIn("<b>Lille</b>", page)
         self.assertIn("&lt;b&gt;Lille&lt;/b&gt;", page)
+
+
+class RapportWordTests(unittest.TestCase):
+    def test_word_report_has_sections_tables_and_every_chart(self):
+        from docx import Document
+        donnees = contenu(analyses=analyses_ventes(), notes="à revoir")
+        document = Document(io.BytesIO(rapport_word(donnees)))
+        titres = [p.text for p in document.paragraphs if p.style.name.startswith("Heading")]
+        for attendu in ["En bref", "Les colonnes (après corrections)", "Points vérifiés et décisions", "Pistes de lecture",
+                        "Graphiques de contrôle", "Analyses", "Ce que ce rapport ne garantit pas"]:
+            self.assertIn(attendu, titres)
+        dessinees = sum(1 for a in donnees["analyses"] if a["donnees"] is not None and len(a["donnees"]))
+        self.assertEqual(len(document.inline_shapes), len(donnees["graphiques"]) + dessinees + 1)  # + le logo
+        self.assertEqual(document.tables[0].rows[0].cells[0].text, "Colonne")
+        self.assertIn("à revoir", [p.text for p in document.paragraphs])
 
 
 class InterpretationsTests(unittest.TestCase):

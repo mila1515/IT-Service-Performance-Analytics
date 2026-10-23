@@ -2,7 +2,7 @@
 
 Entrées en session : `validation` (données corrigées, types). Rien n'est modifié : l'utilisateur
 choisit les colonnes, l'outil calcule et décrit. Sorties : `analyses` (résumés repris par le rapport
-complet), export Power BI, notebook Jupyter et rapport complet.
+complet), export CSV (Power BI, Excel…), notebook Jupyter et rapport complet (HTML ou Word).
 """
 import streamlit as st
 
@@ -13,13 +13,15 @@ from src.core.texte import nombre_lisible
 from src.etape4_visualiser.ecran import contenu_rapport
 from src.etape4_visualiser.preparation import prepare
 from src.etape4_visualiser.rapport import rapport_html
+from src.etape4_visualiser.rapport_word import rapport_word
 from src.etape5_analyser.calculs import (STATISTIQUES, comparer, de, delais, duree, duree_lisible, evolution,
                                          sections_possibles, une_ligne_par, unite_comptee)
-from src.etape5_analyser.exports import export_jupyter, export_power_bi, nom_colonne_delai
+from src.etape5_analyser.exports import export_csv, nom_colonne_delai, notebook_ipynb
 from src.etape5_analyser.resumes import (PRUDENCE_COMPARER, PRUDENCE_EVOLUTION, prudence_delai, resume_comparaison,
                                          resume_delai, resume_evolution)
 
 AUCUN = "(aucun)"
+DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 def _par_type(roles, role):
@@ -141,29 +143,34 @@ def _section_exports(data, roles, nom, reglages, validation):
         colonne = nom_colonne_delai(reglages["debut"], reglages["fin"], reglages["unite_temps"]) if avec_delai else None
         base = nom.rsplit(".", 1)[0]
 
-        def power_bi():
+        def csv_zip():
             delai = (colonne, duree(data, reglages["debut"], reglages["fin"], reglages["unite_temps"])) if avec_delai else None
-            return export_power_bi(data, roles, delai)
+            return export_csv(data, roles, delai)
 
         gauche, milieu, droite = st.columns(3)
         with gauche, st.container(border=True, key="carte_analyse_rapport"):
             st.markdown("**Rapport complet**")
             st.caption("Le rapport qualité avec, en plus, les analyses ci-dessus : graphiques, tableaux et constats.")
-            st.download_button("Rapport complet (HTML)", lambda: rapport_html(contenu()).encode("utf-8"),
-                               f"{base}_rapport_qualite.html", "text/html", icon=":material/insert_chart:", on_click="ignore")
-        with milieu, st.container(border=True, key="carte_analyse_powerbi"):
-            st.markdown("**Power BI**")
-            st.caption("Les données corrigées prêtes à importer"
+            with st.container(horizontal=True):
+                st.download_button("Rapport complet (HTML)", lambda: rapport_html(contenu()).encode("utf-8"),
+                                   f"{base}_rapport_qualite.html", "text/html", icon=":material/insert_chart:",
+                                   on_click="ignore")
+                st.download_button("Rapport Word (.docx)", lambda: rapport_word(contenu()), f"{base}_rapport_qualite.docx",
+                                   DOCX, icon=":material/description:", on_click="ignore")
+        with milieu, st.container(border=True, key="carte_analyse_csv"):
+            st.markdown("**Données en CSV**")
+            st.caption("Les données corrigées"
                        + (f", avec la colonne {colonne} déjà calculée" if avec_delai else "")
-                       + ", et un dictionnaire des colonnes (type, format, signification des cases vides).")
-            st.download_button("Export pour Power BI (ZIP)", power_bi, f"{base}_power_bi.zip", "application/zip",
-                               type="primary", icon=":material/dashboard:", on_click="ignore")
+                       + ", et un dictionnaire des colonnes. Pour Power BI, Excel ou un autre outil : extrayez le ZIP avant "
+                         "d'ouvrir les fichiers.")
+            st.download_button("Export CSV (ZIP)", csv_zip, f"{base}_export_csv.zip", "application/zip",
+                               type="primary", icon=":material/table:", on_click="ignore")
         with droite, st.container(border=True, key="carte_analyse_jupyter"):
             st.markdown("**Jupyter**")
-            st.caption("Un notebook déjà rempli qui recharge les données et refait ces analyses avec pandas, "
-                       "à compléter avec seaborn.")
-            st.download_button("Notebook Jupyter (ZIP)", lambda: export_jupyter(data, roles, nom, reglages),
-                               f"{base}_notebook.zip", "application/zip", icon=":material/code:", on_click="ignore")
+            st.caption("Un notebook prêt à exécuter : aperçu, qualité, statistiques, graphiques, puis ces analyses. "
+                       "Placez-le à côté du CSV de l'export.")
+            st.download_button("Notebook Jupyter (.ipynb)", lambda: notebook_ipynb(nom, roles, reglages),
+                               f"{base}_analyse.ipynb", "application/x-ipynb+json", icon=":material/code:", on_click="ignore")
 
 
 def ecran_analyser():

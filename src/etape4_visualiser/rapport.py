@@ -1,4 +1,4 @@
-"""Étape 4 (Exporter) : rapport qualité en deux versions, Markdown (texte) et HTML (avec les graphiques).
+"""Étape 4 (Exporter) : rapport qualité en Markdown (texte) et HTML (avec les graphiques) ; Word : `rapport_word.py`.
 
 Entrée : un dictionnaire `contenu` assemblé par l'écran :
 `nom`, `produit_le`, `lignes`, `colonnes`, `empreinte`, `decisions`, `journal`, `resultat`, `notes`,
@@ -83,7 +83,7 @@ def resume_fiche(fiche):
     return texte + (f" · {pluriel(fiche['illisibles'], 'date illisible', 'dates illisibles')}" if fiche["illisibles"] else "")
 
 
-def _resultat(resultat):
+def lignes_resultat(resultat):
     lignes = [f"Lignes gardées : {nombre_lisible(resultat['gardees'])} sur {nombre_lisible(resultat['total'])}.",
               f"Lignes écartées : {nombre_lisible(resultat['ecartees'])}"
               + (" (" + ", ".join(f"{motif} : {nombre_lisible(n)}" for motif, n in resultat["motifs"]) + ")."
@@ -97,7 +97,7 @@ def _resultat(resultat):
     return lignes
 
 
-def _regles(regles_verifiees):
+def lignes_regles(regles_verifiees):
     return [f"{regle} : " + (pluriel(len(n), "ligne ne respecte pas", "lignes ne respectent pas") if n
                              else "respectée par toutes les lignes") for regle, n in regles_verifiees.items()]
 
@@ -122,12 +122,12 @@ def rapport_markdown(contenu):
     texte += ["", "## Points vérifiés et décisions", ""]
     texte += [f"- {d['texte']} → **{d['choix']}**" for d in contenu["decisions"]] or ["- Aucun point à vérifier n'a été repéré."]
     texte += ["", "## Ce qui a été fait", ""] + [f"- {phrase}" for phrase in contenu["journal"]]
-    texte += ["", "## Résultat", ""] + [f"- {ligne}" for ligne in _resultat(resultat)]
+    texte += ["", "## Résultat", ""] + [f"- {ligne}" for ligne in lignes_resultat(resultat)]
     if resultat["ecartees"]:
         texte += ["", "Les lignes écartées ne sont pas effacées : elles sont dans le fichier des lignes écartées, avec leur raison. "
                       "Un problème qui disparaît parce que sa ligne est écartée n'a pas été réparé."]
     if contenu["regles_verifiees"]:
-        texte += ["", "## Règles vérifiées", ""] + [f"- {r}" for r in _regles(contenu["regles_verifiees"])] + ["", NOTE_REGLES]
+        texte += ["", "## Règles vérifiées", ""] + [f"- {r}" for r in lignes_regles(contenu["regles_verifiees"])] + ["", NOTE_REGLES]
     if contenu["interpretations"]:
         texte += ["", "## Pistes de lecture", "", NOTE_PISTES, ""] + [f"- {p}" for p in contenu["interpretations"]]
     texte += ["", "## Graphiques de contrôle", "",
@@ -152,12 +152,20 @@ def rapport_markdown(contenu):
     return "\n".join(texte) + "\n"
 
 
+def _specification(graphique):
+    """Le graphique de l'écran, avec une largeur fixe pour le rapport."""
+    return (dessiner(graphique).properties(width=LARGEUR_GRAPHIQUE).configure(font=POLICE).configure_view(stroke=None)
+            .configure_axis(labelFontSize=12, titleFontSize=12)).to_dict()
+
+
 def svg_graphique(graphique):
-    """Le graphique de l'écran, en image SVG (même dessin, largeur fixe pour le rapport)."""
-    graphique_altair = (dessiner(graphique).properties(width=LARGEUR_GRAPHIQUE)
-                        .configure(font=POLICE).configure_view(stroke=None)
-                        .configure_axis(labelFontSize=12, titleFontSize=12))
-    return vl_convert.vegalite_to_svg(graphique_altair.to_dict())
+    """Image SVG du graphique (rapport HTML)."""
+    return vl_convert.vegalite_to_svg(_specification(graphique))
+
+
+def png_graphique(graphique):
+    """Image PNG du graphique, en double résolution (rapport Word)."""
+    return vl_convert.vegalite_to_png(_specification(graphique), scale=2)
 
 
 STYLE = """
@@ -240,13 +248,13 @@ def rapport_html(contenu):
         f"<tbody>{lignes_colonnes}</tbody></table></div></section>",
         f"<section><h2>Points vérifiés et décisions</h2><ul>{decisions or '<li>Aucun point à vérifier n’a été repéré.</li>'}</ul></section>",
         f"<section><h2>Ce qui a été fait</h2>{_liste(contenu['journal'])}<h2 style='margin-top:14px'>Résultat</h2>"
-        f"{_liste(_resultat(resultat))}"
+        f"{_liste(lignes_resultat(resultat))}"
         + ("<p class='discret'>Les lignes écartées ne sont pas effacées : elles sont dans le fichier des lignes écartées, "
            "avec leur raison. Un problème qui disparaît parce que sa ligne est écartée n'a pas été réparé.</p>"
            if resultat["ecartees"] else "") + "</section>",
     ]
     if contenu["regles_verifiees"]:
-        parties.append(f"<section><h2>Règles vérifiées</h2>{_liste(_regles(contenu['regles_verifiees']))}"
+        parties.append(f"<section><h2>Règles vérifiées</h2>{_liste(lignes_regles(contenu['regles_verifiees']))}"
                        f"<p class='discret'>{NOTE_REGLES}</p></section>")
     if contenu["interpretations"]:
         parties.append(f"<section class='pistes'><h2>Pistes de lecture</h2><p class='discret'>{NOTE_PISTES}</p>"

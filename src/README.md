@@ -134,8 +134,8 @@ Une carte par famille de problèmes. Chaque carte n'apparaît que si le fichier 
 | Données corrigées (CSV) | Les données après vos choix, lisibles par Excel |
 | Lignes écartées (CSV) | Chaque ligne mise de côté, avec son numéro d'origine et la raison |
 | Rapport complet (HTML) | Le rapport à lire dans le navigateur, avec les graphiques ; imprimable en PDF |
-| Rapport qualité (texte) | Le même rapport en Markdown, sans les images |
-| Tout le projet (ZIP) | Fichier d'origine inchangé, données corrigées, lignes écartées, les deux rapports, journal détaillé |
+| Rapport Word (.docx) | Le même rapport à ouvrir dans Word, graphiques et tableaux compris |
+| Tout le projet (ZIP) | Fichier d'origine inchangé, données corrigées, lignes écartées, rapport HTML et version texte (Markdown), journal détaillé |
 
 ### 5 · Analyser
 
@@ -155,11 +155,14 @@ calcule, classe et décrit ce que montrent les chiffres, sans jamais donner de c
   lignes.
 - Un groupe de moins de 20 éléments est signalé « trop peu pour comparer ».
 - **Passerelles** :
-  - un **export Power BI** (ZIP) : données corrigées typées, colonne de délai déjà calculée,
-    dictionnaire des colonnes, mode d'emploi ;
-  - un **notebook Jupyter** (ZIP) : généré à partir d'un modèle, il recharge les données et refait
-    les analyses choisies avec pandas.
-- Le **rapport complet** se télécharge aussi depuis cette étape, avec les analyses incluses.
+  - un **export CSV** (ZIP) : données corrigées typées, colonne de délai déjà calculée,
+    dictionnaire des colonnes, mode d'emploi. Pour Power BI, Excel ou un autre outil ; **extraire le
+    ZIP avant d'ouvrir les fichiers** (un fichier ouvert directement dans le ZIP n'est pas utilisable) ;
+  - un **notebook Jupyter** (`.ipynb` seul, sans copie des données) : à placer à côté du CSV de
+    l'export. Généré à partir d'un modèle, il suit les étapes d'une analyse : charger, aperçu (lignes,
+    colonnes, types), qualité (cases vides, doublons), statistiques (moyenne, médiane, minimum,
+    maximum, écart-type ; valeurs fréquentes), graphiques (matplotlib), puis les analyses choisies.
+- Le **rapport complet** (HTML ou Word) se télécharge aussi depuis cette étape, avec les analyses incluses.
 
 ## Le rapport complet
 
@@ -203,13 +206,14 @@ flowchart TB
 | Streamlit | 1.66 (≥ 1.57) | Interface web : écrans, boutons, téléchargements | Une application web en Python, sans HTML ni JavaScript à écrire ; widgets récents (choix segmentés, volets, interrupteurs) |
 | pandas | 3.0 | Lecture du CSV, calculs, corrections | La référence pour les tableaux en Python ; traitement sur les valeurs distinctes pour rester rapide |
 | Altair | 6.3 (≥ 5) | Graphiques de l'écran | Graphiques déclaratifs, couleurs et étiquettes maîtrisées, intégrés à Streamlit |
-| vl-convert-python | 1.9 | Graphiques du rapport HTML, en images SVG | Dessine les mêmes graphiques qu'à l'écran, sans navigateur ni service externe |
+| vl-convert-python | 1.9 | Graphiques des rapports, en images SVG (HTML) et PNG (Word) | Dessine les mêmes graphiques qu'à l'écran, sans navigateur ni service externe |
+| python-docx | 1.2 | Rapport Word (.docx) | Crée un vrai document Word, avec titres, tableaux et images, sans Word installé |
 | Docker et Docker Compose | Python 3.12 slim | Lancer l'outil sans installation | Même environnement partout, utilisateur non administrateur, contrôle de santé |
 | unittest et `streamlit.testing` (AppTest) | bibliothèque standard | Tests des calculs et des écrans | Aucune dépendance de test à ajouter ; écrans testés sans navigateur |
 | Playwright et Chromium | 1.64 | Test du parcours dans un vrai navigateur (développement seulement) | Vérifie les clics, téléchargements et réexécutions réels |
 | Inter, thème « Sarcelle qualité » | — | Police et couleurs | Lisible et reposant ; couleurs des graphiques vérifiées (contraste, daltonisme) |
 
-Seuls pandas, Streamlit, Altair et vl-convert-python sont nécessaires pour faire tourner l'outil
+Seuls pandas, Streamlit, Altair, vl-convert-python et python-docx sont nécessaires pour faire tourner l'outil
 (`src/requirements.txt`).
 
 ## Organisation du code
@@ -238,8 +242,9 @@ src/
 ## Vérifications
 
 - Tests (calculs et écrans) : `python -m unittest discover -s src/tests`, depuis la racine. Il y en
-  a 87. Ils couvrent aussi trois fichiers d'autres domaines (`tests/fixtures/ventes.csv`,
-  `eleves.csv`, `capteurs.csv`), et le notebook Jupyter généré y est réellement exécuté.
+  a 91. Ils couvrent aussi trois fichiers d'autres domaines (`tests/fixtures/ventes.csv`,
+  `eleves.csv`, `capteurs.csv`) ; le notebook Jupyter généré y est réellement exécuté à côté du CSV
+  de l'export (ses graphiques aussi si matplotlib est installé), et le rapport Word est relu.
 - Parcours dans un vrai navigateur (14 étapes) : voir `src/tests/navigateur/README.md`.
 
 ## Limites à ce jour
@@ -255,7 +260,7 @@ src/
 | Analyses | Trois analyses simples ; un seul format de date par colonne ; « dernière ligne » prise dans l'ordre du fichier |
 | Mémoire et partage | Rien n'est sauvegardé : fermer l'onglet fait perdre l'analyse ; pas de compte, pas de reprise, pas de travail à plusieurs |
 | Accès | Sur le poste seulement (`127.0.0.1`), sans authentification |
-| Image Docker | Environ 920 Mo, dont environ 140 Mo pour le dessin des graphiques du rapport |
+| Image Docker | Environ 940 Mo, dont environ 140 Mo pour le dessin des graphiques des rapports |
 
 ## Améliorations possibles
 

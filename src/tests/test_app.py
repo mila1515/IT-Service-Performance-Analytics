@@ -224,7 +224,7 @@ class AnalyserTests(unittest.TestCase):
         self.assertIn("« A » compte 2 id distincts", textes(app.markdown))
         self.assertIn("compte le plus d'id distincts", textes(app.markdown))
         self.assertIn("Mesurer un délai : il faut deux colonnes de type Date.", textes(app.info))
-        self.assertEqual(len(app.get("download_button")), 3)
+        self.assertEqual(len(app.get("download_button")), 4)
         self.assertEqual([a["titre"] for a in app.session_state.analyses],
                          ["Comparer des groupes : categorie", "Évolution dans le temps : date_commande"])
         case.uncheck().run()
