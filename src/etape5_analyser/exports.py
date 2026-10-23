@@ -43,25 +43,35 @@ def _avec_delai(data, delai):
     return data if delai is None else data.assign(**{delai[0]: delai[1].round(4)})
 
 
+def fichiers_donnees(data, roles, nom_fichier, reglages, delai=None):
+    """Les fichiers du dossier « données + notebook » : nom → octets (aussi repris dans l'archive du projet)."""
+    return {
+        FICHIER_DONNEES: csv_bytes(_avec_delai(data, delai)),
+        "dictionnaire_colonnes.csv": csv_bytes(dictionnaire_colonnes(data, roles, delai)),
+        FICHIER_NOTEBOOK: json.dumps(notebook(nom_fichier, roles, reglages), ensure_ascii=False, indent=1).encode("utf-8"),
+        "LISEZMOI.txt": LISEZMOI.encode("utf-8"),
+    }
+
+
 def export_donnees(data, roles, nom_fichier, reglages, delai=None):
     """ZIP : données corrigées (avec la colonne de délai si elle est calculée), dictionnaire, notebook, mode d'emploi."""
     tampon = io.BytesIO()
     with zipfile.ZipFile(tampon, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr(FICHIER_DONNEES, csv_bytes(_avec_delai(data, delai)))
-        archive.writestr("dictionnaire_colonnes.csv", csv_bytes(dictionnaire_colonnes(data, roles, delai)))
-        archive.writestr(FICHIER_NOTEBOOK, json.dumps(notebook(nom_fichier, roles, reglages), ensure_ascii=False, indent=1))
-        archive.writestr("LISEZMOI.txt",
-                         "Commencez par extraire ce ZIP : clic droit > Extraire tout. Un fichier ouvert directement dans "
-                         "le ZIP n'est pas utilisable.\n\n"
-                         "donnees_corrigees.csv : les données après vos corrections (UTF-8, séparateur virgule).\n"
-                         "dictionnaire_colonnes.csv : le type et le format de chaque colonne.\n"
-                         "analyse.ipynb : le notebook Jupyter, qui lit donnees_corrigees.csv dans ce même dossier.\n\n"
-                         "Power BI Desktop : Accueil > Obtenir les données > Texte/CSV > donnees_corrigees.csv ; "
-                         "vérifiez les types dans Power Query avec le dictionnaire (les identifiants restent du texte).\n"
-                         "Excel : Données > À partir d'un fichier texte/CSV (Excel s'arrête à 1 048 576 lignes).\n"
-                         "Jupyter (ou VS Code) : ouvrez analyse.ipynb dans ce dossier, puis exécutez les cellules.\n\n"
-                         "Une case vide est une valeur manquante, pas un zéro.\n")
+        for nom, contenu in fichiers_donnees(data, roles, nom_fichier, reglages, delai).items():
+            archive.writestr(nom, contenu)
     return tampon.getvalue()
+
+
+LISEZMOI = ("Commencez par extraire ce ZIP : clic droit > Extraire tout. Un fichier ouvert directement dans "
+            "le ZIP n'est pas utilisable.\n\n"
+            "donnees_corrigees.csv : les données après vos corrections (UTF-8, séparateur virgule).\n"
+            "dictionnaire_colonnes.csv : le type et le format de chaque colonne.\n"
+            "analyse.ipynb : le notebook Jupyter, qui lit donnees_corrigees.csv dans ce même dossier.\n\n"
+            "Power BI Desktop : Accueil > Obtenir les données > Texte/CSV > donnees_corrigees.csv ; "
+            "vérifiez les types dans Power Query avec le dictionnaire (les identifiants restent du texte).\n"
+            "Excel : Données > À partir d'un fichier texte/CSV (Excel s'arrête à 1 048 576 lignes).\n"
+            "Jupyter (ou VS Code) : ouvrez analyse.ipynb dans ce dossier, puis exécutez les cellules.\n\n"
+            "Une case vide est une valeur manquante, pas un zéro.\n")
 
 
 def _md(*lignes):

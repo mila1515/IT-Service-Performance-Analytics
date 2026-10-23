@@ -156,8 +156,12 @@ def _section_export(validation):
                                f"{base}_lignes_ecartees.csv", "text/csv", icon=":material/playlist_remove:", on_click="ignore")
 
 
-def section_rapport(validation):
-    """Notes, rapport complet (HTML, Word) et archive du projet ; affiché à l'étape 5, dernière étape."""
+def section_rapport(validation, dossier_donnees=None):
+    """Notes, rapport complet (HTML, Word) et archive du projet ; affiché à l'étape 5, dernière étape.
+
+    `dossier_donnees` : fonction sans argument qui renvoie les fichiers du dossier « données + notebook »,
+    repris dans l'archive sous `donnees_et_notebook/`.
+    """
     etat = st.session_state
     notes = st.text_area("Ce que je retiens (facultatif)", value=etat.get("notes", ""), key="w_notes",
                          placeholder="Par exemple : la catégorie A est la plus fréquente ; vérifier avec l'équipe "
@@ -173,10 +177,11 @@ def section_rapport(validation):
         st.download_button("Rapport Word (.docx)", lambda: rapport_word(contenu()), f"{base}_rapport_qualite.docx",
                            DOCX, icon=":material/description:", on_click="ignore",
                            help="Le même rapport, graphiques compris, à ouvrir dans Word.")
-        st.download_button("Tout le projet (ZIP)", lambda: _archive(source, validation, contenu()),
+        st.download_button("Tout le projet (ZIP)", lambda: _archive(source, validation, contenu(), dossier_donnees),
                            f"{base}_projet_{datetime.now(timezone.utc):%Y%m%d}.zip", "application/zip",
                            icon=":material/folder_zip:", on_click="ignore",
-                           help="Fichier d'origine, données corrigées, lignes écartées, rapports et journal.")
+                           help="Tout : fichier d'origine, données corrigées, lignes écartées, rapports HTML, Word et "
+                                "texte, journal, et le dossier données + notebook.")
 
 
 def _memo_filtre():
@@ -222,10 +227,13 @@ def _filtre_dates(data, colonne, memo):
     return spec, f"{colonne} : du {periode[0]:%d/%m/%Y} au {periode[1]:%d/%m/%Y}"
 
 
-def _archive(source, validation, contenu):
+def _archive(source, validation, contenu, dossier_donnees=None):
+    autres = {"rapport_qualite.docx": rapport_word(contenu)}
+    if dossier_donnees is not None:
+        autres.update({f"donnees_et_notebook/{nom}": octets for nom, octets in dossier_donnees().items()})
     return archive_projet(source["contenu"], source["nom"], validation["cleaned"], validation["rejects"],
                           rapport_markdown(contenu), validation["choix"], validation["log"], validation["plan"]["dictionary"],
-                          rapport_html(contenu))
+                          rapport_html(contenu), autres)
 
 
 def _filtre(data, roles):

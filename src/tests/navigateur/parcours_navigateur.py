@@ -153,7 +153,9 @@ def parcours_exemple(p, url):
         nom, contenu = t.telecharger("Tout le projet (ZIP)")
         with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
             assert archive.read("fichier_origine/exemple.csv") == EXEMPLE.read_bytes(), "fichier d'origine modifié"
-            assert "rapport_qualite.html" in archive.namelist()
+            noms = set(archive.namelist())
+            assert {"rapport_qualite.html", "rapport_qualite.docx", "donnees_et_notebook/analyse.ipynb",
+                    "donnees_et_notebook/donnees_corrigees.csv"} <= noms, "archive incomplète"
             json.loads(archive.read("journal.json"))
         details.append(f"{nom} ({len(contenu)} o, fichier d'origine identique)")
         return " · ".join(details)

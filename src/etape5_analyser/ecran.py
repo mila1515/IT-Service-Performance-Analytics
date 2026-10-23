@@ -14,7 +14,7 @@ from src.etape4_visualiser.ecran import section_rapport
 from src.etape4_visualiser.preparation import prepare
 from src.etape5_analyser.calculs import (STATISTIQUES, comparer, de, delais, duree, duree_lisible, evolution,
                                          sections_possibles, une_ligne_par, unite_comptee)
-from src.etape5_analyser.exports import export_donnees, nom_colonne_delai
+from src.etape5_analyser.exports import export_donnees, fichiers_donnees, nom_colonne_delai
 from src.etape5_analyser.resumes import (PRUDENCE_COMPARER, PRUDENCE_EVOLUTION, prudence_delai, resume_comparaison,
                                          resume_delai, resume_evolution)
 
@@ -140,16 +140,21 @@ def _section_exports(data, roles, nom, reglages, validation):
         colonne = nom_colonne_delai(reglages["debut"], reglages["fin"], reglages["unite_temps"]) if avec_delai else None
         base = nom.rsplit(".", 1)[0]
 
+        def delai():
+            return (colonne, duree(data, reglages["debut"], reglages["fin"], reglages["unite_temps"])) if avec_delai else None
+
         def dossier_zip():
-            delai = (colonne, duree(data, reglages["debut"], reglages["fin"], reglages["unite_temps"])) if avec_delai else None
-            return export_donnees(data, roles, nom, reglages, delai)
+            return export_donnees(data, roles, nom, reglages, delai())
+
+        def dossier_fichiers():
+            return fichiers_donnees(data, roles, nom, reglages, delai())
 
         gauche, droite = st.columns(2)
         with gauche, st.container(border=True, key="carte_analyse_rapport"):
             st.markdown("**Rapport complet**")
             st.caption("Tout le parcours, de l'étape 1 à l'étape 5 : lecture du fichier, points repérés, décisions, "
                        "graphiques de contrôle (avec le filtre de l'étape 4 s'il est actif) et ces analyses.")
-            section_rapport(validation)
+            section_rapport(validation, dossier_fichiers)
         with droite, st.container(border=True, key="carte_analyse_donnees"):
             st.markdown("**Données et notebook**")
             st.caption("Un dossier prêt à l'emploi : les données corrigées en CSV"

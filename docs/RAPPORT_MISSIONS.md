@@ -1018,3 +1018,14 @@ Mémoire du conteneur : 50 Mo au repos, **pic d'environ 4,3 Go** pendant le rapp
 
 **Vérifications :** 92 tests OK (ordre des 5 étapes dans les trois versions, filtre conservé après un passage à l'étape 5, boutons à la bonne étape) ; test navigateur de 15 étapes réussi en local et sur Docker.
 
+---
+
+## Archive « Tout le projet » vraiment complète (2026-10-23)
+
+**Demande :** que « Tout le projet (ZIP) » contienne tout.
+
+**Réalisé :** l'archive ajoute le rapport Word (`rapport_qualite.docx`) et, dans `donnees_et_notebook/`, le dossier « données + notebook » tel quel (données typées, dictionnaire des colonnes, notebook, mode d'emploi). Le notebook y lit le CSV de son propre dossier, aux dates au format standard, et non le `donnees_corrigees.csv` de la racine, qui garde le format de dates du fichier d'origine. Le `LISEZMOI` de l'archive décrit chaque fichier.
+
+**À savoir :** les données figurent deux fois dans l'archive (racine et sous-dossier), qui est donc plus lourde pour un gros fichier.
+
+**Vérifications :** 93 tests OK ; test navigateur réussi en local et sur Docker (contenu du ZIP téléchargé vérifié).

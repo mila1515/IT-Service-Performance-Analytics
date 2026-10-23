@@ -40,6 +40,18 @@ class ExportTests(unittest.TestCase):
             self.assertIn("001", archive.read("donnees_corrigees.csv").decode("utf-8-sig"))
             self.assertEqual(json.loads(archive.read("journal.json"))["choix"], {"doublons": {"doublons": "une"}})
 
+    def test_archive_can_hold_everything(self):
+        _, dictionary, cleaned, rejects, log = nettoyer()
+        autres = {"rapport_qualite.docx": b"PK-word", "donnees_et_notebook/analyse.ipynb": b"{}",
+                  "donnees_et_notebook/donnees_corrigees.csv": b"id"}
+        contenu = archive_projet(SOURCE, "donnees.csv", cleaned, rejects, "# Rapport", {}, log, dictionary, "<html>", autres)
+        with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
+            noms = set(archive.namelist())
+            lisezmoi = archive.read("LISEZMOI.txt").decode("utf-8")
+        self.assertTrue({"rapport_qualite.html", "rapport_qualite.md", *autres} <= noms)
+        self.assertIn("rapport_qualite.docx", lisezmoi)
+        self.assertIn("donnees_et_notebook/", lisezmoi)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,8 +33,13 @@ def rejets_lisibles(rejects):
     return resultat
 
 
-def archive_projet(source, nom_fichier, cleaned, rejects, rapport, choix, journal_moteur, dictionnaire, rapport_html=None):
-    """Archive ZIP : fichier d'origine inchangé, données corrigées, lignes écartées, rapports et journal détaillé."""
+def archive_projet(source, nom_fichier, cleaned, rejects, rapport, choix, journal_moteur, dictionnaire, rapport_html=None,
+                   autres=None):
+    """Archive ZIP : fichier d'origine inchangé, données corrigées, lignes écartées, rapports et journal détaillé.
+
+    `autres` : fichiers supplémentaires, chemin dans l'archive → octets (rapport Word, dossier données + notebook).
+    """
+    autres = autres or {}
     tampon = io.BytesIO()
     with zipfile.ZipFile(tampon, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr(f"fichier_origine/{nom_fichier}", source)
@@ -45,9 +50,19 @@ def archive_projet(source, nom_fichier, cleaned, rejects, rapport, choix, journa
             archive.writestr("rapport_qualite.html", rapport_html)
         archive.writestr("journal.json", json.dumps({"choix": choix, "journal": journal_moteur, "dictionnaire": dictionnaire},
                                                     ensure_ascii=False, indent=2, default=str))
-        archive.writestr("LISEZMOI.txt", "Audit qualité d'un fichier CSV avant analyse métier.\n"
-                                         "rapport_qualite.html : le rapport complet avec les graphiques (à ouvrir dans le navigateur).\n"
-                                         "rapport_qualite.md : le même rapport en texte.\n"
-                                         "lignes_ecartees.csv : lignes mises de côté, avec leur numéro d'origine et leur raison.\n"
-                                         "fichier_origine/ : le fichier importé, inchangé.\n")
+        for chemin, contenu in autres.items():
+            archive.writestr(chemin, contenu)
+        lignes = ["Audit qualité d'un fichier CSV avant analyse métier. Extrayez ce ZIP avant d'ouvrir les fichiers.", "",
+                  "fichier_origine/ : le fichier importé, inchangé.",
+                  "donnees_corrigees.csv : les données après vos corrections, dans le format de votre fichier.",
+                  "lignes_ecartees.csv : lignes mises de côté, avec leur numéro d'origine et leur raison.",
+                  "rapport_qualite.html : le rapport complet des étapes 1 à 5, avec les graphiques (navigateur).",
+                  "rapport_qualite.md : le même rapport en texte."]
+        if "rapport_qualite.docx" in autres:
+            lignes.append("rapport_qualite.docx : le même rapport pour Word, graphiques compris.")
+        lignes.append("journal.json : le détail des choix, du journal et des types de colonnes.")
+        if any(c.startswith("donnees_et_notebook/") for c in autres):
+            lignes.append("donnees_et_notebook/ : données typées (dates au format standard), dictionnaire des colonnes et "
+                          "notebook Jupyter qui les lit ; ouvrez analyse.ipynb dans ce dossier.")
+        archive.writestr("LISEZMOI.txt", "\n".join(lignes) + "\n")
     return tampon.getvalue()

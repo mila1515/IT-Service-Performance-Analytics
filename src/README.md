@@ -164,7 +164,7 @@ calcule, classe et décrit ce que montrent les chiffres, sans jamais donner de c
 |---|---|
 | Rapport complet (HTML) | Le rapport des étapes 1 à 5, à lire dans le navigateur, avec les graphiques ; imprimable en PDF |
 | Rapport Word (.docx) | Le même rapport à ouvrir dans Word, graphiques et tableaux compris |
-| Tout le projet (ZIP) | Fichier d'origine inchangé, données corrigées, lignes écartées, rapport HTML et version texte (Markdown), journal détaillé |
+| Tout le projet (ZIP) | Tout : fichier d'origine inchangé, données corrigées, lignes écartées, rapports HTML, Word et texte (Markdown), journal détaillé, et le dossier « données + notebook » dans `donnees_et_notebook/` |
 | Données + notebook (ZIP) | Le dossier décrit ci-dessus |
 
   Le champ « Ce que je retiens (facultatif) » ajoute vos notes au rapport.
@@ -248,7 +248,7 @@ src/
 ## Vérifications
 
 - Tests (calculs et écrans) : `python -m unittest discover -s src/tests`, depuis la racine. Il y en
-  a 92. Ils couvrent aussi trois fichiers d'autres domaines (`tests/fixtures/ventes.csv`,
+  a 93. Ils couvrent aussi trois fichiers d'autres domaines (`tests/fixtures/ventes.csv`,
   `eleves.csv`, `capteurs.csv`) ; le notebook Jupyter y est réellement exécuté dans le dossier extrait
   du ZIP (ses graphiques aussi si matplotlib est installé), et le rapport Word est relu.
 - Parcours dans un vrai navigateur (15 étapes) : voir `src/tests/navigateur/README.md`.
