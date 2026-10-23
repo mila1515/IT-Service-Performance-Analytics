@@ -5,7 +5,6 @@ Clés du parcours simple : `source` (fichier importé), `lecture` (options), `ra
 `choix` (décisions de l'étape Corriger), `validation` (résultat validé), `graphiques_ajoutes`,
 `notes`, `etape` (étape affichée), `regles` (règles cochées à l'étape Comprendre), `analyses`
 (résumés de l'étape Analyser, repris par le rapport complet).
-Les fonctions `invalidate_cleaning` et `reset_dashboard` servent à l'ancienne interface experte.
 """
 import json
 
@@ -68,19 +67,3 @@ def reinitialiser_analyse():
 def aller(etape):
     """Rappel de bouton : change l'étape affichée (avant que la barre d'étapes soit dessinée)."""
     st.session_state.etape = etape
-
-
-def invalidate_cleaning():
-    for key in ("cleaned", "preview", "rejects", "log", "config", "decision", "decision_reason"):
-        st.session_state.pop(key, None)
-
-
-def reset_dashboard(roles, dayfirst=None):
-    """Nouveaux rôles ou format de date : les graphiques et filtres existants ne sont plus valides."""
-    state = st.session_state
-    state.viz_roles = roles
-    if dayfirst is not None:
-        state.viz_dayfirst = dayfirst
-    state.viz_charts = []
-    state.viz_filters = []
-    state.viz_revision = state.get("viz_revision", 0) + 1

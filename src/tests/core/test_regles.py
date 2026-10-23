@@ -4,7 +4,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from src.core.dictionnaire import initial_dictionary, records
-from src.core.regles import audit, compare_audits, recommendation
+from src.core.regles import audit
 from src.etape3_corriger.pipeline import pipeline
 
 
@@ -57,13 +57,6 @@ class QualityTests(unittest.TestCase):
         self.assertEqual(len(result)+len(rejects), len(raw))
         self.assertEqual(set(rejects[("Traçabilité", "Enregistrement source")]), {2, 3})
 
-    def test_recommendation_depends_on_defined_controls(self):
-        empty, _ = audit(self.raw, records(initial_dictionary(self.raw)), [])
-        self.assertEqual(recommendation(empty, 4)[0], "À évaluer")
-        summary, _ = audit(self.raw, self.dictionary, [])
-        self.assertEqual(recommendation(summary, 4)[0], "NO-GO")
-        self.assertEqual(recommendation(empty, 0)[0], "NO-GO")
-
     def test_date_format_and_trim_are_applied_to_exported_data(self):
         raw = pd.DataFrame({"date": [" 31/12/2026 "]})
         dictionary = records(initial_dictionary(raw))
@@ -72,39 +65,3 @@ class QualityTests(unittest.TestCase):
         self.assertEqual(result.date.iloc[0], pd.Timestamp("2026-12-31"))
         summary, _ = audit(result, dictionary, [])
         self.assertEqual(summary.iloc[0]["Statut"], "Conforme")
-
-
-class ComparisonTests(unittest.TestCase):
-    def test_exclusions_are_not_counted_as_corrections(self):
-        raw = pd.DataFrame({"id": ["1", "2", "2", "3", "4"], "groupe": ["a", None, "b", None, "c"],
-                            "valeur": [1., None, 3., 4., 5.]})
-        dictionary = records(initial_dictionary(raw))
-        rules = [{"id": "U", "column": "id", "kind": "Unique", "priority": "P1", "threshold": 0.},
-                 {"id": "G", "column": "groupe", "kind": "Obligatoire", "priority": "P2", "threshold": 0.},
-                 {"id": "V", "column": "valeur", "kind": "Obligatoire", "priority": "P3", "threshold": 25.}]
-        cleaned, _, _ = pipeline(raw, dictionary, rules, {"groupe": "Supprimer les lignes", "valeur": "Médiane"},
-                                 reject_rule_ids=["U"])
-        before, before_details = audit(raw, dictionary, rules)
-        after, after_details = audit(cleaned, dictionary, rules)
-        result = compare_audits(before, before_details, after, after_details, cleaned.index).set_index("ID")
-        # Unicité : les deux occurrences de « 2 » sont mises en rejet, rien n'est corrigé.
-        self.assertEqual(result.loc["U", ["Anomalies avant", "Anomalies après"]].tolist(), [2, 0])
-        self.assertEqual(result.loc["U", "Écartées par exclusion de lignes"], 2)
-        self.assertEqual(result.loc["U", "Résolues sur lignes conservées"], 0)
-        # Complétude du groupe : lignes supprimées, donc exclusion.
-        self.assertEqual(result.loc["G", "Écartées par exclusion de lignes"], 2)
-        # Valeur manquante sur la ligne 2 (rejetée) : exclusion, pas de remplacement.
-        self.assertEqual(result.loc["V", "Écartées par exclusion de lignes"], 1)
-        self.assertEqual(result.loc["V", "Statut avant"], "Conforme")
-        self.assertTrue((result["Nouvelles anomalies"] == 0).all())
-
-    def test_imputation_is_a_resolution_on_kept_rows(self):
-        raw = pd.DataFrame({"valeur": [1., None, 3.]})
-        dictionary = records(initial_dictionary(raw))
-        rules = [{"id": "V", "column": "valeur", "kind": "Obligatoire", "priority": "P2", "threshold": 0.}]
-        cleaned, _, _ = pipeline(raw, dictionary, rules, {"valeur": "Médiane"})
-        before, before_details = audit(raw, dictionary, rules)
-        after, after_details = audit(cleaned, dictionary, rules)
-        row = compare_audits(before, before_details, after, after_details, cleaned.index).iloc[0]
-        self.assertEqual((row["Écartées par exclusion de lignes"], row["Résolues sur lignes conservées"]), (0, 1))
-        self.assertEqual(row["Statut après"], "Conforme")

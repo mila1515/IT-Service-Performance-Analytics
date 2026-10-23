@@ -1,44 +1,18 @@
 """Contrôles qualité avec références aux enregistrements sources.
 
-Utilisé par les règles facultatives de l'étape Comprendre (règles simples : remplie, unique, entre deux bornes) et par
-l'ancienne interface experte (tous les contrôles, priorités P1/P2/P3, seuils).
+Utilisé par les règles facultatives de l'étape Comprendre (règles simples : remplie, unique, entre deux bornes)
+et par le pipeline de l'étape Corriger.
 """
 
 
 import json
-import re
 
-import numpy as np
 import pandas as pd
 
 from src.core.dictionnaire import convert, normalize_missing
 from src.core.texte import nombre_lisible
 
-CHECKS = ["Obligatoire", "Unique", "Intervalle", "Catégories autorisées", "Format", "Ordre des dates"]
-
 AUDIT_COLUMNS = ["ID", "Colonne", "Dimension", "Règle", "Seuil (%)", "Anomalies", "Lignes", "Taux (%)", "Statut", "Priorité"]
-
-
-def validate_rule(rule, columns):
-    if rule["column"] not in columns or rule["kind"] not in CHECKS + ["Clé composée unique"]:
-        raise ValueError("Colonne ou contrôle inconnu.")
-    if rule["priority"] not in ("P1", "P2", "P3") or not 0 <= rule["threshold"] <= 100:
-        raise ValueError("Priorité ou seuil invalide.")
-    kind = rule["kind"]
-    if kind == "Clé composée unique":
-        keys = rule.get("columns", [])
-        if not keys or len(set(keys)) != len(keys) or any(c not in columns for c in keys):
-            raise ValueError("La combinaison doit contenir des colonnes existantes et distinctes.")
-    if kind == "Intervalle" and (not np.isfinite(rule["low"]) or not np.isfinite(rule["high"]) or rule["low"] > rule["high"]):
-        raise ValueError("Intervalle invalide.")
-    if kind == "Format":
-        if len(rule["pattern"]) > 200:
-            raise ValueError("Expression de format trop longue (200 caractères maximum).")
-        re.compile(rule["pattern"])
-    if kind == "Catégories autorisées" and not rule["values"]:
-        raise ValueError("Précisez au moins une catégorie autorisée.")
-    if kind == "Ordre des dates" and (rule["other"] not in columns or rule["other"] == rule["column"]):
-        raise ValueError("Choisissez deux colonnes de dates différentes.")
 
 
 def audit(data, dictionary, rules):
@@ -101,44 +75,6 @@ def audit(data, dictionary, rules):
             details.append({"Enregistrement source": int(index)+1, "ID règle": rule["id"],
                             "Colonne": col, "Valeur": detail_value, "Motif": kind})
     return pd.DataFrame(rows, columns=AUDIT_COLUMNS), pd.DataFrame(details, columns=["Enregistrement source", "ID règle", "Colonne", "Valeur", "Motif"])
-
-
-def compare_audits(before, before_details, after, after_details, kept_index):
-    """Rejoue avant / après en séparant ce qui a été exclu de ce qui a été résolu.
-
-    `kept_index` : index source des lignes conservées (le nettoyé garde l'index du brut).
-    Une anomalie disparue parce que sa ligne a été écartée n'est pas une correction.
-    """
-    keys = ["ID", "Colonne", "Dimension", "Règle", "Seuil (%)", "Priorité"]
-    comparison = before.merge(after, on=keys, suffixes=(" avant", " après"))
-    kept = {int(i) + 1 for i in kept_index}
-
-    def flagged(details, rule_id):
-        return set(details.loc[details["ID règle"] == rule_id, "Enregistrement source"])
-
-    excluded, resolved, new = [], [], []
-    for rule_id in comparison["ID"]:
-        b, a = flagged(before_details, rule_id), flagged(after_details, rule_id)
-        excluded.append(len(b - kept))
-        resolved.append(len((b & kept) - a))
-        new.append(len(a - b))
-    comparison["Écartées par exclusion de lignes"] = excluded
-    comparison["Résolues sur lignes conservées"] = resolved
-    comparison["Nouvelles anomalies"] = new
-    return comparison
-
-
-def recommendation(audit_after, row_count):
-    if row_count == 0:
-        return "NO-GO", "Aucune ligne exploitable."
-    if audit_after.empty:
-        return "À évaluer", "Aucune règle de qualité définie."
-    failed = audit_after.loc[audit_after["Statut"] != "Conforme"]
-    if (failed["Priorité"] == "P1").any():
-        return "NO-GO", "Au moins un contrôle critique P1 échoue."
-    if not failed.empty:
-        return "GO avec réserves", "Des contrôles P2/P3 restent non conformes."
-    return "GO", "Tous les contrôles définis sont conformes ; seuls ces contrôles ont été évalués."
 
 
 def _controle(colonne, kind, libelle):

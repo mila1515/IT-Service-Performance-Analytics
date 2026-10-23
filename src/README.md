@@ -1,372 +1,297 @@
 # Analyse simple — audit qualité d'un CSV avant l'analyse métier
 
-Outil pour analyste débutant ou en apprentissage : importer n'importe quel fichier CSV,
-comprendre ce qu'il contient, corriger les problèmes de forme en un clic, contrôler le
-résultat en graphiques et remettre des données fiables avec la trace de ce qui a été décidé.
-L'analyse métier vient ensuite. Indépendant des notebooks et de Power BI.
+**Analyse simple** est une application web pour analyste débutant ou en apprentissage. Elle prend
+n'importe quel fichier CSV et guide l'utilisateur en cinq étapes :
 
-Depuis la racine du projet, dans l'environnement virtuel :
+1. comprendre ce que contient le fichier ;
+2. corriger les problèmes de forme en un clic ;
+3. contrôler le résultat en graphiques ;
+4. poser les premières questions métier ;
+5. remettre des données fiables, avec un rapport qui trace chaque décision.
+
+L'outil n'impose aucune colonne et ne contient aucune règle métier. Il fonctionne aussi bien sur
+des incidents IT que sur des ventes, des notes d'élèves ou des relevés de capteurs. Il est
+indépendant des notebooks et des fichiers Power BI du dépôt.
+
+## Démarrer
+
+Depuis la racine du dépôt, dans l'environnement virtuel :
 
 ```powershell
 python -m pip install -r src/requirements.txt
 python -m streamlit run src/app.py
 ```
 
-## Les 5 étapes
-
-1. **Importer** : déposer le fichier ; nombre de lignes et de colonnes, aperçu. Aucune saisie
-   obligatoire. Options de lecture (séparateur, encodage, décimales) repliées derrière « Le tableau
-   ne ressemble pas à votre fichier ? ». Les identifiants (001…) sont lus en texte pour garder
-   leurs zéros. Changer une option après des choix les efface, avec un avertissement.
-2. **Comprendre** : chiffres clés, une carte par colonne (type en mots simples, remplissage,
-   mini-graphique), liste des points à vérifier. Un clic sur l'étiquette du type (« Catégorie »,
-   « Identifiant »…) permet de le corriger. Quand un identifiant se répète, le volet « Pourquoi
-   … se répète ? » montre ce qui change entre les lignes d'une même valeur (part des groupes où
-   chaque colonne change, colonnes toujours identiques, un exemple). Rien n'est modifié.
-3. **Corriger** : une carte par famille de points — codes de valeur manquante (« ? », « NA »…),
-   texte dans des nombres, cases vides, lignes identiques, dates ambiguës (jour/mois), espaces en
-   trop (« A » et « A␣ » comptés comme deux valeurs). L'explication de chaque carte est derrière
-   l'icône (?). Chaque
-   point se règle en un clic ; **par défaut, rien ne change**. Le résultat (lignes gardées et
-   écartées, cases vides, moyenne avant → après) et le journal se mettent à jour en direct.
-   Une ligne écartée n'est pas effacée et « écarter n'est pas corriger » est rappelé.
-4. **Visualiser et exporter** : trois graphiques de contrôle choisis selon les rôles, chacun avec
-   une phrase « À retenir » (règles générales : valeur la plus fréquente, moyenne fragile sous
-   3 valeurs, volume ≠ performance, textes ignorés signalés) ; ajout guidé par une question ;
-   téléchargements générés au clic : données corrigées (CSV), lignes écartées (CSV, numéro de
-   ligne d'origine et raison), **rapport complet (HTML)**, rapport qualité (texte Markdown),
-   archive ZIP avec le fichier d'origine inchangé, les deux rapports et le journal.
-   Le rapport complet contient : une synthèse « En bref », le tableau des colonnes après
-   corrections (remplissage, valeurs différentes, min / médiane / moyenne / max, période), les
-   décisions et le résultat, les règles vérifiées, des **pistes de lecture** calculées à partir des
-   chiffres (colonne peu remplie, moyenne tirée par quelques valeurs, valeur dominante, identifiant
-   répété : compter les valeurs distinctes), et les graphiques de l'écran avec leur « À retenir ».
-   Si le Filtrage est actif, le rapport le dit ; les données téléchargées, elles, ne sont pas filtrées.
-5. **Analyser** : premières questions métier sur les données corrigées, sans IA. L'utilisateur
-   choisit les colonnes, l'outil calcule, classe et décrit (« Ce que montrent les chiffres ») ; il ne
-   donne jamais de cause. Trois analyses, proposées selon les types de colonnes :
-   - **Comparer des groupes** (une Catégorie) : nombre, moyenne ou médiane d'un nombre ;
-   - **Mesurer un délai** (deux Dates) : délai médian global et par groupe ;
-   - **Évolution dans le temps** (une Date) : nombre par jour, mois ou année, pour tous ou une valeur.
-   Si une colonne Identifiant se répète, « Compter chaque … une seule fois (sa dernière ligne) » est
-   coché par défaut. Les groupes de moins de 20 éléments sont signalés « trop peu pour comparer ».
-   Passerelles : **export Power BI** (données corrigées, délai calculé, dictionnaire des colonnes) et
-   **notebook Jupyter** (généré à partir d'un modèle, il recharge les données et refait les analyses).
-   Les analyses affichées sont reprises dans le **rapport complet** (section « Analyses » : réglages,
-   graphique, tableau des 10 premiers groupes, constats), téléchargeable aussi depuis cette étape.
-   Une nouvelle validation à l'étape Corriger les efface : il faut rouvrir l'étape 5.
-
-## Options facultatives
-
-Un seul parcours pour tout le monde, sans mode à choisir. Deux options, éteintes par défaut :
-
-- **Règles (facultatif)** — volet fermé sur chaque carte de l'étape Comprendre : « doit être
-  remplie », « valeurs uniques » (identifiants), « valeurs entre deux bornes » (nombres). Le
-  résultat s'affiche aussitôt. Si une règle n'est pas respectée, l'étape Corriger montre une carte
-  « Règles non respectées » : garder et signaler, ou écarter les lignes. Une règle non respectée
-  n'est pas forcément une erreur ; les textes non numériques ne sont pas comptés dans les bornes
-  (ils ont déjà leur propre carte). Le rapport qualité indique chaque règle vérifiée.
-- **Filtrage** — interrupteur à l'étape Visualiser : garder ou exclure des valeurs d'une
-  catégorie, choisir une période. Il ne change que les graphiques, pas les données téléchargées.
-
-Volontairement absents : priorités P1/P2/P3, seuils en %, expressions régulières, clés composées,
-configuration JSON, GO/NO-GO.
-
-Règles constantes : le fichier d'origine n'est jamais modifié ; chaque traitement repart de
-lui ; moyenne et médiane seulement pour les nombres, « Inconnu » seulement pour les
-catégories ; aucune règle métier ni colonne propre à un domaine ; le rapport ne certifie pas
-l'exactitude des valeurs. Les sessions restent en mémoire : télécharger avant de fermer.
-
-## Lancer avec Docker Desktop
-
-Depuis la racine du dépôt :
+Avec Docker Desktop, sans rien installer d'autre :
 
 ```powershell
-docker compose up -d --build
-```
-
-Ouvrir **http://localhost:8503**. Le port est exposé uniquement sur la machine
-locale. Les données, notebooks et fichiers Power BI du dépôt ne sont pas copiés
-dans l'image. Importer le CSV depuis l'interface.
-
-```powershell
-docker compose ps
+docker compose up -d --build      # puis ouvrir http://localhost:8503
 docker compose logs --tail 50 analyse
 docker compose down
 ```
 
-Pour utiliser un autre port disponible :
+- Le port n'est ouvert que sur la machine locale. Pour en changer : `$env:ANALYSE_PORT = "8504"`
+  avant `docker compose up`.
+- Les données, notebooks et fichiers Power BI du dépôt ne sont pas copiés dans l'image : le CSV
+  s'importe depuis l'interface.
+- Après une modification du code, relancer `docker compose up -d --build`.
 
-```powershell
-$env:ANALYSE_PORT = "8504"
-docker compose up -d --build
+## Le parcours en un coup d'œil
+
+```mermaid
+flowchart LR
+    F[/Fichier CSV/] --> E1
+    subgraph Parcours
+        E1["1 · Importer<br/>lire le fichier"] --> E2["2 · Comprendre<br/>voir, rien ne change"]
+        E2 --> E3["3 · Corriger<br/>un choix par problème"]
+        E3 --> E4["4 · Visualiser<br/>contrôler en graphiques"]
+        E4 --> E5["5 · Analyser<br/>premières questions métier"]
+    end
+    E4 --> S1[/"Données corrigées<br/>Lignes écartées<br/>Archive ZIP"/]
+    E4 --> R[/"Rapport complet<br/>(HTML ou texte)"/]
+    E5 --> R
+    E5 --> S2[/"Export Power BI<br/>Notebook Jupyter"/]
 ```
 
-Après une modification du code, relancer `docker compose up -d --build`.
-Les sessions restent en mémoire : exporter le projet avant d'arrêter ou de
+Le fichier d'origine n'est jamais modifié. Chaque correction repart des données brutes, et tout
+ce qui est décidé est noté :
+
+```mermaid
+flowchart TB
+    B[("Données brutes<br/>jamais modifiées")] --> C{"Choix de l'étape 3<br/>par défaut : rien ne change"}
+    C --> D[("Données corrigées")]
+    C --> X[("Lignes écartées<br/>avec numéro d'origine et raison")]
+    C --> J["Journal des décisions"]
+    D --> G["Graphiques de contrôle (4)<br/>Analyses (5)"]
+    J --> R[/"Rapport complet"/]
+    G --> R
+    X --> R
+```
+
+## Les étapes en détail
+
+### 1 · Importer
+
+| Ce que vous voyez | Ce que vous décidez | Ce qui en sort |
+|---|---|---|
+| Nom du fichier, nombre de lignes et de colonnes, aperçu des 20 premières lignes | Rien d'obligatoire. Si le tableau semble mal découpé, les options de lecture (séparateur, encodage, décimale) sont dans « Le tableau ne ressemble pas à votre fichier ? » | Les données brutes, gardées telles quelles |
+
+- Les identifiants comme `001` sont lus en texte, pour garder leurs zéros.
+- Si une seule colonne est lue, un message explique que le séparateur est sans doute faux.
+- Changer une option après avoir fait des choix efface ces choix, avec un avertissement.
+
+### 2 · Comprendre
+
+| Ce que vous voyez | Ce que vous décidez | Ce qui en sort |
+|---|---|---|
+| Chiffres clés (lignes, colonnes, points à vérifier) ; une carte par colonne : type en mots simples, part remplie, valeurs différentes, mini-graphique ou minimum, médiane, moyenne, maximum ; la liste des points à vérifier | Corriger le type d'une colonne (clic sur l'étiquette « Catégorie », « Identifiant »…) ; cocher des **règles facultatives** : « doit être remplie », « valeurs uniques », « entre deux bornes » | Le type de chaque colonne, les règles cochées |
+
+- Quand un identifiant se répète, le volet **« Pourquoi … se répète ? »** montre ce qui change
+  entre les lignes d'une même valeur : part des groupes où chaque colonne change, colonnes
+  toujours identiques, un exemple. Un identifiant répété n'est jamais présenté comme une erreur.
+- À cette étape, rien n'est modifié.
+
+### 3 · Corriger
+
+Une carte par famille de problèmes. Chaque carte n'apparaît que si le fichier est concerné.
+
+| Problème repéré | Choix possibles |
+|---|---|
+| Codes qui ressemblent à des valeurs manquantes (« ? », « NA », « inconnu »…) | C'est une valeur manquante · Garder tel quel |
+| Texte dans une colonne de nombres | Traiter comme des nombres · Écarter ces lignes · Ne rien changer |
+| Cases vides | Laisser vide · Écarter ces lignes |
+| Lignes identiques | Garder toutes les lignes · Garder une seule ligne |
+| Dates ambiguës (05/03 = 5 mars ou 3 mai ?) | Jour d'abord · Mois d'abord |
+| Espaces en trop (« A » et « A␣ » comptés comme deux valeurs) | Laisser tel quel · Supprimer les espaces en trop |
+| Règles cochées non respectées | Garder et signaler · Écarter ces lignes |
+
+- **Par défaut, rien ne change.** L'explication de chaque carte est derrière l'icône (?), et
+  « Voir les lignes concernées » montre des exemples.
+- Le résultat se met à jour en direct : lignes gardées et écartées, cases vides avant → après,
+  moyenne avant → après, journal.
+- Une ligne écartée n'est pas effacée : elle part dans un fichier à part. L'écran le rappelle :
+  « écarter n'est pas corriger ».
+- « Valider et voir les graphiques » enregistre les choix, relus au moment du clic.
+
+### 4 · Visualiser
+
+- **Trois graphiques de contrôle**, choisis selon les types de colonnes : répartition d'une
+  catégorie, comparaison ou distribution d'un nombre, évolution dans le temps. Chacun a une
+  phrase « À retenir ».
+- **Ajouter un graphique**, guidé par une question : comment se répartit une colonne, comment ça
+  évolue, comparer des groupes.
+- **Filtrage**, éteint par défaut : garder ou exclure des valeurs d'une catégorie, choisir une
+  période. Il ne change que les graphiques, jamais les fichiers téléchargés.
+- **Téléchargements**, générés au clic :
+
+| Fichier | Contenu |
+|---|---|
+| Données corrigées (CSV) | Les données après vos choix, lisibles par Excel |
+| Lignes écartées (CSV) | Chaque ligne mise de côté, avec son numéro d'origine et la raison |
+| Rapport complet (HTML) | Le rapport à lire dans le navigateur, avec les graphiques ; imprimable en PDF |
+| Rapport qualité (texte) | Le même rapport en Markdown, sans les images |
+| Tout le projet (ZIP) | Fichier d'origine inchangé, données corrigées, lignes écartées, les deux rapports, journal détaillé |
+
+### 5 · Analyser
+
+Premières questions métier sur les données corrigées. **Vous choisissez les colonnes ; l'outil
+calcule, classe et décrit ce que montrent les chiffres, sans jamais donner de cause.**
+
+| Analyse | Il faut | Ce que l'outil montre |
+|---|---|---|
+| Comparer des groupes | une Catégorie | Classement par nombre, moyenne ou médiane d'un nombre ; poids du premier groupe, concentration, valeurs manquantes |
+| Mesurer un délai | deux Dates | Délai médian global et par groupe ; plus long, plus court ; un groupe très lourd qui tire la médiane |
+| Évolution dans le temps | une Date | Nombre par jour, mois ou année, pour tous ou une valeur ; périodes très chargées ou presque vides |
+
+- Une analyse impossible faute de colonne du bon type est remplacée par un message qui dit
+  pourquoi.
+- Si une colonne Identifiant se répète, « Compter chaque … une seule fois (sa dernière ligne) »
+  est coché par défaut : on compte alors des incidents, des commandes ou des clients, pas des
+  lignes.
+- Un groupe de moins de 20 éléments est signalé « trop peu pour comparer ».
+- **Passerelles** :
+  - un **export Power BI** (ZIP) : données corrigées typées, colonne de délai déjà calculée,
+    dictionnaire des colonnes, mode d'emploi ;
+  - un **notebook Jupyter** (ZIP) : généré à partir d'un modèle, il recharge les données et refait
+    les analyses choisies avec pandas.
+- Le **rapport complet** se télécharge aussi depuis cette étape, avec les analyses incluses.
+
+## Le rapport complet
+
+Il réunit tout ce que l'outil a montré et tout ce que vous avez décidé, dans l'ordre de lecture :
+
+```mermaid
+flowchart TB
+    A["En bref<br/>5 à 6 phrases"] --> B["Le fichier<br/>dimensions, empreinte SHA-256"]
+    B --> C["Les colonnes après corrections<br/>type, % rempli, min · médiane · moyenne · max, période"]
+    C --> D["Points vérifiés et décisions<br/>ce qui a été fait, résultat avant / après"]
+    D --> E["Règles vérifiées<br/>(si cochées)"]
+    E --> F["Pistes de lecture<br/>calculées à partir des chiffres"]
+    F --> G["Graphiques de contrôle<br/>avec « À retenir » et le filtre éventuel"]
+    G --> H["Analyses de l'étape 5<br/>graphique, tableau, constats"]
+    H --> I["Notes, puis ce que le rapport ne garantit pas"]
+```
+
+- Les **pistes de lecture** sont des phrases calculées, sans règle métier. Exemples : une colonne
+  remplie à moins de 50 % ; une moyenne loin de la médiane (« la médiane décrit mieux une valeur
+  typique ») ; une valeur qui représente plus de la moitié des lignes ; un identifiant répété
+  (« comptez les valeurs distinctes plutôt que les lignes »).
+- Les analyses sont effacées à chaque nouvelle validation de l'étape 3 : le rapport ne décrit
+  jamais des analyses faites sur d'anciennes données.
+- Dans le HTML, tout texte issu du fichier est échappé : un nom de colonne ou une valeur
+  contenant du code ne s'exécute pas à l'ouverture.
+
+## Ce qui ne change jamais
+
+- Le fichier d'origine n'est jamais modifié ; chaque traitement repart de lui.
+- Par défaut, aucun choix ne modifie les données.
+- Moyenne et médiane seulement pour les nombres ; aucune colonne ni règle propre à un domaine.
+- Un constat décrit les chiffres, jamais une cause ; le mot « retard » n'est pas utilisé.
+- Le rapport ne certifie pas l'exactitude des valeurs : il dit ce qui a été vérifié.
+- Tout reste en mémoire : télécharger avant de fermer la page.
+
+## Outils et stack
+
+| Outil | Version | Rôle dans le projet | Pourquoi ce choix |
+|---|---|---|---|
+| Python | 3.12 | Langage de tout le projet | Standard de l'analyse de données, lisible par un analyste débutant |
+| Streamlit | 1.66 (≥ 1.57) | Interface web : écrans, boutons, téléchargements | Une application web en Python, sans HTML ni JavaScript à écrire ; widgets récents (choix segmentés, volets, interrupteurs) |
+| pandas | 3.0 | Lecture du CSV, calculs, corrections | La référence pour les tableaux en Python ; traitement sur les valeurs distinctes pour rester rapide |
+| Altair | 6.3 (≥ 5) | Graphiques de l'écran | Graphiques déclaratifs, couleurs et étiquettes maîtrisées, intégrés à Streamlit |
+| vl-convert-python | 1.9 | Graphiques du rapport HTML, en images SVG | Dessine les mêmes graphiques qu'à l'écran, sans navigateur ni service externe |
+| Docker et Docker Compose | Python 3.12 slim | Lancer l'outil sans installation | Même environnement partout, utilisateur non administrateur, contrôle de santé |
+| unittest et `streamlit.testing` (AppTest) | bibliothèque standard | Tests des calculs et des écrans | Aucune dépendance de test à ajouter ; écrans testés sans navigateur |
+| Playwright et Chromium | 1.64 | Test du parcours dans un vrai navigateur (développement seulement) | Vérifie les clics, téléchargements et réexécutions réels |
+| Inter, thème « Sarcelle qualité » | — | Police et couleurs | Lisible et reposant ; couleurs des graphiques vérifiées (contraste, daltonisme) |
+
+Seuls pandas, Streamlit, Altair et vl-convert-python sont nécessaires pour faire tourner l'outil
+(`src/requirements.txt`).
 
 ## Organisation du code
 
 ```
 src/
   app.py                 navigation entre les 5 étapes (point d'entrée)
-  config.py              constantes (seuils, couleurs, limites d'affichage)
-  .streamlit/config.toml thème « Sarcelle qualité » (couleur principale, fond, texte)
-  assets/logo.svg        logo affiché dans la barre du haut
-  core/                  commun : lecture, dictionnaire, rôles, dates, statistiques, règles,
+  config.py              constantes : seuils, couleurs, limites d'affichage
+  .streamlit/config.toml thème « Sarcelle qualité »
+  assets/logo.svg        logo de la barre du haut et du rapport
+  core/                  commun : lecture, dictionnaire, types, dates, statistiques, règles,
                          textes, dessin des graphiques, session (seul module Streamlit)
   etape1_importer/       écran d'import
-  etape2_comprendre/     fiches de colonnes, diagnostic, détection des points + écran
+  etape2_comprendre/     fiches de colonnes, diagnostic, points à vérifier, répétitions + écran
   etape3_corriger/       pipeline, application des choix, résultat, journal + écran
-  etape4_visualiser/     préparation, graphiques de contrôle, exports + écran
-  etape5_analyser/       comparer, délai, évolution, exports Power BI et Jupyter + écran
-  expert/                ancienne interface experte, gardée comme archive (voir plus bas)
-  tests/                 tests en miroir ; tests/navigateur/ : parcours dans Chromium
+  etape4_visualiser/     préparation, graphiques de contrôle, exports, rapport, pistes de lecture + écran
+  etape5_analyser/       comparer, délai, évolution, résumés pour le rapport, Power BI, Jupyter + écran
+  tests/                 tests en miroir des dossiers ; fixtures/ ; navigateur/
 ```
 
-Une étape n'importe que `core/`, `config.py` et des étapes antérieures ; le calcul (sans
-Streamlit) est séparé des écrans (`ecran.py`).
+- Une étape n'importe que `core/`, `config.py` et des étapes antérieures.
+- Le calcul (sans Streamlit, testable seul) est séparé de l'écran (`ecran.py`).
+- Les calculs coûteux sont mémorisés pour la session : un clic ne recalcule que ce qui dépend
+  de ce qui a changé. Les fichiers à télécharger sont générés au clic.
 
 ## Vérifications
 
-- Tests : `python -m unittest discover -s src/tests` (depuis la racine).
-- Navigateur : voir `src/tests/navigateur/README.md`.
+- Tests (calculs et écrans) : `python -m unittest discover -s src/tests`, depuis la racine. Il y en
+  a 87. Ils couvrent aussi trois fichiers d'autres domaines (`tests/fixtures/ventes.csv`,
+  `eleves.csv`, `capteurs.csv`), et le notebook Jupyter généré y est réellement exécuté.
+- Parcours dans un vrai navigateur (14 étapes) : voir `src/tests/navigateur/README.md`.
 
-## Limites
+## Limites à ce jour
 
-Un seul fichier CSV, traitement en mémoire, pas de restauration d'une session. Pas d'import
-Excel ni de base de données. Les graphiques servent au contrôle, pas aux conclusions métier.
-La première arrivée sur les étapes 2 et 3 prend quelques secondes sur un gros fichier
-(environ 5 s pour 141 712 lignes × 36 colonnes) ; ensuite chaque interaction prend ~0,3 s.
+| Limite | Détail |
+|---|---|
+| Une seule source | Un fichier CSV à la fois ; pas d'Excel, de Parquet, de base de données ni de jointure |
+| Taille | 200 Mo par fichier (limite de Streamlit). Mesuré : 141 712 lignes × 36 colonnes (44 Mo) passent ; une analyse ouverte occupe environ 11 fois la taille du fichier en mémoire, par onglet |
+| Temps sur un gros fichier | Sur 141 712 lignes : import ≈ 5 s, première arrivée sur Comprendre ≈ 8 s, puis chaque clic < 1 s ; Analyser ≈ 7 s puis ≈ 2 s par réglage ; rapport ≈ 5 à 9 s depuis l'étape 4, ≈ 24 s depuis l'étape 5 ; CSV et exports ≈ 8 à 15 s |
+| Lecture | Deux encodages (UTF-8, Windows) et quatre séparateurs (`,` `;` tabulation `\|`), à choisir à la main si besoin |
+| Types | Proposés à partir du nom et du contenu : à vérifier à l'étape 2 (par exemple, `sensor_id` avec 3 valeurs est plutôt une catégorie) |
+| Corrections | Liste fermée ; pas de règle sur plusieurs colonnes, de clé composée, de formule personnalisée, ni d'annulation pas à pas |
+| Analyses | Trois analyses simples ; un seul format de date par colonne ; « dernière ligne » prise dans l'ordre du fichier |
+| Mémoire et partage | Rien n'est sauvegardé : fermer l'onglet fait perdre l'analyse ; pas de compte, pas de reprise, pas de travail à plusieurs |
+| Accès | Sur le poste seulement (`127.0.0.1`), sans authentification |
+| Image Docker | Environ 920 Mo, dont environ 140 Mo pour le dessin des graphiques du rapport |
 
-## Ancienne interface experte (archive)
+## Améliorations possibles
 
-L'ancienne interface complète en
-6 étapes reste disponible à part, pour mémoire :
-dictionnaire détaillé, règles de qualité P1/P2/P3 rejouées avant/après, diagnostic des
-répétitions, dashboard configurable (filtres, disposition, configuration JSON), décision GO /
-NO-GO. Code et tests dans `src/expert/` et `src/tests/expert/`.
+### Outils
+
+| Proposition | Bénéfice |
+|---|---|
+| Détection automatique de l'encodage et du séparateur | Plus aucun réglage de lecture dans la plupart des cas |
+| Lecture d'Excel et de Parquet | Couvrir les exports les plus courants |
+| Sauvegarder puis recharger une analyse (fichier projet) | Reprendre un travail sans tout refaire |
+| Intégration continue (tests lancés à chaque modification) | Moins de régressions |
+| Règles de qualité réutilisables d'un fichier à l'autre (par exemple Great Expectations, Pandera ou Soda) | Contrôler de la même façon un fichier reçu chaque mois |
+
+### Puissance et grands volumes
+
+| Proposition | Bénéfice |
+|---|---|
+| Moteur de calcul en colonnes (DuckDB ou Polars) à la place de pandas pour les gros fichiers | Fichiers de plusieurs Go, calculs plusieurs fois plus rapides, moins de mémoire |
+| Lire le fichier par morceaux et ne garder qu'une copie des données | Mémoire proche de la taille du fichier au lieu d'environ 11 fois |
+| Écriture des exports en Parquet en plus du CSV | Exports plus petits et plus rapides, lus directement par Power BI |
+| Relever la limite d'import (`server.maxUploadSize`) après un test de charge mesuré | Accepter des fichiers de plus de 200 Mo en connaissant le temps d'attente |
+| Calcul des contrôles directement dans l'entrepôt de données (requêtes SQL) | Contrôler des tables entières sans les télécharger |
+
+### Pour un usage en entreprise
+
+| Besoin | Proposition |
+|---|---|
+| Accès sécurisé | Déploiement interne derrière une authentification unique (SSO), droits par équipe |
+| Données sensibles | Garder le traitement en mémoire, purger les sessions, tenir un registre des traitements (RGPD) |
+| Plusieurs utilisateurs en même temps | Plusieurs instances, limite de mémoire par conteneur, surveillance |
+| Sources | Connecteurs vers les bases de données, les API et l'entrepôt de données |
+| Traçabilité | Stockage central des rapports et journaux, historique par jeu de données |
+| Contrôles récurrents | Planification (par exemple Airflow ou Azure Data Factory), alertes quand la qualité baisse |
+| Analyse métier | Power BI, Metabase ou Superset branchés sur les données corrigées |
+
+## Historique
+
+La première version de l'outil (6 étapes, règles P1/P2/P3, diagnostic des répétitions avec clé
+composée, dashboard configurable, décision GO / NO-GO) a été retirée le 2026-10-23 : plus aucune
+partie de l'outil ne l'utilisait. Elle reste dans l'historique git :
 
 ```powershell
-python -m streamlit run src/expert/app_expert.py
+git checkout 4179b84 -- src/expert src/tests/expert
 ```
-
-Parcours : découverte du CSV, exploration brute et statistiques, nettoyage avec
-prévisualisation et validation, comparaison avant/après, exploration nettoyée et
-visualisation, conclusions et export CSV/JSON.
-
-Les cellules vides restent vides par défaut. Les décisions sont prises par colonne.
-Les remplacements moyenne/médiane sont réservés aux mesures numériques.
-Les lignes mises en rejet sont exclues avant le calcul des remplacements.
-Les doublons supprimés sont uniquement les lignes strictement identiques.
-Les données brutes restent intactes. Chaque nouveau traitement repart du brut.
-Le rapport JSON exporte la configuration, l'historique et les notes métier.
-
-Limites de cette première version : une seule source CSV, traitement en mémoire,
-sans restauration automatique d'une session complète. Une archive ZIP permet de
-conserver le projet et les versions validées. Les formats de date et les types
-sont définis par l'utilisateur dans le dictionnaire. Pas encore de connexion SQL, import Excel,
-ni de mapping ou d'indicateur métier calculé automatiquement. Les valeurs
-extrêmes sont signalées avec la règle IQR et conservées. Les statistiques utilisent
-les valeurs renseignées ; écart-type et variance utilisent n − 1.
-
-Vérifications : `python -m unittest discover -s src/tests`.
-
-Performances : les diagnostics, audits, statistiques et préparations de graphiques
-sont mémorisés pour la session et recalculés seulement si les données, le
-dictionnaire, les règles ou les rôles changent. Les fichiers à télécharger sont
-générés au clic.
-
-### Dashboard adaptable aux données
-
-À l'étape 5, confirmer les rôles des colonnes : mesure, catégorie, date ou
-identifiant. Les identifiants sont exclus des suggestions d'agrégation.
-Les rôles proposés sont des heuristiques, toujours corrigeables, initialisés depuis
-le dictionnaire de l'étape 2. Identifiant : un mot du nom parmi `id`, `uuid`, `code`,
-`number`, `num`, `no`, `n°`, `numéro`, `matricule`, `identifiant`, `réf`, `référence`, `clé`.
-Date : nom contenant `date` (hors `update`), finissant par `_at`, mots `horodatage`,
-`timestamp`, ou valeurs toutes au format ISO `AAAA-MM-JJ[ hh:mm[:ss]][fuseau]`.
-Une année numérique au rôle Date est lue comme une année. Un seul format de date
-est appliqué par colonne ; les valeurs qui ne le respectent pas sont signalées. Les dates ambiguës
-nécessitent de confirmer le choix jour/mois. Les conversions ne modifient pas
-les données nettoyées ; les échecs sont comptabilisés comme valeurs manquantes
-dans la vue de visualisation. Les dates avec fuseau sont ramenées en UTC.
-
-Suggestions expliquées : histogramme, boîte à moustaches, barres, évolution
-temporelle, nuage de points et tableau croisé des effectifs (au format long).
-L'éditeur permet de choisir les axes, l'effectif / somme / moyenne / médiane,
-la période, le titre, le tri et la limite de groupes affichés.
-
-Les filtres globaux s'appliquent à tous les graphiques après clic sur
-« Appliquer les filtres globaux ». Des filtres locaux peuvent ensuite être
-ajoutés à chaque graphique ; les deux niveaux sont combinés par intersection.
-Catégories : mode « Retenir » ou « Exclure » les valeurs choisies. Jusqu'à 50
-valeurs distinctes, toutes sont retenues par défaut ; au-delà, le mode « Exclure »
-avec une sélection vide garde toutes les lignes. Au-delà de 1 000 valeurs distinctes
-(identifiants), les valeurs se saisissent une par ligne. Nombres : bornes inclusives. Dates : période
-inclusive, y compris toute la dernière journée. Chaque filtre permet de retenir
-ou d'exclure les valeurs manquantes. Les effectifs retenus et les lignes non
-exploitables pour le graphique sont affichés.
-
-Prévisualiser puis ajouter un graphique au dashboard. Les graphiques s'affichent
-dans l'ordre de la liste : la section de disposition change la position (1 = en haut)
-et la largeur (demi / pleine), ou retire un graphique. Deux demi-largeurs consécutives
-partagent une rangée ; une pleine largeur occupe sa propre rangée. « Modifier ce
-graphique » ouvre son titre, son calcul et ses filtres dans l'éditeur. Les anciennes
-configurations JSON avec un numéro de ligne (« row ») sont acceptées : leurs graphiques
-sont rangés par ligne à l'import. Pas de glisser-déposer dans cette version.
-Maximum : 30 graphiques et 100 groupes par graphique en barres.
-
-Exporter / réimporter la configuration JSON depuis l'étape 5. Les colonnes,
-leurs rôles et le format des dates doivent correspondre à la configuration.
-Une importation remplace le dashboard courant après validation. Une modification
-des rôles ou du format des dates réinitialise le dashboard. Un nouvel import CSV
-réinitialise toute la session. Les traitements de nettoyage recalculent les
-graphiques existants sur les nouvelles données validées.
-
-Les histogrammes et quartiles utilisent toutes les valeurs exploitables.
-Au-delà de 5 000 points, les nuages affichent un échantillon reproductible ; les
-boîtes affichent au maximum 1 000 valeurs hors moustaches, avec mention explicite.
-Les courbes dépassant 5 000 périodes proposent le tableau complet et demandent
-de réduire la période ou filtrer avant affichage. Une somme sur une période vide
-reste manquante plutôt que de suggérer une observation à zéro.
-Les suggestions sont fondées sur des règles, sans LLM, et ne remplacent pas la
-validation métier des calculs. Aucun indicateur métier n'est déduit automatiquement.
-
-Chaque graphique affiche le nombre de lignes retenues par ses filtres sur la base
-des lignes après filtres globaux, et les lignes sans valeur exploitable.
-
-### Parcours essentiel de qualité des données
-
-1. **Découverte du CSV** : fichier, dimensions et premières lignes immédiatement
-   visibles, sans champ de saisie à remplir. Aucune connaissance préalable du
-   grain, de la période ou des indicateurs n'est exigée.
-2. **Exploration brute** : statistiques, échantillon reproductible, dictionnaire
-   éditable et diagnostic qualité. Dans le dictionnaire : définition, type observé
-   et attendu, rôle, unité, champ obligatoire, unicité, criticité et faux vides.
-   Des règles supplémentaires couvrent les bornes numériques, catégories permises,
-   formats et ordre entre deux dates, avec seuil toléré et priorité P1/P2/P3.
-   Les constats chiffrés sont affichés automatiquement, sans formulaire de notes
-   à remplir pendant l'exploration. Les informations métier facultatives restent
-   disponibles uniquement dans la synthèse.
-3. **Nettoyage** : diagnostic chiffré avant les choix, responsable et note facultatifs, conversions réelles dans les données
-   exportées, traitement des échecs (bloquer par défaut / rejeter / convertir en vide),
-   choix par colonne pour les manquants, normalisation des espaces, doublons stricts
-   et sélection de règles dont les échecs doivent être mis en rejet. Prévisualisation
-   des données, rejets et contrôles avant validation.
-4. **Comparaison** : règles rejouées avant/après, anomalies restantes, rejets,
-   journal horodaté en UTC et nombre de versions validées. Pour chaque règle, les
-   anomalies disparues sont séparées en « écartées par exclusion de lignes » (rejets :
-   ce n'est pas une correction), « résolues sur lignes conservées » et « nouvelles
-   anomalies ». Sans règle définie, l'étape l'indique : rien ne certifie les données.
-5. **Analyse et visualisation** : dashboard configurable existant.
-6. **Synthèse** : évaluation des règles et décision utilisateur GO / GO avec réserves /
-   NO-GO, justification, conclusions et exports. Sans justification, la décision
-   exportée reste « À évaluer ». Sans règle, aucun GO automatique n'est proposé.
-   Un contrôle P1 en échec suggère NO-GO ; la décision finale appartient à l'utilisateur.
-   Les informations de projet et la décision métier à éclairer peuvent être
-   renseignées ici après lecture des résultats, sans bloquer les étapes précédentes.
-
-À l'import, sélectionner les identifiants/codes dans « Colonnes à lire comme texte »
-pour préserver leurs zéros initiaux. Seules les cellules vides sont interprétées
-comme manquantes par le lecteur CSV ; les espaces seuls sont reconnus lors de
-l'audit/nettoyage. Les chaînes NA, NULL, Inconnu, etc. restent des valeurs jusqu'à
-leur déclaration explicite comme marqueurs, colonne par colonne.
-
-Les dates sont lues en ISO 8601 sauf format explicitement défini, par exemple
-`%d/%m/%Y %H:%M`. Les fuseaux sont convertis en UTC. Les valeurs infinies ne sont
-pas acceptées lors d'une conversion numérique. Une valeur atypique reste conservée
-tant qu'aucun traitement ou rejet explicite ne la concerne.
-
-La référence d'un rejet/anomalie est le numéro d'enregistrement dans le CSV source
-(à partir de 1, hors en-tête). Un enregistrement avec plusieurs motifs n'apparaît
-qu'une fois dans les rejets, avec tous ses motifs. Le CSV des rejets utilise deux
-lignes d'en-tête afin de séparer les métadonnées des colonnes originales.
-
-L'archive ZIP contient le CSV original inchangé, les données nettoyées, les rejets,
-le rapport JSON et sa synthèse Markdown, les résultats tabulaires du dashboard et
-chaque version de nettoyage validée avec sa recette et son journal. Télécharger
-l'archive avant de fermer la session ou de charger une autre source. Les versions
-sont indépendantes et calculées depuis le brut, pas en cumulant les nettoyages.
-Modifier le dictionnaire ou les règles invalide le nettoyage courant et sa décision,
-sans effacer les versions déjà validées. Modifier le dictionnaire réinitialise aussi
-le dashboard pour éviter des agrégations fondées sur d'anciens rôles.
-
-Les seuils d'anomalies utilisent toutes les lignes comme dénominateur. L'unicité
-signale toutes les occurrences renseignées d'une valeur dupliquée. Les contrôles
-de format, type, intervalle, catégories et dates ignorent les valeurs manquantes :
-les combiner avec un contrôle « Obligatoire » si nécessaire. Le rapport doit être
-interprété selon les règles effectivement définies : il ne certifie pas l'exactitude
-métier. Les obligations conditionnelles, la fraîcheur automatisée, la modélisation,
-les jointures et les imports de plusieurs CSV restent hors périmètre pour le moment.
-
-### Comprendre les répétitions sans imposer de métier
-
-Dans l'étape 2, la section « Comprendre les clés répétées » est facultative.
-Choisir une clé de regroupement simple ou composée, puis éventuellement des
-colonnes distinguant les lignes / événements et les champs à comparer. Aucun
-nom de colonne ni domaine n'est imposé : commande + ligne, circulation + date +
-arrêt, employé + période + affectation sont des exemples de configurations.
-
-Le diagnostic affiche les groupes répétés, les doublons stricts en excès,
-les différences pour une même clé de ligne et les détails incomplets. Chaque
-groupe est consultable avec les enregistrements sources et les colonnes qui
-varient. Les champs non sélectionnés pour comparaison ne créent pas de conflit ;
-les doublons stricts sont toujours évalués sur toutes les colonnes originales.
-Les clés de regroupement incomplètes sont présentées à part. Les marqueurs vides
-du dictionnaire sont reconnus, sans conversion de type ou normalisation du texte.
-Une configuration modifiée reste un brouillon jusqu'au clic sur « Analyser les
-répétitions ». Les résultats et paramètres sont exportables en JSON et inclus
-dans le rapport et l'archive du projet si une analyse a été configurée.
-
-Cette exploration ne modifie ni le nettoyage, ni les filtres, ni les contrôles
-existants. Des détails distincts ne garantissent pas la validité métier ; des
-lignes identiques ne sont pas une preuve suffisante d'erreur. Il n'y a ni fusion,
-ni suppression, ni rejet automatique à partir de ce diagnostic.
-
-Pour contrôler réellement une clé composée, confirmer explicitement son unicité
-et ajouter la règle depuis cette section. Ce choix invalide le nettoyage courant
-afin que les contrôles soient rejoués ; les versions validées restent conservées.
-La règle signale toutes les occurrences d'une combinaison complète dupliquée.
-Les clés incomplètes sont exclues de ce contrôle d'unicité : définir aussi des
-contrôles « Obligatoire » pour les colonnes requises. Un éventuel rejet doit être
-sélectionné explicitement à l'étape de nettoyage et porte alors sur toutes les
-occurrences signalées, sans choisir arbitrairement une ligne à conserver.
-Une nouvelle source CSV réinitialise la configuration et ces règles comme les
-autres paramètres du projet.
-
-### Interface simplifiée : observer avant de décider
-
-Les étapes se suivent avec des boutons « Explorer les données », « Continuer vers
-le nettoyage », « Continuer vers les graphiques » et « Passer à la synthèse ».
-La navigation latérale reste disponible. La validation d'un nettoyage ouvre
-directement la comparaison avant/après.
-
-L'exploration présente d'abord les valeurs manquantes (effectifs, pourcentages,
-lignes concernées), les doublons, les statistiques et distributions. Les types,
-le dictionnaire, les règles métier et les clés répétées restent dans des sections
-repliées. Les options de lecture du CSV sont également repliées.
-
-Avant tout choix de nettoyage, un diagnostic affiche le nombre de cellules vides,
-de lignes concernées et de doublons, puis un tableau par colonne : vides détectés,
-pourcentages, échecs de conversion et moyenne/médiane pour les mesures numériques.
-Seules les colonnes concernées disposent d'un choix de remplacement. Les valeurs
-des colonnes complètes sont conservées sans poser de question. Les échecs de
-conversion restent bloqués tant qu'aucun traitement explicite n'est choisi.
-
-Les marqueurs possibles (`?`, `NA`, `NULL`, etc.) sont comptés séparément : ils
-ne sont pas automatiquement considérés comme vides. Un bouton permet de les
-reconnaître explicitement dans les colonnes du tableau ; ce choix est enregistré
-dans le dictionnaire. Pour un traitement limité à certaines colonnes, utiliser
-le dictionnaire. Cette distinction est utile lorsque les champs absents sont
-représentés par un code comme `?` plutôt que par une cellule vide.
-
-Le responsable et la note de nettoyage sont facultatifs. Sans note saisie, une
-description automatique du plan est enregistrée dans le journal. La prévisualisation
-montre les lignes conservées, vides restants et rejets ; les paramètres et contrôles
-détaillés sont repliés. Chaque suppression ou remplacement reste un choix explicite.
-
-Le dashboard propose un premier graphique adapté sans nécessiter de configuration.
-L'aperçu précède l'ajout au dashboard ; les réglages d'axes, calculs, titre et
-filtres locaux se trouvent dans « Personnaliser le graphique et ses filtres ».
-La décision formelle GO/NO-GO est facultative et repliée dans la synthèse.

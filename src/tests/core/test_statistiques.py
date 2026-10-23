@@ -3,7 +3,6 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from src.core.statistiques import statistics
 from src.etape3_corriger.pipeline import clean
 
 
@@ -33,17 +32,6 @@ class CleaningTests(unittest.TestCase):
         self.assertEqual(result.x.tolist(), ["Inconnu", "a"])
         self.assertEqual(len(result), 2)
         self.assertEqual(len(log), 1)
-
-    def test_descriptive_statistics(self):
-        stats = statistics(pd.DataFrame({"x": [1., 2., 3., None]}))
-        self.assertEqual(stats.loc["x", "Moyenne"], 2.)
-        self.assertEqual(stats.loc["x", "Variance"], 1.)
-
-    def test_statistics_exclude_declared_identifiers(self):
-        stats = statistics(pd.DataFrame({"id": [1, 2, 3], "x": [1., 2., 3.]}), exclude=["id"])
-        self.assertEqual(stats.index.tolist(), ["x"])
-        self.assertTrue(statistics(pd.DataFrame({"id": [1, 2]}), exclude=["id"]).empty)
-
 
 if __name__ == "__main__":
     unittest.main()

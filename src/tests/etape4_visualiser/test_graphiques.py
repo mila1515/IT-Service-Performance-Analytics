@@ -1,13 +1,11 @@
-import copy
 import unittest
 
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from src.core.roles import infer_roles
-from src.etape4_visualiser.graphiques import apply_filters, chart_data, suggestions
+from src.etape4_visualiser.graphiques import apply_filters
 from src.etape4_visualiser.preparation import prepare
-from src.expert.configuration import validate_configuration
 
 
 class VisualizationTests(unittest.TestCase):
@@ -23,7 +21,6 @@ class VisualizationTests(unittest.TestCase):
         self.assertEqual(self.roles["id"], "Identifiant")
         self.assertEqual(self.roles["date_ouverture"], "Date")
         self.assertEqual(self.invalid, {"date_ouverture": 1})
-        self.assertFalse(any(c["x"] == "id" or c["y"] == "id" for c in suggestions(self.roles)))
         assert_frame_equal(self.raw, original)
 
     def test_intersection_and_missing_filters(self):
@@ -39,45 +36,6 @@ class VisualizationTests(unittest.TestCase):
     def test_end_date_includes_entire_day(self):
         result = apply_filters(self.data, [{"column": "date_ouverture", "type": "Date", "low": "2026-01-01", "high": "2026-01-31", "missing": False}])
         self.assertEqual(len(result), 2)
-
-    def test_aggregation_sort_and_excluded_rows(self):
-        spec = next(s for s in suggestions(self.roles) if s["kind"] == "Barres" and s["y"] == "hours")
-        frame, excluded = chart_data(self.data, spec)
-        self.assertEqual(frame.Groupe.tolist(), ["b", "a"])
-        self.assertEqual(frame.Valeur.tolist(), [8., 2.])
-        self.assertEqual(excluded, 1)
-
-    def test_empty_month_is_not_zero_sum(self):
-        spec = next(s for s in suggestions(self.roles) if s["kind"] == "Courbe" and s["y"] == "hours")
-        spec["agg"] = "Somme"
-        frame, _ = chart_data(self.data, spec)
-        self.assertTrue(pd.isna(frame.Valeur.iloc[1]))
-
-    def test_round_trip_and_reject_invalid_configuration(self):
-        config = {"version": 1, "roles": self.roles, "filters": [], "charts": suggestions(self.roles)}
-        validate_configuration(config, self.roles)
-        invalid = copy.deepcopy(config)
-        invalid["charts"][0]["x"] = "absent"
-        with self.assertRaises(ValueError):
-            validate_configuration(invalid, self.roles)
-        invalid = copy.deepcopy(config)
-        invalid["filters"] = [{"column": "hours", "type": "Mesure", "low": 10, "high": 2, "missing": False}]
-        with self.assertRaises(ValueError):
-            validate_configuration(invalid, self.roles)
-
-    def test_group_column_names_do_not_collide_with_result_columns(self):
-        base = {"period": "Mois", "sort": "Groupe", "limit": 20, "filters": []}
-        for name in ["Valeur", "Groupe", "Série"]:
-            data = pd.DataFrame({name: ["a", "b", "a"], "m": [1., 2., 3.], "c": ["x", "y", "x"]})
-            frame, _ = chart_data(data, dict(base, kind="Barres", x=name, y=None, agg="Effectif"))
-            self.assertEqual(frame.to_dict("list"), {"Groupe": ["a", "b"], "Valeur": [2, 1]})
-            frame, _ = chart_data(data, dict(base, kind="Barres", x=name, y="m", agg="Moyenne"))
-            self.assertEqual(frame.Valeur.tolist(), [2., 2.])
-            frame, _ = chart_data(data, dict(base, kind="Tableau croisé", x=name, y="c", agg="Effectif"))
-            self.assertEqual(list(frame), ["Groupe", "Série", "Valeur"])
-        dates = pd.DataFrame({"Valeur": pd.to_datetime(["2026-01-05", "2026-02-01"]), "Groupe": [1., 3.]})
-        frame, _ = chart_data(dates, dict(base, kind="Courbe", x="Valeur", y="Groupe", agg="Moyenne"))
-        self.assertEqual(frame.Valeur.tolist(), [1., 3.])
 
     def test_roles_from_french_names_and_iso_content(self):
         data = pd.DataFrame({"N° commande": [1, 2], "matricule": [10, 20], "Numéro client": [5, 6],
@@ -102,10 +60,6 @@ class VisualizationTests(unittest.TestCase):
         self.assertEqual(apply_filters(data, [dict(spec, missing=True)]).index.tolist(), [1, 2, 3])
         self.assertEqual(apply_filters(data, [dict(spec, values=[], exclude=True)]).g.tolist(), ["a", "b", "c"])
         self.assertEqual(apply_filters(data, [{k: v for k, v in spec.items() if k != "exclude"}]).g.tolist(), ["a"])
-        roles = {"g": "Catégorie"}
-        validate_configuration({"version": 1, "roles": roles, "charts": [], "filters": [spec]}, roles)
-        with self.assertRaises(ValueError):
-            validate_configuration({"version": 1, "roles": roles, "charts": [], "filters": [dict(spec, exclude="oui")]}, roles)
 
     def test_updated_by_is_not_proposed_as_date(self):
         roles = infer_roles(pd.DataFrame({"sys_updated_by": ["x"], "sys_updated_at": ["2026-01-01"], "date_update": ["2026-01-01"]}))

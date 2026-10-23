@@ -2,8 +2,7 @@
 
 Lancer depuis la racine : python -m streamlit run src/app.py
 Parcours en 5 étapes, une par dossier : etape1_importer → etape2_comprendre → etape3_corriger
-→ etape4_visualiser → etape5_analyser. Ce fichier ne contient que la navigation ; l'ancienne interface complète
-reste disponible à côté (src/expert/app_expert.py).
+→ etape4_visualiser → etape5_analyser. Ce fichier ne contient que la navigation.
 """
 import sys
 from pathlib import Path

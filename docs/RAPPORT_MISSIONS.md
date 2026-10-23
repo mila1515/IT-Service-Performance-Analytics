@@ -920,3 +920,19 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 
 **Vérifications :** 119 tests OK (dont `AnalysesDansLeRapportTests` et l'effacement après validation) ; test navigateur réussi (rapport téléchargé depuis l'étape 5 avec sa section « Analyses ») ; rapport vérifié visuellement sur le fichier réel.
 
+---
+
+## Suppression de l'ancienne interface experte (2026-10-23)
+
+**Demande :** supprimer le code de l'ancienne interface experte s'il n'est plus utilisé.
+
+**Constat :** aucune partie de l'outil n'importait `src/expert/` ; seuls ses propres tests et un test de l'étape 4 s'en servaient.
+
+**Supprimé :**
+- `src/expert/` (interface en 6 étapes, dashboard configurable, configuration JSON, règles P1/P2/P3, répétitions avec clé composée, rapport de projet) et `src/tests/expert/`.
+- Le code commun qui ne servait plus qu'à elle : `invalidate_cleaning` et `reset_dashboard` (`core/session.py`), `CHECKS`, `validate_rule`, `compare_audits`, `recommendation` (`core/regles.py`), `profile` et `statistics` (`core/statistiques.py`), `TYPES` (`core/dictionnaire.py`), `suggestions` et `chart_data` (`etape4_visualiser/graphiques.py`), et les tests qui ne visaient que ce code.
+
+**Gardé :** `audit` (règles facultatives et pipeline), `apply_filters` (Filtrage), et tous les tests de ce qui reste (filtres, types de colonnes, dates, contrôles).
+
+**Récupération :** `git checkout 4179b84 -- src/expert src/tests/expert`.
+

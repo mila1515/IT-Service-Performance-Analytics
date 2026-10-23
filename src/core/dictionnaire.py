@@ -8,9 +8,6 @@ import pandas as pd
 
 from src.core.roles import infer_roles
 
-TYPES = ["Conserver", "Texte", "Nombre", "Date"]
-
-
 def initial_dictionary(data):
     roles = infer_roles(data)
     return pd.DataFrame([{"Colonne": col, "Définition": "", "Type observé": str(data[col].dtype),
