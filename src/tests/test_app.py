@@ -129,7 +129,7 @@ class ParcoursSimpleTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertIn("À retenir", textes(app.markdown))
         self.assertIn("1 texte ignoré", textes(app.caption))
-        self.assertEqual(len(app.get("download_button")), 5)
+        self.assertEqual([b.label for b in app.get("download_button")], ["Données corrigées (CSV)", "Lignes écartées (CSV)"])
         app.segmented_control(key="w_ajout_question").set_value("repartition").run()
         bouton(app, "Ajouter ce graphique").click().run()
         self.assertEqual(len(app.session_state.graphiques_ajoutes), 1)
@@ -193,6 +193,23 @@ class ReglesEtFiltrageTests(unittest.TestCase):
         self.assertIn("4 / 7 lignes retenues", textes(app.markdown))
         self.assertEqual(len(app.session_state.validation["cleaned"]), 7)
 
+    def test_filter_is_kept_when_going_to_step_5_and_back(self):
+        app = self.ouvrir()
+        app.session_state["etape"] = "Corriger"
+        app.run()
+        bouton(app, "Valider et voir les graphiques").click().run()
+        app.toggle(key="w_filtre_actif").set_value(True).run()
+        app.segmented_control(key="w_filtre_mode").set_value("exclure").run()
+        cle = next(p.key for p in app.get("button_group") if (p.key or "").startswith("w_filtre_valeurs_"))
+        app.button_group(key=cle).set_value(["A"]).run()
+        bouton(app, "Étape suivante : analyser").click().run()
+        self.assertEqual(app.session_state.filtre["texte"], "categorie : exclure A")
+        app.session_state["etape"] = "Visualiser"
+        app.run()
+        self.assertFalse(app.exception)
+        self.assertTrue(app.toggle(key="w_filtre_actif").value)
+        self.assertIn("4 / 7 lignes retenues", textes(app.markdown))
+
 
 class AnalyserTests(unittest.TestCase):
     def ouvrir_valide(self, contenu, nom):
@@ -224,7 +241,8 @@ class AnalyserTests(unittest.TestCase):
         self.assertIn("« A » compte 2 id distincts", textes(app.markdown))
         self.assertIn("compte le plus d'id distincts", textes(app.markdown))
         self.assertIn("Mesurer un délai : il faut deux colonnes de type Date.", textes(app.info))
-        self.assertEqual(len(app.get("download_button")), 3)
+        self.assertEqual([b.label for b in app.get("download_button")],
+                         ["Rapport complet (HTML)", "Rapport Word (.docx)", "Tout le projet (ZIP)", "Données + notebook (ZIP)"])
         self.assertEqual([a["titre"] for a in app.session_state.analyses],
                          ["Comparer des groupes : categorie", "Évolution dans le temps : date_commande"])
         case.uncheck().run()

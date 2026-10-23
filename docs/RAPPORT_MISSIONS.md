@@ -1003,3 +1003,18 @@ Mémoire du conteneur : 50 Mo au repos, **pic d'environ 4,3 Go** pendant le rapp
 **Réalisé :** à l'étape 5, un seul bouton « Données + notebook (ZIP) » remplace « Export CSV (ZIP) » et « Notebook Jupyter (.ipynb) », et une seule carte « Données et notebook ». Une fois extrait, le dossier contient `donnees_corrigees.csv`, `analyse.ipynb` (qui lit le CSV posé à côté), `dictionnaire_colonnes.csv` et `LISEZMOI.txt`. Le notebook ne recopie pas les données. La carte « Rapport complet » (HTML et Word) ne change pas.
 
 **Vérifications :** 91 tests OK (notebook exécuté directement dans le dossier extrait, graphiques compris) ; test navigateur réussi en local et sur Docker.
+
+---
+
+## Un seul rapport, à l'étape 5, sur les étapes 1 à 5 (2026-10-23)
+
+**Demande :** le rapport se téléchargeait aux étapes 4 et 5 avec des contenus légèrement différents ; le garder à un seul endroit, l'étape 5, et qu'il couvre bien tout le parcours. Constat vérifié au passage : le filtre de l'étape 4 était perdu en changeant d'étape (Streamlit efface l'état des widgets qui ne sont plus affichés).
+
+**Réalisé :**
+- Rapport HTML, rapport Word, archive du projet et notes à l'étape 5 seulement (`section_rapport`) ; l'étape 4 garde les deux CSV.
+- Rapport organisé par étapes : En bref ; Étape 1 · Importer (fichier, taille, options de lecture, colonnes lues en texte, empreinte) ; Étape 2 · Comprendre (points repérés par famille, règles cochées) ; Étape 3 · Corriger (décisions, journal, résultat, colonnes après corrections) ; Étape 4 · Visualiser (graphiques de contrôle, filtre, pistes de lecture) ; Étape 5 · Analyser ; notes ; limites.
+- Une seule description du rapport (`blocs`) mise en forme en Markdown, HTML et Word : les trois versions ne peuvent plus diverger.
+- Filtre mémorisé dans la session (`filtre`), retrouvé en revenant à l'étape 4, appliqué et indiqué dans le rapport ; effacé à une nouvelle validation.
+
+**Vérifications :** 92 tests OK (ordre des 5 étapes dans les trois versions, filtre conservé après un passage à l'étape 5, boutons à la bonne étape) ; test navigateur de 15 étapes réussi en local et sur Docker.
+

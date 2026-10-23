@@ -134,16 +134,21 @@ def parcours_exemple(p, url):
         nom, contenu = t.telecharger("Lignes écartées (CSV)")
         assert contenu.decode("utf-8-sig").startswith("Ligne d'origine,Raison"), contenu[:80]
         details.append(f"{nom} ({len(contenu)} o)")
+        assert t.bouton("Rapport complet (HTML)").count() == 0, "le rapport ne se télécharge qu'à l'étape 5"
+        t.bouton("Étape suivante : analyser").click()
+        t.voir("Télécharger votre travail")
+        t.fin_execution()
         nom, contenu = t.telecharger("Rapport Word (.docx)")
         with zipfile.ZipFile(io.BytesIO(contenu)) as docx:
             texte_word = docx.read("word/document.xml").decode("utf-8")
             images = [n for n in docx.namelist() if n.startswith("word/media/")]
-        assert "Points vérifiés et décisions" in texte_word and len(images) >= 4, "rapport Word incomplet"
+        etapes = [texte_word.index(f"Étape {n} · ") for n in range(1, 6)]
+        assert etapes == sorted(etapes) and len(images) >= 4, "rapport Word incomplet"
         details.append(f"{nom} ({len(contenu)} o, {len(images) - 1} graphiques)")
         nom, contenu = t.telecharger("Rapport complet (HTML)")
         page_rapport = contenu.decode("utf-8")
         assert page_rapport.count("<svg") >= 4, "graphiques absents du rapport HTML"
-        assert "<h2>Pistes de lecture</h2>" in page_rapport and "<h2>Les colonnes (après corrections)</h2>" in page_rapport
+        assert "<h3>Pistes de lecture</h3>" in page_rapport and "<h2>Étape 1 · Importer</h2>" in page_rapport
         details.append(f"{nom} ({len(contenu)} o, {page_rapport.count('<svg') - 1} graphiques)")
         nom, contenu = t.telecharger("Tout le projet (ZIP)")
         with zipfile.ZipFile(io.BytesIO(contenu)) as archive:
@@ -232,11 +237,6 @@ def parcours_regles_filtrage(p, url):
         assert texte.startswith("4 / 5"), texte
         nom, contenu = t.telecharger("Données corrigées (CSV)")
         assert contenu.decode("utf-8-sig").count("\n") == 6, "le filtre ne doit pas changer les données téléchargées"
-        nom, contenu = t.telecharger("Rapport Word (.docx)")
-        with zipfile.ZipFile(io.BytesIO(contenu)) as docx:
-            texte_word = docx.read("word/document.xml").decode("utf-8")
-        assert "Règles vérifiées" in texte_word
-        assert "Graphiques filtrés" in texte_word, "le filtre doit être indiqué dans le rapport"
         return texte
     t.etape("E3. Filtrage : graphiques filtrés, téléchargements inchangés", filtre)
 
@@ -251,9 +251,23 @@ def parcours_regles_filtrage(p, url):
             assert json.loads(archive.read("analyse.ipynb"))["nbformat"] == 4
         nom, contenu = t.telecharger("Rapport complet (HTML)")
         page_rapport = contenu.decode("utf-8")
-        assert "<h2>Analyses</h2>" in page_rapport and "Comparer des groupes : categorie" in page_rapport
+        assert "<h2>Étape 5 · Analyser</h2>" in page_rapport and "Comparer des groupes : categorie" in page_rapport
+        assert "Graphiques filtrés" in page_rapport, "le filtre de l'étape 4 doit être dans le rapport"
+        nom, contenu = t.telecharger("Rapport Word (.docx)")
+        with zipfile.ZipFile(io.BytesIO(contenu)) as docx:
+            texte_word = docx.read("word/document.xml").decode("utf-8")
+        assert "Règles cochées" in texte_word and "Graphiques filtrés" in texte_word
         return nom
-    t.etape("E4. Analyser : constats, dossier données + notebook, rapport avec les analyses", analyser)
+    t.etape("E4. Analyser : dossier données + notebook, rapport des 5 étapes avec le filtre", analyser)
+
+    def retour_filtre():
+        page.get_by_role("radio", name="4 · Visualiser").click()
+        t.voir("Vérifier vos données en graphiques")
+        t.fin_execution()
+        texte = page.get_by_text("lignes retenues").first.inner_text()
+        assert texte.startswith("4 / 5"), f"filtre perdu au retour : {texte}"
+        return texte
+    t.etape("E5. Retour à l'étape 4 : le filtre est retrouvé", retour_filtre)
     page.close()
     return t.resultats
 

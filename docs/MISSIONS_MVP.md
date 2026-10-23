@@ -163,6 +163,7 @@ Commence par la MISSION 1. Ne code rien avant d'avoir lu les fichiers et exécut
 | Écran d'import allégé | Terminé : zone de dépôt centrée en français, bouton d'exemple, conseil gros fichier, informations en sarcelle ; 89 tests OK ; navigateur réussi | [Import](RAPPORT_MISSIONS.md#écran-dimport-allégé-2026-10-23) |
 | Rapport Word, export CSV, notebook | Terminé : rapport .docx avec graphiques, « Export CSV », notebook seul et complet (aperçu, qualité, statistiques, graphiques, analyses) ; 91 tests OK ; navigateur et Docker réussis | [Word, CSV, notebook](RAPPORT_MISSIONS.md#rapport-word-export-csv-et-notebook-complet-2026-10-23) |
 | Dossier données + notebook | Terminé : un seul ZIP (CSV corrigé, notebook, dictionnaire, mode d'emploi) ; 91 tests OK ; navigateur et Docker réussis | [Dossier](RAPPORT_MISSIONS.md#un-seul-dossier--données--notebook--2026-10-23) |
+| Rapport unique des étapes 1 à 5 | Terminé : rapport et archive à l'étape 5, sections par étape, filtre mémorisé ; 92 tests OK ; navigateur et Docker réussis | [Rapport unique](RAPPORT_MISSIONS.md#un-seul-rapport-à-létape-5-sur-les-étapes-1-à-5-2026-10-23) |
 | 7. Répétitions | Terminée (version légère) : volet « Pourquoi … se répète ? » sur les cartes Identifiant, lecture seule ; 95 tests OK ; navigateur réussi, aussi sur le fichier réel | [Mission 7](RAPPORT_MISSIONS.md#mission-7--répétitions-version-légère-2026-10-22) |
 
 Tous les rapports sont regroupés dans un seul fichier : [RAPPORT_MISSIONS.md](RAPPORT_MISSIONS.md).

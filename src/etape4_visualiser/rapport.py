@@ -1,10 +1,12 @@
-"""Étape 4 (Exporter) : rapport qualité en Markdown (texte) et HTML (avec les graphiques) ; Word : `rapport_word.py`.
+"""Le rapport qualité, organisé comme le parcours : étape 1 Importer → étape 5 Analyser.
 
 Entrée : un dictionnaire `contenu` assemblé par l'écran :
-`nom`, `produit_le`, `lignes`, `colonnes`, `empreinte`, `decisions`, `journal`, `resultat`, `notes`,
-`regles_verifiees`, `fiches` (colonnes après corrections), `interpretations`, `graphiques`
-(descriptions de `controles`), `filtre` (None, ou {texte, retenues, total}), `analyses` (résumés de
-l'étape Analyser : graphique, `tableau`, constats dans `a_retenir`, `prudence`).
+`nom`, `taille`, `lecture` (séparateur, encodage, décimale en clair), `ids_texte`, `produit_le`, `lignes`,
+`colonnes`, `empreinte`, `decisions`, `journal`, `resultat`, `notes`, `regles_verifiees`, `fiches`
+(colonnes après corrections), `interpretations`, `graphiques` (descriptions de `controles`), `filtre`
+(None, ou {texte, retenues, total}), `analyses` (résumés de l'étape Analyser).
+`blocs` décrit le rapport une seule fois (titres, textes, listes, tableaux, graphiques) ; les versions
+texte (Markdown), HTML et Word (`rapport_word.py`) ne font que le mettre en forme.
 Le rapport décrit ce qui a été vérifié, décidé et vu ; il ne certifie pas l'exactitude des valeurs.
 Dans le HTML, tout texte issu du fichier est échappé.
 """
@@ -22,15 +24,25 @@ LIMITES = ("Les vérifications portent sur la forme des données : codes de vale
            "sont exactes, ni qu'elles répondent à la question métier.")
 NOTE_PISTES = ("Pistes calculées à partir des chiffres seulement, sans règle métier : à vérifier avec ce que vous "
                "savez des données.")
+NOTE_ECARTEES = ("Les lignes écartées ne sont pas effacées : elles sont dans le fichier des lignes écartées, avec leur "
+                 "raison. Un problème qui disparaît parce que sa ligne est écartée n'a pas été réparé.")
 RIEN_A_SIGNALER = "Rien de particulier à signaler."
 NOTE_REGLES = "Une règle non respectée n'est pas forcément une erreur : elle signale un écart avec ce qui était attendu."
 LOGO = Path(__file__).parents[1] / "assets" / "logo.svg"
 POLICE = "Segoe UI, Inter, Arial, sans-serif"
 LARGEUR_GRAPHIQUE = 640
+ETAPES = ["Étape 1 · Importer", "Étape 2 · Comprendre", "Étape 3 · Corriger", "Étape 4 · Visualiser", "Étape 5 · Analyser"]
 
 
 def _aucun_changement(journal):
     return not journal or journal[0].startswith("Aucun changement")
+
+
+def taille_lisible(octets):
+    """1 536 → « 1,5 Ko », 268 874 011 → « 256,4 Mo »."""
+    if octets >= 1024 * 1024:
+        return f"{nombre_lisible(round(octets / 1024 / 1024, 1))} Mo"
+    return f"{nombre_lisible(round(octets / 1024, 1))} Ko"
 
 
 def synthese(contenu):
@@ -51,10 +63,9 @@ def synthese(contenu):
                    f"{nombre_lisible(filtre['total'])} lignes)." if filtre
                    else "Graphiques calculés sur toutes les lignes gardées.")
     if contenu["interpretations"]:
-        phrases.append(f"{pluriel(len(contenu['interpretations']), 'piste de lecture', 'pistes de lecture')} plus bas.")
+        phrases.append(f"{pluriel(len(contenu['interpretations']), 'piste de lecture', 'pistes de lecture')} à l'étape 4.")
     n = len(contenu["analyses"])
-    phrases.append(f"{pluriel(n, 'analyse', 'analyses')} de l'étape Analyser {'incluse' if n == 1 else 'incluses'}."
-                   if n else "Étape Analyser : aucune analyse incluse (ouvrez l'étape 5 avant de télécharger).")
+    phrases.append(f"{pluriel(n, 'analyse', 'analyses')} à l'étape 5." if n else "Aucune analyse à l'étape 5.")
     return phrases
 
 
@@ -102,54 +113,89 @@ def lignes_regles(regles_verifiees):
                              else "respectée par toutes les lignes") for regle, n in regles_verifiees.items()]
 
 
-def _cellule_md(texte):
-    return str(texte).replace("|", "\\|").replace("\n", " ")
+def _points_par_famille(decisions):
+    familles = {}
+    for decision in decisions:
+        familles[decision["titre"]] = familles.get(decision["titre"], 0) + 1
+    return [f"{titre} : {pluriel(n, 'point')}" for titre, n in familles.items()]
 
 
-def rapport_markdown(contenu):
-    """Version texte : tout le contenu du rapport, les graphiques décrits par leur titre et « À retenir »."""
-    resultat = contenu["resultat"]
-    texte = [f"# Rapport qualité — {contenu['nom']}", "",
-             f"Produit le {contenu['produit_le']:%d/%m/%Y à %H:%M} (UTC).", "",
-             "## En bref", ""] + [f"- {p}" for p in synthese(contenu)]
-    texte += ["", "## Le fichier", "",
-              f"- {nombre_lisible(contenu['lignes'])} lignes, {nombre_lisible(contenu['colonnes'])} colonnes.",
-              f"- Empreinte SHA-256 du fichier d'origine : `{contenu['empreinte']}`. Ce fichier n'a pas été modifié.",
-              "", "## Les colonnes (après corrections)", "",
-              "| Colonne | Type | Remplie | Valeurs différentes | En résumé |", "|---|---|---|---|---|"]
-    texte += [f"| {_cellule_md(f['colonne'])} | {f['libelle']} | {part_lisible(f['remplies'] / f['total']) if f['total'] else '—'} "
-              f"| {nombre_lisible(f['distinctes'])} | {_cellule_md(resume_fiche(f))} |" for f in contenu["fiches"]]
-    texte += ["", "## Points vérifiés et décisions", ""]
-    texte += [f"- {d['texte']} → **{d['choix']}**" for d in contenu["decisions"]] or ["- Aucun point à vérifier n'a été repéré."]
-    texte += ["", "## Ce qui a été fait", ""] + [f"- {phrase}" for phrase in contenu["journal"]]
-    texte += ["", "## Résultat", ""] + [f"- {ligne}" for ligne in lignes_resultat(resultat)]
-    if resultat["ecartees"]:
-        texte += ["", "Les lignes écartées ne sont pas effacées : elles sont dans le fichier des lignes écartées, avec leur raison. "
-                      "Un problème qui disparaît parce que sa ligne est écartée n'a pas été réparé."]
+def _a_dessiner(element):
+    return element.get("donnees") is not None and len(element["donnees"]) > 0
+
+
+def blocs(contenu):
+    """Le rapport, une fois pour toutes : liste de (genre, …) dans l'ordre de lecture.
+
+    Genres : section, sous_titre, texte, discret, filtre, puces, decisions, tableau, graphique, retenir.
+    """
+    b = [("section", "En bref"), ("puces", synthese(contenu))]
+
+    lecture = contenu.get("lecture") or {}
+    importer = [f"Fichier : {contenu['nom']}" + (f" ({taille_lisible(contenu['taille'])})" if contenu.get("taille") else "") + ".",
+                f"{nombre_lisible(contenu['lignes'])} lignes et {nombre_lisible(contenu['colonnes'])} colonnes."]
+    if lecture:
+        importer.append(f"Lecture : séparateur {lecture['separateur']}, encodage {lecture['encodage']}, "
+                        f"décimale {lecture['decimale']}.")
+    if contenu.get("ids_texte"):
+        importer.append("Lues comme du texte pour garder les zéros au début : " + ", ".join(map(str, contenu["ids_texte"])) + ".")
+    importer.append(f"Empreinte SHA-256 du fichier d'origine : {contenu['empreinte']}. Ce fichier n'a pas été modifié.")
+    b += [("section", ETAPES[0]), ("puces", importer)]
+
+    b.append(("section", ETAPES[1]))
+    if contenu["decisions"]:
+        b += [("texte", f"{pluriel(len(contenu['decisions']), 'point à vérifier repéré', 'points à vérifier repérés')} :"),
+              ("puces", _points_par_famille(contenu["decisions"]))]
+    else:
+        b.append(("texte", "Aucun point à vérifier n'a été repéré."))
     if contenu["regles_verifiees"]:
-        texte += ["", "## Règles vérifiées", ""] + [f"- {r}" for r in lignes_regles(contenu["regles_verifiees"])] + ["", NOTE_REGLES]
-    if contenu["interpretations"]:
-        texte += ["", "## Pistes de lecture", "", NOTE_PISTES, ""] + [f"- {p}" for p in contenu["interpretations"]]
-    texte += ["", "## Graphiques de contrôle", "",
-              (f"Filtre appliqué aux graphiques : {contenu['filtre']['texte']}. Les données téléchargées ne sont pas filtrées."
-               if contenu["filtre"] else "Calculés sur toutes les lignes gardées.")
-              + " Les graphiques sont dessinés dans le rapport HTML."]
+        b += [("sous_titre", "Règles cochées"), ("puces", lignes_regles(contenu["regles_verifiees"])), ("discret", NOTE_REGLES)]
+
+    b.append(("section", ETAPES[2]))
+    if contenu["decisions"]:
+        b += [("sous_titre", "Décisions"), ("decisions", [(d["texte"], d["choix"]) for d in contenu["decisions"]])]
+    b += [("sous_titre", "Ce qui a été fait"), ("puces", contenu["journal"]),
+          ("sous_titre", "Résultat"), ("puces", lignes_resultat(contenu["resultat"]))]
+    if contenu["resultat"]["ecartees"]:
+        b.append(("discret", NOTE_ECARTEES))
+    b += [("sous_titre", "Les colonnes après corrections"),
+          ("tableau", ["Colonne", "Type", "Remplie", "Valeurs différentes", "En résumé"],
+           [[f["colonne"], f["libelle"], part_lisible(f["remplies"] / f["total"]) if f["total"] else "—",
+             nombre_lisible(f["distinctes"]), resume_fiche(f)] for f in contenu["fiches"]])]
+
+    b.append(("section", ETAPES[3]))
+    filtre = contenu["filtre"]
+    b.append(("filtre", f"Filtre appliqué aux graphiques : {filtre['texte']} ({nombre_lisible(filtre['retenues'])} / "
+                        f"{nombre_lisible(filtre['total'])} lignes). Les données téléchargées ne sont pas filtrées.")
+             if filtre else ("discret", "Graphiques de contrôle calculés sur toutes les lignes gardées."))
     for g in contenu["graphiques"]:
-        texte += ["", f"### {g['titre']}", "", g["sous_titre"], "", "**À retenir :** " + " ".join(g["a_retenir"])]
+        b += [("sous_titre", g["titre"]), ("discret", g["sous_titre"])]
+        if _a_dessiner(g):
+            b.append(("graphique", g))
+        b.append(("retenir", "À retenir : ", " ".join(g["a_retenir"])))
+    if not contenu["graphiques"]:
+        b.append(("texte", "Aucun graphique de contrôle possible avec les types de colonnes choisis."))
+    if contenu["interpretations"]:
+        b += [("sous_titre", "Pistes de lecture"), ("discret", NOTE_PISTES), ("puces", contenu["interpretations"])]
+
+    b.append(("section", ETAPES[4]))
     if contenu["analyses"]:
-        texte += ["", "## Analyses", "", "Calculées sur les données corrigées ; graphiques dans le rapport HTML."]
+        b.append(("discret", "Calculées sur les données corrigées, avec les colonnes choisies à l'étape Analyser."))
         for a in contenu["analyses"]:
-            texte += ["", f"### {a['titre']}", "", a["sous_titre"]]
+            b += [("sous_titre", a["titre"]), ("discret", a["sous_titre"])]
+            if _a_dessiner(a):
+                b.append(("graphique", a))
             if a["tableau"] is not None and len(a["tableau"]):
-                colonnes = list(a["tableau"].columns)
-                texte += ["", "| " + " | ".join(_cellule_md(c) for c in colonnes) + " |", "|" + "---|" * len(colonnes)]
-                texte += ["| " + " | ".join(_cellule_md(v) for v in ligne) + " |" for ligne in a["tableau"].itertuples(index=False)]
-            texte += ["", "**Ce que montrent les chiffres :**", ""] + [f"- {c}" for c in a["a_retenir"] or [RIEN_A_SIGNALER]]
-            texte += ["", a["prudence"]]
+                b.append(("tableau", list(a["tableau"].columns), [list(ligne) for ligne in a["tableau"].itertuples(index=False)]))
+            b += [("retenir", "Ce que montrent les chiffres", ""), ("puces", a["a_retenir"] or [RIEN_A_SIGNALER]),
+                  ("discret", a["prudence"])]
+    else:
+        b.append(("texte", "Aucune analyse : il faut une colonne de type Catégorie ou Date (étape Comprendre)."))
+
     if contenu["notes"].strip():
-        texte += ["", "## Notes", "", contenu["notes"].strip()]
-    texte += ["", "## Ce que ce rapport ne garantit pas", "", LIMITES]
-    return "\n".join(texte) + "\n"
+        b += [("section", "Notes"), ("texte", contenu["notes"].strip())]
+    b += [("section", "Ce que ce rapport ne garantit pas"), ("texte", LIMITES)]
+    return b
 
 
 def _specification(graphique):
@@ -168,6 +214,33 @@ def png_graphique(graphique):
     return vl_convert.vegalite_to_png(_specification(graphique), scale=2)
 
 
+def _cellule_md(texte):
+    return str(texte).replace("|", "\\|").replace("\n", " ")
+
+
+def rapport_markdown(contenu):
+    """Version texte : tout le rapport ; chaque graphique est décrit par son titre et « À retenir »."""
+    texte = [f"# Rapport qualité — {contenu['nom']}", "", f"Produit le {contenu['produit_le']:%d/%m/%Y à %H:%M} (UTC)."]
+    for genre, *valeurs in blocs(contenu):
+        if genre == "section":
+            texte += ["", f"## {valeurs[0]}"]
+        elif genre == "sous_titre":
+            texte += ["", f"### {valeurs[0]}"]
+        elif genre in ("texte", "discret", "filtre"):
+            texte += ["", valeurs[0]]
+        elif genre == "puces":
+            texte += [""] + [f"- {p}" for p in valeurs[0]]
+        elif genre == "decisions":
+            texte += [""] + [f"- {t} → **{c}**" for t, c in valeurs[0]]
+        elif genre == "tableau":
+            entetes, lignes = valeurs
+            texte += ["", "| " + " | ".join(_cellule_md(c) for c in entetes) + " |", "|" + "---|" * len(entetes)]
+            texte += ["| " + " | ".join(_cellule_md(v) for v in ligne) + " |" for ligne in lignes]
+        elif genre == "retenir":
+            texte += ["", f"**{valeurs[0].strip()}** {valeurs[1]}".rstrip()]
+    return "\n".join(texte) + "\n"
+
+
 STYLE = """
 :root { --principale: #0B6F71; --fond: #F1F5F5; --carte: #FFFFFF; --encre: #1E2A38; --encre-2: #5B6673;
         --bordure: #D9DEE5; --doux: #E3F2F2; --alerte: #9A4B00; --alerte-fond: #FDF0E1; }
@@ -178,101 +251,65 @@ header { display: flex; justify-content: space-between; align-items: center; gap
 header p { margin: 0; color: var(--encre-2); font-size: 13px; }
 h1 { font-size: 26px; margin: 4px 0 0; }
 h2 { font-size: 19px; margin: 0 0 10px; }
-h3 { font-size: 16px; margin: 0; }
+h3 { font-size: 16px; margin: 18px 0 4px; }
 section { background: var(--carte); border: 1px solid var(--bordure); border-radius: 12px; padding: 18px 20px; }
-.bref { border-left: 4px solid var(--principale); }
-.bref ul, section ul { margin: 0; padding-left: 20px; }
-.discret { color: var(--encre-2); font-size: 13px; margin: 6px 0 0; }
-.tableau { overflow-x: auto; }
+section.bref { border-left: 4px solid var(--principale); }
+section.etape h2 { color: var(--principale); }
+section ul { margin: 6px 0; padding-left: 20px; }
+p { margin: 6px 0; }
+.discret { color: var(--encre-2); font-size: 13px; }
+.tableau { overflow-x: auto; margin: 8px 0; }
 table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--bordure); vertical-align: top; }
 th { background: var(--doux); color: var(--principale); font-weight: 600; }
-td.nombre { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.type { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 6px; background: var(--doux); color: var(--principale); }
-.pistes li { margin-bottom: 6px; }
-.graphiques { display: flex; flex-direction: column; gap: 14px; }
-.graphique { border: 1px solid var(--bordure); border-radius: 10px; padding: 14px 16px; }
-.graphique svg { max-width: 100%; height: auto; display: block; margin: 8px 0; }
-.graphique .tableau { margin: 8px 0 4px; }
-.graphique ul { margin: 4px 0 0; }
-.retenir { margin: 0; }
-.filtre { background: var(--alerte-fond); color: var(--alerte); border-radius: 8px; padding: 8px 12px; margin: 0 0 12px; }
-code { font-size: 12px; word-break: break-all; }
-@media print { body { background: #fff; } section { break-inside: avoid; } }
+svg { max-width: 100%; height: auto; display: block; margin: 8px 0; }
+.filtre { background: var(--alerte-fond); color: var(--alerte); border-radius: 8px; padding: 8px 12px; }
+.note { white-space: pre-line; }
+@media print { body { background: #fff; } section { break-inside: avoid-page; } }
 """
-
-
-def _liste(elements):
-    return "<ul>" + "".join(f"<li>{escape(e)}</li>" for e in elements) + "</ul>"
-
-
-def _tableau_html(tableau):
-    entetes = "".join(f"<th>{escape(str(c))}</th>" for c in tableau.columns)
-    lignes = "".join("<tr>" + "".join(f"<td>{escape(str(v))}</td>" for v in ligne) + "</tr>"
-                     for ligne in tableau.itertuples(index=False))
-    return f"<div class='tableau'><table><thead><tr>{entetes}</tr></thead><tbody>{lignes}</tbody></table></div>"
-
-
-def _analyse_html(analyse):
-    e = escape
-    dessin = svg_graphique(analyse) if analyse["donnees"] is not None and len(analyse["donnees"]) else ""
-    tableau = _tableau_html(analyse["tableau"]) if analyse["tableau"] is not None and len(analyse["tableau"]) else ""
-    return (f"<div class='graphique'><h3>{e(analyse['titre'])}</h3><p class='discret'>{e(analyse['sous_titre'])}</p>"
-            f"{dessin}{tableau}<p class='retenir'><strong>Ce que montrent les chiffres</strong></p>"
-            f"{_liste(analyse['a_retenir'] or [RIEN_A_SIGNALER])}<p class='discret'>{e(analyse['prudence'])}</p></div>")
 
 
 def rapport_html(contenu):
     """Version à lire dans le navigateur, avec les graphiques dessinés ; imprimable en PDF."""
     e = escape
-    resultat, filtre = contenu["resultat"], contenu["filtre"]
-    lignes_colonnes = "".join(
-        f"<tr><td>{e(f['colonne'])}</td><td><span class='type'>{e(f['libelle'])}</span></td>"
-        f"<td class='nombre'>{part_lisible(f['remplies'] / f['total']) if f['total'] else '—'}</td>"
-        f"<td class='nombre'>{nombre_lisible(f['distinctes'])}</td><td>{e(resume_fiche(f))}</td></tr>"
-        for f in contenu["fiches"])
-    decisions = "".join(f"<li>{e(d['texte'])} → <strong>{e(d['choix'])}</strong></li>" for d in contenu["decisions"])
-    graphiques = "".join(
-        f"<div class='graphique'><h3>{e(g['titre'])}</h3><p class='discret'>{e(g['sous_titre'])}</p>"
-        f"{svg_graphique(g)}<p class='retenir'><strong>À retenir :</strong> {e(' '.join(g['a_retenir']))}</p></div>"
-        for g in contenu["graphiques"]) or "<p>Aucun graphique de contrôle possible avec les types de colonnes choisis.</p>"
-    parties = [
-        f"<header>{LOGO.read_text(encoding='utf-8')}<p>Produit le {contenu['produit_le']:%d/%m/%Y à %H:%M} (UTC)</p></header>",
-        f"<h1>Rapport qualité — {e(contenu['nom'])}</h1>",
-        f"<section class='bref'><h2>En bref</h2>{_liste(synthese(contenu))}</section>",
-        f"<section><h2>Le fichier</h2><ul><li>{nombre_lisible(contenu['lignes'])} lignes, "
-        f"{nombre_lisible(contenu['colonnes'])} colonnes.</li><li>Empreinte SHA-256 du fichier d'origine : "
-        f"<code>{e(contenu['empreinte'])}</code>. Ce fichier n'a pas été modifié.</li></ul></section>",
-        "<section><h2>Les colonnes (après corrections)</h2><div class='tableau'><table><thead><tr><th>Colonne</th>"
-        "<th>Type</th><th>Remplie</th><th>Valeurs différentes</th><th>En résumé</th></tr></thead>"
-        f"<tbody>{lignes_colonnes}</tbody></table></div></section>",
-        f"<section><h2>Points vérifiés et décisions</h2><ul>{decisions or '<li>Aucun point à vérifier n’a été repéré.</li>'}</ul></section>",
-        f"<section><h2>Ce qui a été fait</h2>{_liste(contenu['journal'])}<h2 style='margin-top:14px'>Résultat</h2>"
-        f"{_liste(lignes_resultat(resultat))}"
-        + ("<p class='discret'>Les lignes écartées ne sont pas effacées : elles sont dans le fichier des lignes écartées, "
-           "avec leur raison. Un problème qui disparaît parce que sa ligne est écartée n'a pas été réparé.</p>"
-           if resultat["ecartees"] else "") + "</section>",
-    ]
-    if contenu["regles_verifiees"]:
-        parties.append(f"<section><h2>Règles vérifiées</h2>{_liste(lignes_regles(contenu['regles_verifiees']))}"
-                       f"<p class='discret'>{NOTE_REGLES}</p></section>")
-    if contenu["interpretations"]:
-        parties.append(f"<section class='pistes'><h2>Pistes de lecture</h2><p class='discret'>{NOTE_PISTES}</p>"
-                       f"{_liste(contenu['interpretations'])}</section>")
-    parties.append("<section><h2>Graphiques de contrôle</h2>"
-                   + (f"<p class='filtre'>Filtre appliqué aux graphiques : {e(filtre['texte'])} "
-                      f"({nombre_lisible(filtre['retenues'])} / {nombre_lisible(filtre['total'])} lignes). "
-                      "Les données téléchargées ne sont pas filtrées.</p>" if filtre
-                      else "<p class='discret'>Calculés sur toutes les lignes gardées.</p>")
-                   + f"<div class='graphiques'>{graphiques}</div></section>")
-    if contenu["analyses"]:
-        parties.append("<section><h2>Analyses</h2><p class='discret'>Calculées sur les données corrigées, avec les "
-                       "colonnes choisies à l'étape Analyser.</p><div class='graphiques'>"
-                       + "".join(_analyse_html(a) for a in contenu["analyses"]) + "</div></section>")
-    if contenu["notes"].strip():
-        parties.append(f"<section><h2>Notes</h2><p style='white-space:pre-line'>{e(contenu['notes'].strip())}</p></section>")
-    parties.append(f"<section><h2>Ce que ce rapport ne garantit pas</h2><p>{LIMITES}</p></section>")
+    parties, section = [], None
+
+    def fermer():
+        if section is not None:
+            parties.append(section + "</section>")
+
+    for genre, *valeurs in blocs(contenu):
+        if genre == "section":
+            fermer()
+            classe = "bref" if valeurs[0] == "En bref" else ("etape" if valeurs[0] in ETAPES else "")
+            section = f"<section class='{classe}'><h2>{e(valeurs[0])}</h2>"
+            continue
+        if genre == "sous_titre":
+            morceau = f"<h3>{e(valeurs[0])}</h3>"
+        elif genre == "texte":
+            morceau = f"<p class='note'>{e(valeurs[0])}</p>"
+        elif genre == "discret":
+            morceau = f"<p class='discret'>{e(valeurs[0])}</p>"
+        elif genre == "filtre":
+            morceau = f"<p class='filtre'>{e(valeurs[0])}</p>"
+        elif genre == "puces":
+            morceau = "<ul>" + "".join(f"<li>{e(p)}</li>" for p in valeurs[0]) + "</ul>"
+        elif genre == "decisions":
+            morceau = "<ul>" + "".join(f"<li>{e(t)} → <strong>{e(c)}</strong></li>" for t, c in valeurs[0]) + "</ul>"
+        elif genre == "tableau":
+            entetes, lignes = valeurs
+            morceau = ("<div class='tableau'><table><thead><tr>" + "".join(f"<th>{e(str(c))}</th>" for c in entetes)
+                       + "</tr></thead><tbody>" + "".join("<tr>" + "".join(f"<td>{e(str(v))}</td>" for v in ligne) + "</tr>"
+                                                         for ligne in lignes) + "</tbody></table></div>")
+        elif genre == "graphique":
+            morceau = svg_graphique(valeurs[0])
+        else:  # retenir
+            morceau = f"<p><strong>{e(valeurs[0])}</strong>{e(valeurs[1])}</p>"
+        section += morceau
+    fermer()
+    entete = (f"<header>{LOGO.read_text(encoding='utf-8')}<p>Produit le {contenu['produit_le']:%d/%m/%Y à %H:%M} (UTC)</p></header>"
+              f"<h1>Rapport qualité — {e(contenu['nom'])}</h1>")
     return ("<!doctype html><html lang='fr'><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width, initial-scale=1'>"
             f"<title>Rapport qualité — {e(contenu['nom'])}</title><style>{STYLE}</style></head>"
-            f"<body><main>{''.join(parties)}</main></body></html>")
+            f"<body><main>{entete}{''.join(parties)}</main></body></html>")

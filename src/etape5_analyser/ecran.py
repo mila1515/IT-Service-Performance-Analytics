@@ -10,10 +10,8 @@ from src.config import LIBELLE_MANQUANT
 from src.core.dessins import classement, periodes
 from src.core.session import aller, cached
 from src.core.texte import nombre_lisible
-from src.etape4_visualiser.ecran import contenu_rapport
+from src.etape4_visualiser.ecran import section_rapport
 from src.etape4_visualiser.preparation import prepare
-from src.etape4_visualiser.rapport import rapport_html
-from src.etape4_visualiser.rapport_word import rapport_word
 from src.etape5_analyser.calculs import (STATISTIQUES, comparer, de, delais, duree, duree_lisible, evolution,
                                          sections_possibles, une_ligne_par, unite_comptee)
 from src.etape5_analyser.exports import export_donnees, nom_colonne_delai
@@ -21,7 +19,6 @@ from src.etape5_analyser.resumes import (PRUDENCE_COMPARER, PRUDENCE_EVOLUTION, 
                                          resume_delai, resume_evolution)
 
 AUCUN = "(aucun)"
-DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 def _par_type(roles, role):
@@ -137,8 +134,8 @@ def _section_evolution(unites, roles, unite, resumes):
 
 def _section_exports(data, roles, nom, reglages, validation):
     with st.container(border=True, key="carte_analyse_exports"):
-        st.subheader("Continuer l'analyse dans un autre outil", anchor=False)
-        contenu = contenu_rapport(validation)
+        st.subheader("Télécharger votre travail", anchor=False)
+        st.caption("Rien n'est enregistré en ligne : téléchargez avant de fermer la page. Votre fichier d'origine n'a pas été modifié.")
         avec_delai = bool(reglages.get("debut") and reglages.get("fin"))
         colonne = nom_colonne_delai(reglages["debut"], reglages["fin"], reglages["unite_temps"]) if avec_delai else None
         base = nom.rsplit(".", 1)[0]
@@ -150,13 +147,9 @@ def _section_exports(data, roles, nom, reglages, validation):
         gauche, droite = st.columns(2)
         with gauche, st.container(border=True, key="carte_analyse_rapport"):
             st.markdown("**Rapport complet**")
-            st.caption("Le rapport qualité avec, en plus, les analyses ci-dessus : graphiques, tableaux et constats.")
-            with st.container(horizontal=True):
-                st.download_button("Rapport complet (HTML)", lambda: rapport_html(contenu()).encode("utf-8"),
-                                   f"{base}_rapport_qualite.html", "text/html", icon=":material/insert_chart:",
-                                   on_click="ignore")
-                st.download_button("Rapport Word (.docx)", lambda: rapport_word(contenu()), f"{base}_rapport_qualite.docx",
-                                   DOCX, icon=":material/description:", on_click="ignore")
+            st.caption("Tout le parcours, de l'étape 1 à l'étape 5 : lecture du fichier, points repérés, décisions, "
+                       "graphiques de contrôle (avec le filtre de l'étape 4 s'il est actif) et ces analyses.")
+            section_rapport(validation)
         with droite, st.container(border=True, key="carte_analyse_donnees"):
             st.markdown("**Données et notebook**")
             st.caption("Un dossier prêt à l'emploi : les données corrigées en CSV"

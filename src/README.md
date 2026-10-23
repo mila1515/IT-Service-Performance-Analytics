@@ -47,9 +47,8 @@ flowchart LR
         E3 --> E4["4 · Visualiser<br/>contrôler en graphiques"]
         E4 --> E5["5 · Analyser<br/>premières questions métier"]
     end
-    E4 --> S1[/"Données corrigées<br/>Lignes écartées<br/>Archive ZIP"/]
-    E4 --> R[/"Rapport complet<br/>(HTML ou texte)"/]
-    E5 --> R
+    E4 --> S1[/"Données corrigées<br/>Lignes écartées"/]
+    E5 --> R[/"Rapport complet des étapes 1 à 5<br/>(HTML ou Word)<br/>Archive du projet"/]
     E5 --> S2[/"Export Power BI<br/>Notebook Jupyter"/]
 ```
 
@@ -126,16 +125,10 @@ Une carte par famille de problèmes. Chaque carte n'apparaît que si le fichier 
 - **Ajouter un graphique**, guidé par une question : comment se répartit une colonne, comment ça
   évolue, comparer des groupes.
 - **Filtrage**, éteint par défaut : garder ou exclure des valeurs d'une catégorie, choisir une
-  période. Il ne change que les graphiques, jamais les fichiers téléchargés.
-- **Téléchargements**, générés au clic :
-
-| Fichier | Contenu |
-|---|---|
-| Données corrigées (CSV) | Les données après vos choix, lisibles par Excel |
-| Lignes écartées (CSV) | Chaque ligne mise de côté, avec son numéro d'origine et la raison |
-| Rapport complet (HTML) | Le rapport à lire dans le navigateur, avec les graphiques ; imprimable en PDF |
-| Rapport Word (.docx) | Le même rapport à ouvrir dans Word, graphiques et tableaux compris |
-| Tout le projet (ZIP) | Fichier d'origine inchangé, données corrigées, lignes écartées, rapport HTML et version texte (Markdown), journal détaillé |
+  période. Il ne change que les graphiques, jamais les fichiers téléchargés. Ses réglages sont
+  gardés quand on change d'étape, et le rapport (étape 5) l'indique.
+- **Téléchargements** : « Données corrigées (CSV) » (lisible par Excel) et « Lignes écartées (CSV) »
+  (numéro de ligne d'origine et raison). Le rapport et l'archive sont à l'étape 5.
 
 ### 5 · Analyser
 
@@ -165,30 +158,40 @@ calcule, classe et décrit ce que montrent les chiffres, sans jamais donner de c
     graphiques (matplotlib), puis les analyses choisies ;
   - `dictionnaire_colonnes.csv` (type et format de chaque colonne) et `LISEZMOI.txt`.
   Un fichier ouvert directement dans le ZIP, sans l'extraire, n'est pas utilisable.
-- Le **rapport complet** (HTML ou Word) se télécharge aussi depuis cette étape, avec les analyses incluses.
+- **Télécharger votre travail**, en fin de parcours :
+
+| Fichier | Contenu |
+|---|---|
+| Rapport complet (HTML) | Le rapport des étapes 1 à 5, à lire dans le navigateur, avec les graphiques ; imprimable en PDF |
+| Rapport Word (.docx) | Le même rapport à ouvrir dans Word, graphiques et tableaux compris |
+| Tout le projet (ZIP) | Fichier d'origine inchangé, données corrigées, lignes écartées, rapport HTML et version texte (Markdown), journal détaillé |
+| Données + notebook (ZIP) | Le dossier décrit ci-dessus |
+
+  Le champ « Ce que je retiens (facultatif) » ajoute vos notes au rapport.
 
 ## Le rapport complet
 
-Il réunit tout ce que l'outil a montré et tout ce que vous avez décidé, dans l'ordre de lecture :
+Un seul rapport, téléchargé à l'étape 5, qui retrace tout le parcours dans l'ordre :
 
 ```mermaid
 flowchart TB
-    A["En bref<br/>5 à 6 phrases"] --> B["Le fichier<br/>dimensions, empreinte SHA-256"]
-    B --> C["Les colonnes après corrections<br/>type, % rempli, min · médiane · moyenne · max, période"]
-    C --> D["Points vérifiés et décisions<br/>ce qui a été fait, résultat avant / après"]
-    D --> E["Règles vérifiées<br/>(si cochées)"]
-    E --> F["Pistes de lecture<br/>calculées à partir des chiffres"]
-    F --> G["Graphiques de contrôle<br/>avec « À retenir » et le filtre éventuel"]
-    G --> H["Analyses de l'étape 5<br/>graphique, tableau, constats"]
-    H --> I["Notes, puis ce que le rapport ne garantit pas"]
+    A["En bref<br/>5 à 6 phrases"] --> B["Étape 1 · Importer<br/>fichier, taille, lecture (séparateur, encodage, décimale), empreinte"]
+    B --> C["Étape 2 · Comprendre<br/>points repérés par famille, règles cochées"]
+    C --> D["Étape 3 · Corriger<br/>décisions, ce qui a été fait, résultat avant / après, colonnes après corrections"]
+    D --> E["Étape 4 · Visualiser<br/>graphiques de contrôle, filtre éventuel, pistes de lecture"]
+    E --> F["Étape 5 · Analyser<br/>graphique, tableau et constats de chaque analyse"]
+    F --> G["Notes, puis ce que le rapport ne garantit pas"]
 ```
+
+- Les trois versions (HTML, Word, texte de l'archive) sont produites à partir d'une même liste de
+  sections : elles disent exactement la même chose.
 
 - Les **pistes de lecture** sont des phrases calculées, sans règle métier. Exemples : une colonne
   remplie à moins de 50 % ; une moyenne loin de la médiane (« la médiane décrit mieux une valeur
   typique ») ; une valeur qui représente plus de la moitié des lignes ; un identifiant répété
   (« comptez les valeurs distinctes plutôt que les lignes »).
-- Les analyses sont effacées à chaque nouvelle validation de l'étape 3 : le rapport ne décrit
-  jamais des analyses faites sur d'anciennes données.
+- Les analyses et le filtre sont effacés à chaque nouvelle validation de l'étape 3 : le rapport
+  ne décrit jamais des analyses faites sur d'anciennes données.
 - Dans le HTML, tout texte issu du fichier est échappé : un nom de colonne ou une valeur
   contenant du code ne s'exécute pas à l'ouverture.
 
@@ -245,10 +248,10 @@ src/
 ## Vérifications
 
 - Tests (calculs et écrans) : `python -m unittest discover -s src/tests`, depuis la racine. Il y en
-  a 91. Ils couvrent aussi trois fichiers d'autres domaines (`tests/fixtures/ventes.csv`,
+  a 92. Ils couvrent aussi trois fichiers d'autres domaines (`tests/fixtures/ventes.csv`,
   `eleves.csv`, `capteurs.csv`) ; le notebook Jupyter y est réellement exécuté dans le dossier extrait
   du ZIP (ses graphiques aussi si matplotlib est installé), et le rapport Word est relu.
-- Parcours dans un vrai navigateur (14 étapes) : voir `src/tests/navigateur/README.md`.
+- Parcours dans un vrai navigateur (15 étapes) : voir `src/tests/navigateur/README.md`.
 
 ## Limites à ce jour
 
