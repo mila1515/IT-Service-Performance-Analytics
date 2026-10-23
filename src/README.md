@@ -242,8 +242,8 @@ src/
 | Limite | Détail |
 |---|---|
 | Une seule source | Un fichier CSV à la fois ; pas d'Excel, de Parquet, de base de données ni de jointure |
-| Taille | 200 Mo par fichier (limite de Streamlit). Mesuré : 141 712 lignes × 36 colonnes (44 Mo) passent ; une analyse ouverte occupe environ 11 fois la taille du fichier en mémoire, par onglet |
-| Temps sur un gros fichier | Sur 141 712 lignes : import ≈ 5 s, première arrivée sur Comprendre ≈ 8 s, puis chaque clic < 1 s ; Analyser ≈ 7 s puis ≈ 2 s par réglage ; rapport ≈ 5 à 9 s depuis l'étape 4, ≈ 24 s depuis l'étape 5 ; CSV et exports ≈ 8 à 15 s |
+| Taille | 400 Mo par fichier (`server.maxUploadSize` dans `.streamlit/config.toml`). Mesuré dans Docker : 850 272 lignes × 36 colonnes (264 Mo) passent, avec un pic d'environ 4,3 Go de mémoire, soit environ 15 fois la taille du fichier, par onglet. Avec les 7,6 Go de Docker, un seul onglet à la fois pour un fichier de cette taille. Au-delà de 400 Mo, le message de refus est celui de Streamlit, en anglais |
+| Temps sur un gros fichier | Sur 850 272 lignes (264 Mo) : import ≈ 22 s, Comprendre ≈ 18 s, Corriger ≈ 8 s, un choix ≈ 2 s, validation et Visualiser ≈ 27 s, rapport ≈ 30 s, Analyser ≈ 2 s par réglage. Sur 141 712 lignes : import ≈ 5 s, première arrivée sur Comprendre ≈ 8 s, puis chaque clic < 1 s ; Analyser ≈ 7 s puis ≈ 2 s par réglage ; rapport ≈ 5 à 9 s depuis l'étape 4, ≈ 24 s depuis l'étape 5 ; CSV et exports ≈ 8 à 15 s |
 | Lecture | Deux encodages (UTF-8, Windows) et quatre séparateurs (`,` `;` tabulation `\|`), à choisir à la main si besoin |
 | Types | Proposés à partir du nom et du contenu : à vérifier à l'étape 2 (par exemple, `sensor_id` avec 3 valeurs est plutôt une catégorie) |
 | Corrections | Liste fermée ; pas de règle sur plusieurs colonnes, de clé composée, de formule personnalisée, ni d'annulation pas à pas |
@@ -271,7 +271,7 @@ src/
 | Moteur de calcul en colonnes (DuckDB ou Polars) à la place de pandas pour les gros fichiers | Fichiers de plusieurs Go, calculs plusieurs fois plus rapides, moins de mémoire |
 | Lire le fichier par morceaux et ne garder qu'une copie des données | Mémoire proche de la taille du fichier au lieu d'environ 11 fois |
 | Écriture des exports en Parquet en plus du CSV | Exports plus petits et plus rapides, lus directement par Power BI |
-| Relever la limite d'import (`server.maxUploadSize`) après un test de charge mesuré | Accepter des fichiers de plus de 200 Mo en connaissant le temps d'attente |
+| Relever encore la limite d'import (`server.maxUploadSize`, aujourd'hui 400 Mo) après un nouveau test de charge | Accepter des fichiers plus gros en connaissant le temps d'attente et la mémoire |
 | Calcul des contrôles directement dans l'entrepôt de données (requêtes SQL) | Contrôler des tables entières sans les télécharger |
 
 ### Pour un usage en entreprise

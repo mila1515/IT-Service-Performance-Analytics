@@ -193,8 +193,14 @@ def parcours_regles_filtrage(p, url):
 
     def regle():
         page.get_by_text("Règles (facultatif)").first.click()
-        page.locator('[data-testid="stCheckbox"]').filter(has_text="Valeurs uniques").click()
-        t.fin_execution()
+        case = page.locator('[data-testid="stCheckbox"]').filter(has_text="Valeurs uniques")
+        case.wait_for()
+        # Un clic pendant l'ouverture du volet peut se perdre : on vérifie qu'il a pris.
+        for _ in range(3):
+            case.click()
+            t.fin_execution()
+            if case.locator("input").is_checked():
+                break
         t.voir("2 lignes ne respectent pas (lignes 4, 6)")
     t.etape("E1. Règle « valeurs uniques » cochée et vérifiée", regle)
 

@@ -159,6 +159,7 @@ Commence par la MISSION 1. Ne code rien avant d'avoir lu les fichiers et exécut
 | Étape 5 Analyser | Terminée : comparer des groupes, délai, évolution, constats calculés, exports Power BI et Jupyter ; testée sur 4 domaines ; 115 tests OK ; navigateur réussi | [Analyser](RAPPORT_MISSIONS.md#étape-5--analyser--2026-10-23) |
 | Analyses dans le rapport | Terminé : section « Analyses » (graphique, tableau, constats) dans le rapport HTML et texte, bouton aussi à l'étape 5 ; 119 tests OK ; navigateur réussi | [Analyses dans le rapport](RAPPORT_MISSIONS.md#analyses-de-létape-5-dans-le-rapport-complet-2026-10-23) |
 | Suppression de l'archive experte | Terminé : `src/expert/` et le code qui ne servait qu'à lui retirés ; récupérable dans git (4179b84) | [Suppression](RAPPORT_MISSIONS.md#suppression-de-lancienne-interface-experte-2026-10-23) |
+| Fichiers jusqu'à 400 Mo | Terminé : limite relevée ; 264 Mo mesurés dans Docker (30 s au plus par étape, pic 4,3 Go) | [400 Mo](RAPPORT_MISSIONS.md#fichiers-jusquà-400-mo-2026-10-23) |
 | 7. Répétitions | Terminée (version légère) : volet « Pourquoi … se répète ? » sur les cartes Identifiant, lecture seule ; 95 tests OK ; navigateur réussi, aussi sur le fichier réel | [Mission 7](RAPPORT_MISSIONS.md#mission-7--répétitions-version-légère-2026-10-22) |
 
 Tous les rapports sont regroupés dans un seul fichier : [RAPPORT_MISSIONS.md](RAPPORT_MISSIONS.md).

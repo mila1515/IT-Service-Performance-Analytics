@@ -936,3 +936,29 @@ Script : `src/tests/navigateur/parcours_navigateur.py`.
 
 **Récupération :** `git checkout 4179b84 -- src/expert src/tests/expert`.
 
+---
+
+## Fichiers jusqu'à 400 Mo (2026-10-23)
+
+**Demande :** un CSV de 264 Mo était refusé (limite de 200 Mo de Streamlit). Le moteur reste pandas.
+
+**Réalisé :**
+- `server.maxUploadSize = 400` dans `src/.streamlit/config.toml` (local et Docker).
+- Sous le dépôt de fichier, la taille maximale est affichée en français, lue dans la configuration, avec le temps et la mémoire mesurés.
+
+**Mesure dans Docker** sur un CSV de 264 Mo (850 272 lignes × 36 colonnes, le fichier d'incidents copié 6 fois avec des numéros distincts) :
+
+| Étape | Temps |
+|---|---|
+| Import (envoi + lecture) | 22 s |
+| Arrivée sur Comprendre | 18 s |
+| Arrivée sur Corriger | 8 s |
+| Un choix (« ? » = valeur manquante) | 2 s |
+| Validation et arrivée sur Visualiser | 27 s |
+| Rapport complet (HTML) | 30 s |
+| Analyser, puis changer un réglage | 2 s chacun |
+
+Mémoire du conteneur : 50 Mo au repos, **pic d'environ 4,3 Go** pendant le rapport, 3,8 Go ensuite (environ 15 fois la taille du fichier, plus que les 11 fois estimés). Résultat vérifié : le choix est bien appliqué (82 % des cases remplies, comme sur le fichier d'origine).
+
+**Limites :** avec 7,6 Go dans Docker, un seul onglet à la fois pour un fichier de cette taille. Au-delà de 400 Mo, le refus est affiché par Streamlit, en anglais : il ne peut pas être traduit.
+

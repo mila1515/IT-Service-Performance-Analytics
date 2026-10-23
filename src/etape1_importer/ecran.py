@@ -77,6 +77,8 @@ def ecran_importer():
     st.caption("Choisissez un fichier CSV. Votre fichier d'origine n'est jamais modifié : "
                "toutes les corrections se font sur une copie.")
     fichier = st.file_uploader("Fichier CSV", type=["csv"], key="w_fichier")
+    st.caption(f"Taille maximale : {st.get_option('server.maxUploadSize')} Mo. Un fichier d'environ 260 Mo demande "
+               "jusqu'à 30 secondes par étape et environ 4 Go de mémoire : gardez un seul onglet ouvert.")
     if fichier is not None:
         _nouveau_fichier(fichier)
     source = etat.get("source")

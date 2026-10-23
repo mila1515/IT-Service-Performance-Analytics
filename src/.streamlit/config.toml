@@ -2,6 +2,10 @@
 [client]
 toolbarMode = "minimal"
 
+[server]
+# Taille maximale d'un fichier importé, en Mo (200 par défaut). Mesuré : 264 Mo → pic d'environ 4,3 Go de mémoire.
+maxUploadSize = 400
+
 [theme]
 base = "light"
 primaryColor = "#0B6F71"
