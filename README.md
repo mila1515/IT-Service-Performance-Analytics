@@ -15,9 +15,9 @@ Le projet transforme un journal d'incidents ITSM en indicateurs opérationnels, 
 | Indicateur | Résultat | Lecture métier |
 | --- | ---: | --- |
 | Incidents analysés | 24 918 | Base suffisamment large pour suivre la performance du support IT |
-| Conformité SLA globale | 63,45 % | Niveau perfectible, avec un risque réel de non-respect des engagements |
+| Conformité SLA globale | 63,42 % | Niveau perfectible, avec un risque réel de non-respect des engagements |
 | Temps moyen de résolution | 178,17 h | Les délais moyens restent élevés et doivent être suivis par priorité et groupe |
-| SLA — priorités Critical / High | 2,22 % / 0,98 % | Les incidents les plus sensibles présentent les taux de conformité les plus faibles |
+| SLA — priorités Critical / High | 1,85 % / 0,49 % | Les incidents les plus sensibles présentent les taux de conformité les plus faibles |
 | Temps de résolution selon réassignation | 266 h contre 95 h | Les incidents réassignés sont associés à des délais nettement plus longs |
 
 ## Tableau de bord Power BI
@@ -61,8 +61,8 @@ DIVIDE([Reassigned Incidents], [Total Incidents], 0)
 
 ### Enseignements métier
 
-- La conformité SLA globale atteint 63,45 %, ce qui met en évidence une marge d'amélioration importante.
-- Les priorités Critical et High enregistrent moins de 3 % de conformité SLA et constituent le principal point d'alerte.
+- La conformité SLA globale atteint 63,42 %, ce qui met en évidence une marge d'amélioration importante.
+- Les priorités Critical et High enregistrent moins de 2 % de conformité SLA et constituent le principal point d'alerte.
 - Les incidents réassignés nécessitent environ 266 heures de résolution, contre 95 heures sans réassignation.
 - Le groupe 70 concentre la plus grande part du volume et doit faire l'objet d'un suivi régulier de sa charge.
 - Les incidents associés au groupe `Inconnu` signalent un besoin d'amélioration de la qualité d'affectation.

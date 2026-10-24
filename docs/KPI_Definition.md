@@ -14,7 +14,9 @@ Total Incidents = DISTINCTCOUNT(incident_clean[number])
 
 ## Taux de conformité SLA
 
-Part des incidents résolus dans le respect du SLA.
+Part des incidents dont le statut SLA de ServiceNow (`made_sla`) est vrai, calculée sur **tous les incidents** de la sélection, y compris ceux qui ne sont pas encore résolus.
+
+Un statut SLA vide reste vide dans `incident_clean.csv` : le notebook l'exclut du calcul, alors que la mesure DAX le garde au dénominateur (il compte alors comme non conforme). Les données actuelles n'ont aucun statut vide, donc les deux donnent le même résultat.
 
 ```text
 Incidents conformes SLA / Total incidents
