@@ -35,3 +35,9 @@ Thumbs.db
 
 **/.pbi/localSettings.json
 **/.pbi/cache.abf
+
+# Dossier projet personnel (non versionné)
+docs/DOSSIER_PROJET_OUTIL_ANALYSE.md
+
+# Jeux de données de test (générés en local, non versionnés)
+jeux_de_test/

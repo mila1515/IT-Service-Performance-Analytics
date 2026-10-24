@@ -1,0 +1,24 @@
+# Thème « Sarcelle qualité » de l'outil d'analyse simple (lu car placé à côté de src/app.py).
+[client]
+toolbarMode = "minimal"
+
+[server]
+# Taille maximale d'un fichier importé, en Mo (200 par défaut). Mesuré : 264 Mo → pic d'environ 4,3 Go de mémoire.
+maxUploadSize = 400
+
+[theme]
+base = "light"
+primaryColor = "#0B6F71"
+backgroundColor = "#F1F5F5"
+secondaryBackgroundColor = "#E3F2F2"
+textColor = "#1E2A38"
+borderColor = "#D9DEE5"
+linkColor = "#0B6F71"
+# Messages d'information (st.info) en sarcelle plutôt qu'en bleu.
+blueColor = "#0B6F71"
+blueBackgroundColor = "#E3F2F2"
+blueTextColor = "#0B6F71"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFontWeights = 700
+baseRadius = "0.75rem"
+showWidgetBorder = true

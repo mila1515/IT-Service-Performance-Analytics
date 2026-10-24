@@ -1,0 +1,8 @@
+name: analyse-csv
+
+services:
+  analyse:
+    build: .
+    ports:
+      - "127.0.0.1:${ANALYSE_PORT:-8503}:8501"
+    restart: unless-stopped

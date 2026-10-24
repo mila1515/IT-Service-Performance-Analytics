@@ -1,0 +1,10 @@
+# Lancer depuis la racine du dépôt : docker compose -f it_service_app/compose.yaml up -d --build
+name: it-service-performance
+
+services:
+  it-service:
+    build: .
+    ports:
+      # Accessible seulement depuis ce poste ; 8501-8503 sont déjà pris par d'autres applications.
+      - "127.0.0.1:${IT_SERVICE_PORT:-8510}:8510"
+    restart: unless-stopped
