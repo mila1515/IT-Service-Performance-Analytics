@@ -27,8 +27,10 @@ greenColor = "#0F766E"
 greenBackgroundColor = "#E0F2EF"
 greenTextColor = "#0F5F59"
 font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+# Titres sobres : titre de page, étapes (st.header), titres de cartes (st.subheader).
+headingFontSizes = ["2rem", "1.4rem", "1.1rem", "1rem", "0.9rem", "0.85rem"]
 headingFontWeights = [700, 700, 600, 600, 600, 600]
-metricValueFontSize = "1.85rem"
+metricValueFontSize = "1.6rem"
 metricValueFontWeight = 600
 baseRadius = "0.75rem"
 showWidgetBorder = true

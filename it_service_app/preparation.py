@@ -211,6 +211,46 @@ def preparer(data):
     return df, pd.DataFrame(controles), infos
 
 
+# Options de nettoyage facultatives : décochées par défaut, la table reste celle des règles de référence.
+SEUIL_DELAI_EXTREME_H = 30 * 24
+OPTIONS = {
+    "exclure_sans_equipe": "Exclure les incidents sans équipe (« Inconnu »)",
+    "exclure_sans_categorie": "Exclure les incidents sans catégorie (« Inconnu »)",
+    "sla_vide_non_conforme": "Compter un statut SLA vide comme non conforme",
+    "ecarter_delais_extremes": "Écarter des délais les résolutions de plus de 30 jours",
+}
+EXPLICATIONS_OPTIONS = {
+    "exclure_sans_equipe": "Les incidents dont l'équipe n'est pas renseignée sont retirés de tous les calculs.",
+    "exclure_sans_categorie": "Les incidents dont la catégorie n'est pas renseignée sont retirés de tous les calculs.",
+    "sla_vide_non_conforme": "Un incident sans statut SLA compte comme non conforme au lieu d'être exclu du taux.",
+    "ecarter_delais_extremes": "Les incidents restent comptés, mais leur délai de résolution n'entre plus dans les "
+                               "moyennes et médianes (il dépasse 30 jours).",
+}
+
+
+def appliquer_options(incidents, choisies):
+    """Applique les options cochées à la table d'incidents. Retourne (table, effets).
+
+    effets : une ligne par option cochée, avec le nombre d'incidents concernés.
+    Sans option, la table est renvoyée telle quelle.
+    """
+    df, effets = incidents, []
+    for option in [o for o in OPTIONS if o in choisies]:
+        if option in ("exclure_sans_equipe", "exclure_sans_categorie"):
+            colonne = "assignment_group" if option == "exclure_sans_equipe" else "category"
+            concernes = df[colonne].eq("Inconnu") if colonne in df.columns else pd.Series(False, index=df.index)
+            df = df[~concernes]
+        elif option == "sla_vide_non_conforme":
+            concernes = df["sla_compliant"].isna()
+            df = df.assign(sla_compliant=df["sla_compliant"].fillna(0))
+        else:
+            concernes = df["resolution_time_hours"] > SEUIL_DELAI_EXTREME_H
+            df = df.assign(resolution_time_hours=df["resolution_time_hours"].mask(concernes))
+        effets.append({"option": OPTIONS[option], "incidents concernés": int(concernes.sum()),
+                       "effet": EXPLICATIONS_OPTIONS[option]})
+    return df, effets
+
+
 def _duree(df, colonne_fin, controles, nom):
     """Heures entre opened_at et colonne_fin, arrondies à 2 décimales ; négatives → manquantes (comptées)."""
     if colonne_fin not in df.columns:

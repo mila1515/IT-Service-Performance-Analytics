@@ -2,3 +2,6 @@ streamlit==1.66.0
 pandas==3.0.3
 numpy==2.5.1
 altair==6.3.0
+# Rapport Word : graphiques Altair convertis en images, document .docx.
+vl-convert-python==1.9.0
+python-docx==1.2.0
