@@ -9,7 +9,8 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from preparation import COLONNES_CALCULEES, FichierIncompatible, lire_csv, preparer  # noqa: E402
+from preparation import (COLONNES_CALCULEES, OPTIONS, FichierIncompatible, appliquer_options,  # noqa: E402
+                         lire_csv, preparer)
 
 ENTETE = "number,incident_state,reassignment_count,reopen_count,sys_mod_count,made_sla,opened_at,sys_updated_at,resolved_at,closed_at,priority,category,assignment_group"
 
@@ -102,6 +103,34 @@ class Preparation(unittest.TestCase):
         contenu = b"number,opened_at\nINC1,1/3/2016 08:00\nINC1,1/3/2016 08:00\n"
         with self.assertRaises(FichierIncompatible):
             preparer(lire_csv(contenu))
+
+    def test_sans_option_la_table_ne_change_pas(self):
+        incidents, _, _ = preparer(lire_csv(csv(
+            "INC1,Closed,0,0,1,true,1/3/2016 08:00,5/3/2016 10:00,2/3/2016 08:00,5/3/2016 10:00,3 - Moderate,A,?")))
+        resultat, effets = appliquer_options(incidents, [])
+        self.assertIs(resultat, incidents)
+        self.assertEqual(effets, [])
+
+    def test_options_de_nettoyage(self):
+        incidents, _, _ = preparer(lire_csv(csv(
+            "INC1,Closed,0,0,1,true,1/3/2016 08:00,5/3/2016 10:00,2/3/2016 08:00,5/3/2016 10:00,3 - Moderate,A,?",
+            "INC2,Closed,0,0,1,?,1/3/2016 08:00,5/4/2016 10:00,15/4/2016 08:00,15/4/2016 10:00,3 - Moderate,?,G1",
+            "INC3,Closed,0,0,1,true,1/3/2016 08:00,5/3/2016 10:00,1/3/2016 10:00,5/3/2016 10:00,3 - Moderate,B,G2")))
+        sans_equipe, effets = appliquer_options(incidents, ["exclure_sans_equipe"])
+        self.assertEqual(sorted(sans_equipe["number"]), ["INC2", "INC3"])
+        self.assertEqual(effets[0]["incidents concernés"], 1)
+        sans_categorie, _ = appliquer_options(incidents, ["exclure_sans_categorie"])
+        self.assertEqual(sorted(sans_categorie["number"]), ["INC1", "INC3"])
+        sla, _ = appliquer_options(incidents, ["sla_vide_non_conforme"])
+        self.assertEqual(sla.set_index("number").loc["INC2", "sla_compliant"], 0)
+        self.assertTrue(pd.isna(incidents.set_index("number").loc["INC2", "sla_compliant"]))  # original intact
+        extremes, effets = appliquer_options(incidents, ["ecarter_delais_extremes"])
+        self.assertEqual(len(extremes), 3)  # incidents gardés, seul le délai est écarté
+        self.assertTrue(pd.isna(extremes.set_index("number").loc["INC2", "resolution_time_hours"]))
+        self.assertEqual(effets[0]["incidents concernés"], 1)
+        tout, effets = appliquer_options(incidents, list(OPTIONS))
+        self.assertEqual(len(effets), len(OPTIONS))
+        self.assertEqual(list(tout["number"]), ["INC3"])
 
     def test_point_virgule_accepte(self):
         data = lire_csv(b"number;opened_at\nINC1;1/3/2016 08:00\n")

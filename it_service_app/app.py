@@ -2,23 +2,25 @@
 
 Lancer depuis la racine du dépôt : python -m streamlit run it_service_app/app.py (port 8510, voir .streamlit/config.toml)
 Parcours : 1 Importer → 2 Vérifier → 3 Filtrer → 4 Indicateurs et graphiques → 5 Télécharger.
-Ce fichier ne contient que l'interface ; les règles sont dans preparation.py et indicateurs.py.
+Ce fichier ne contient que l'interface ; les règles sont dans preparation.py et indicateurs.py,
+les graphiques dans graphiques.py et le rapport Word dans rapport.py.
 Le fichier importé reste en mémoire de session : rien n'est écrit sur le disque.
 """
 from pathlib import Path
 
-import altair as alt
 import pandas as pd
 import streamlit as st
 
+from graphiques import (graphique_categories, graphique_delais, graphique_equipes, graphique_reassignation,
+                        graphique_sla_mois, graphique_sla_priorite, graphique_volume)
 from indicateurs import (CHAMP_PERIODE, FILTRES, MIN_INCIDENTS_EQUIPE, calculer_kpi, effet_reassignation,
-                         filtrer, format_fr, lecture, plus_longs, plus_reassignes, recapitulatif_kpi, repartition,
-                         sla_par_equipe, sla_par_mois, sla_par_priorite, tranches_delai, volume_par_mois)
-from preparation import COLONNES_REQUISES, COLONNES_UTILES, FichierIncompatible, lire_csv, preparer
+                         filtrer, format_fr, lecture, plus_longs, plus_reassignes, recapitulatif_kpi,
+                         sla_par_equipe, sla_par_priorite)
+from preparation import (COLONNES_REQUISES, COLONNES_UTILES, OPTIONS, FichierIncompatible, appliquer_options,
+                         lire_csv, preparer)
+from rapport import rapport_word
 
 LOGO = Path(__file__).parent / "assets" / "logo.svg"
-# Couleurs du thème (.streamlit/config.toml) reprises dans les graphiques.
-BLEU, TURQUOISE, GRIS = "#1E40AF", "#0F766E", "#94A3B8"
 # KPI en cartes, deux lignes de quatre ; les autres sont dans le tableau des définitions.
 KPI_CARTES = [["Incidents uniques", "Incidents résolus", "Incidents ouverts", "Respect des SLA"],
               ["Délai moyen de résolution", "Délai médian de résolution", "Taux d'incidents réassignés",
@@ -29,44 +31,6 @@ KPI_CARTES = [["Incidents uniques", "Incidents résolus", "Incidents ouverts", "
 def charger(contenu):
     """Lecture + préparation, mises en cache pour ne pas les refaire à chaque filtre."""
     return preparer(lire_csv(contenu))
-
-
-def barres(data, x, y, titre_x, titre_y, horizontal=False, tri=None, domaine=None, infobulles=None,
-           hauteur=260, gris=(), couleurs=None, angle=None):
-    """Diagramme en barres d'une seule série (x = valeur, y = catégorie), avec infobulle.
-
-    gris : catégories hors métier (« Inconnu », « Autres ») affichées en gris ;
-    couleurs : {catégorie: couleur} quand chaque barre a sa propre identité.
-    """
-    echelle = alt.Scale(domain=domaine) if domaine else alt.Undefined
-    # Graduations au format français : 24 918 (espace fine insécable comme séparateur de milliers).
-    graduations = alt.Axis(labelExpr="replace(format(datum.value, ',d'), ',', ' ')")
-    valeur = (alt.X if horizontal else alt.Y)(f"{x}:Q", title=titre_x, scale=echelle, axis=graduations)
-    # Toutes les étiquettes de catégorie restent visibles et ne sont pas tronquées.
-    axe = alt.Axis(labelOverlap=False, labelLimit=240, **({"labelAngle": angle} if angle is not None else {}))
-    categorie = (alt.Y if horizontal else alt.X)(f"{y}:N", title=titre_y, sort=tri, axis=axe)
-    if couleurs:
-        couleur = alt.Color(f"{y}:N", scale=alt.Scale(domain=list(couleurs), range=list(couleurs.values())),
-                            legend=None)
-    elif gris:
-        couleur = alt.condition(alt.FieldOneOfPredicate(field=y, oneOf=list(gris)), alt.value(GRIS), alt.value(BLEU))
-    else:
-        couleur = alt.value(BLEU)
-    infobulles = infobulles or [alt.Tooltip(y, title=titre_y), alt.Tooltip(x, title=titre_x)]
-    return (alt.Chart(data, height=hauteur, background="transparent").mark_bar(cornerRadiusEnd=4)
-            .encode(categorie, valeur, color=couleur, tooltip=infobulles))
-
-
-def infobulles_resume(nom, titre):
-    """Infobulle commune aux tableaux de resume() : incidents, SLA et délais."""
-    return [alt.Tooltip(nom, title=titre), alt.Tooltip("incidents", title="Incidents"),
-            alt.Tooltip("sla_pct", title="SLA (%)"), alt.Tooltip("resolution_moyenne_h", title="Délai moyen (h)"),
-            alt.Tooltip("resolution_mediane_h", title="Délai médian (h)")]
-
-
-def hors_metier(valeurs):
-    """Valeurs de remplacement à griser : « Inconnu » (non renseigné) et « Autres (n) »."""
-    return [v for v in valeurs if v == "Inconnu" or str(v).startswith("Autres")]
 
 
 def etape(icone, numero, titre):
@@ -130,8 +94,8 @@ cartes[4].metric("Période couverte",
                  border=True, help="Première et dernière date d'ouverture valides (opened_at).")
 if infos["format"] == "journal d'événements":
     st.info(f"{format_fr(infos['lignes'])} lignes pour {format_fr(infos['incidents'])} incidents. Les indicateurs "
-            "portent sur le **dernier état connu** de chaque incident (sys_updated_at le plus récent), comme dans "
-            "le notebook.", title="Journal d'événements détecté", icon=":material/timeline:")
+            "portent sur le **dernier état connu** de chaque incident (sys_updated_at le plus récent).",
+            title="Journal d'événements détecté", icon=":material/timeline:")
 else:
     st.success("Une ligne par incident : le fichier est utilisé tel quel.", title="Table d'incidents détectée",
                icon=":material/table_rows:")
@@ -160,6 +124,21 @@ with st.container(border=True, key="carte_anomalies"):
         formats = {c: f or "aucun format reconnu" for c, f in infos["formats_dates"].items()}
         st.dataframe(pd.DataFrame(formats.items(), columns=["colonne", "format"]), hide_index=True,
                      alt="Format reconnu pour chaque colonne de dates")
+
+with st.container(border=True, key="carte_options"):
+    st.subheader(":material/tune: Options de nettoyage (facultatives)", anchor=False)
+    st.caption("Décochées, les résultats suivent les règles de référence (identiques au rapport Power BI). "
+               "Cochez une option pour en tester l'effet sur tous les indicateurs, graphiques et exports.")
+    colonnes_options = st.columns(2)
+    choisies = [option for i, (option, libelle) in enumerate(OPTIONS.items())
+                if colonnes_options[i % 2].checkbox(libelle, key=f"option_{option}")]
+    incidents, effets_options = appliquer_options(incidents, choisies)
+    if effets_options:
+        st.dataframe(pd.DataFrame(effets_options), hide_index=True, alt="Effet des options de nettoyage cochées",
+                     column_config={"option": "Option", "incidents concernés": nombre("Incidents concernés"),
+                                    "effet": "Effet"})
+        st.warning("Les résultats ne sont plus ceux des règles de référence : ils peuvent différer du rapport "
+                   "Power BI.", icon=":material/info:")
 
 # --- 3. Filtrer ---------------------------------------------------------------------------------
 etape("filter_alt", 3, "Filtrer")
@@ -191,6 +170,8 @@ selection = filtrer(incidents, debut, fin, choix)
 actifs = ([f"période {debut:%d/%m/%Y} – {fin:%d/%m/%Y} (opened_at)"] if debut else []) + \
          [f"{FILTRES[c]} = {', '.join(v)}" for c, v in choix.items() if v]
 description_filtres = " ; ".join(actifs) or "aucun filtre"
+if effets_options:
+    description_filtres += " · options : " + " ; ".join(e["option"] for e in effets_options)
 st.caption(f":material/info: **{format_fr(selection['number'].nunique())}** incidents sur "
            f"{format_fr(len(incidents))} · Filtres actifs : {description_filtres}")
 
@@ -220,8 +201,8 @@ else:
         with st.container(border=True, key="carte_lecture"):
             st.subheader(":material/lightbulb: Lecture des résultats", anchor=False)
             st.markdown("\n".join(f"- {m}" for m in messages))
-            st.caption("Messages calculés automatiquement sur la sélection filtrée, avec les seuils indiqués dans le "
-                       "README. Ils montrent des liens, pas des causes : à confirmer avant de conclure.")
+            st.caption("Messages calculés automatiquement sur la sélection filtrée. Ils montrent des liens, "
+                       "pas des causes : à confirmer avant de conclure.")
 
     sla_disponible = selection["sla_compliant"].notna().any()
     sans_sla = "Indisponible : pas de statut SLA exploitable (colonne made_sla absente ou vide)."
@@ -229,15 +210,12 @@ else:
     gauche, droite = st.columns(2)
     with gauche.container(border=True, key="carte_volume"):
         st.subheader("Évolution du nombre d'incidents", anchor=False)
-        st.altair_chart(barres(volume_par_mois(selection), "incidents", "mois", "Incidents", "Mois d'ouverture",
-                               angle=-45), alt="Nombre d'incidents par mois d'ouverture")
+        st.altair_chart(graphique_volume(selection), alt="Nombre d'incidents par mois d'ouverture")
         st.caption("Date utilisée : opened_at. Un mois avec peu d'incidents ne permet pas de conclure à une tendance.")
     with droite.container(border=True, key="carte_sla_mois"):
         st.subheader("Respect des SLA par mois", anchor=False)
         if sla_disponible:
-            st.altair_chart(barres(sla_par_mois(selection), "sla_pct", "mois", "Respect des SLA (%)", "Mois d'ouverture",
-                                   domaine=[0, 100], angle=-45, infobulles=infobulles_resume("mois", "Mois")),
-                            alt="Taux de respect des SLA par mois d'ouverture")
+            st.altair_chart(graphique_sla_mois(selection), alt="Taux de respect des SLA par mois d'ouverture")
             st.caption("Survolez une barre pour voir le nombre d'incidents : un taux calculé sur quelques incidents "
                        "varie fortement d'un mois à l'autre.")
         else:
@@ -251,11 +229,7 @@ else:
             st.caption("Indisponible : colonne priority absente.")
         else:
             if sla_disponible:
-                st.altair_chart(barres(priorites, "sla_pct", "priority", "Respect des SLA (%)", "Priorité",
-                                       horizontal=True, tri="ascending", domaine=[0, 100], hauteur=200,
-                                       gris=hors_metier(priorites["priority"]),
-                                       infobulles=infobulles_resume("priority", "Priorité")),
-                                alt="Taux de respect des SLA par priorité")
+                st.altair_chart(graphique_sla_priorite(selection), alt="Taux de respect des SLA par priorité")
             else:
                 st.caption(sans_sla)
             st.dataframe(priorites, hide_index=True, alt="Volume, SLA et délais par priorité",
@@ -267,10 +241,7 @@ else:
             st.caption("Indisponible : colonne reassignment_count absente ou vide. Le nombre d'événements n'est pas "
                        "utilisé à la place.")
         else:
-            st.altair_chart(barres(reassignation, "resolution_moyenne_h", "reassignment_status",
-                                   "Délai moyen de résolution (h)", "", horizontal=True, tri=None, hauteur=200,
-                                   couleurs={"Sans réassignation": TURQUOISE, "Avec réassignation": BLEU},
-                                   infobulles=infobulles_resume("reassignment_status", "Incidents")),
+            st.altair_chart(graphique_reassignation(selection),
                             alt="Délai moyen de résolution avec et sans réassignation")
             st.dataframe(reassignation, hide_index=True, alt="Volume, SLA et délais avec et sans réassignation",
                          column_config={"reassignment_status": "Réassignation", **COLONNES_RESUME})
@@ -280,18 +251,13 @@ else:
     gauche, droite = st.columns(2)
     with gauche.container(border=True, key="carte_delais", height="stretch"):
         st.subheader("Délais de résolution", anchor=False)
-        st.altair_chart(barres(tranches_delai(selection), "incidents", "tranche", "Incidents", "Délai de résolution",
-                               tri=alt.SortField("ordre"), angle=0, hauteur=380),
-                        alt="Nombre d'incidents par tranche de délai de résolution")
+        st.altair_chart(graphique_delais(selection), alt="Nombre d'incidents par tranche de délai de résolution")
         st.caption("Incidents avec des dates d'ouverture et de résolution valides. "
                    "La moyenne est tirée vers le haut par quelques incidents très longs : la médiane est plus représentative.")
     with droite.container(border=True, key="carte_categorie", height="stretch"):
         st.subheader("Répartition par catégorie", anchor=False)
         if "category" in selection.columns:
-            categories = repartition(selection, "category", limite=15)
-            st.altair_chart(barres(categories, "incidents", "category", "Incidents", "Catégorie", horizontal=True,
-                                   tri=None, hauteur=380, gris=hors_metier(categories["category"])),
-                            alt="Nombre d'incidents par catégorie")
+            st.altair_chart(graphique_categories(selection), alt="Nombre d'incidents par catégorie")
             st.caption("Les 15 catégories les plus fréquentes. En gris : « Inconnu » (catégorie non renseignée) "
                        "et « Autres » (les catégories suivantes, regroupées).")
         else:
@@ -304,11 +270,7 @@ else:
             st.caption("Indisponible : il faut les colonnes assignment_group et made_sla, et au moins une équipe avec "
                        f"{MIN_INCIDENTS_EQUIPE} incidents dans la sélection.")
         else:
-            st.altair_chart(barres(equipes, "sla_pct", "assignment_group", "Respect des SLA (%)", "Équipe",
-                                   horizontal=True, tri="-x", domaine=[0, 100], hauteur=400,
-                                   gris=hors_metier(equipes["assignment_group"]),
-                                   infobulles=infobulles_resume("assignment_group", "Équipe")),
-                            alt="Taux de respect des SLA des équipes les plus chargées")
+            st.altair_chart(graphique_equipes(selection), alt="Taux de respect des SLA des équipes les plus chargées")
             st.caption(f"Les {len(equipes)} équipes les plus chargées (au moins {MIN_INCIDENTS_EQUIPE} incidents). "
                        "En gris : « Inconnu », les incidents sans équipe renseignée.")
 
@@ -337,19 +299,29 @@ else:
 # --- 5. Télécharger -----------------------------------------------------------------------------
 etape("download", 5, "Télécharger")
 with st.container(border=True, key="carte_exports"):
-    st.caption("Les tables d'incidents gardent les colonnes et l'ordre de data/processed/incident_clean.csv, "
-               "le fichier lu par Power BI. Les noms de fichiers sont différents : rien n'est écrasé.")
+    st.markdown(
+        "- **Rapport d'analyse** (Word, à imprimer ou partager) : le fichier, son nettoyage, les indicateurs, "
+        "les graphiques et l'interprétation, expliqués pour un lecteur non technique.\n"
+        "- **Données nettoyées** (CSV) : une ligne par incident, après contrôle et nettoyage, sur toute la période. "
+        "Mêmes colonnes que le fichier lu par Power BI (`incident_clean.csv`).\n"
+        "- **Données nettoyées et filtrées** (CSV) : la même table, limitée aux filtres de l'étape 3.\n"
+        "- **Indicateurs** (CSV) : chaque KPI avec sa valeur, sa définition et le périmètre utilisé.")
+    st.caption("Les options de nettoyage cochées à l'étape 2 s'appliquent aux quatre fichiers. "
+               "Les noms de fichiers sont propres à cet outil : aucun fichier du projet n'est écrasé.")
     with st.container(horizontal=True):
-        st.download_button("Table d'incidents préparée", lambda: incidents.to_csv(index=False),
-                           file_name="it_service_incidents_prepares.csv", mime="text/csv", type="primary",
-                           icon=":material/download:", on_click="ignore")
-        st.download_button("Données filtrées", lambda: selection.to_csv(index=False),
+        st.download_button("Rapport d'analyse (Word)",
+                           lambda: rapport_word(fichier.name, infos, controles, incidents, selection, kpis,
+                                                effets_options, description_filtres),
+                           file_name="rapport_analyse_incidents_it.docx", type="primary",
+                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                           icon=":material/description:", on_click="ignore")
+        st.download_button("Données nettoyées", lambda: incidents.to_csv(index=False),
+                           file_name="it_service_incidents_nettoyes.csv", mime="text/csv",
+                           icon=":material/cleaning_services:", on_click="ignore")
+        st.download_button("Données nettoyées et filtrées", lambda: selection.to_csv(index=False),
                            file_name="it_service_incidents_filtres.csv", mime="text/csv",
                            icon=":material/filter_alt:", on_click="ignore", disabled=selection.empty)
-        st.download_button("Récapitulatif des KPI",
+        st.download_button("Indicateurs",
                            lambda: recapitulatif_kpi(kpis, description_filtres).to_csv(index=False).encode("utf-8-sig"),
                            file_name="it_service_kpi.csv", mime="text/csv", icon=":material/table_chart:",
                            on_click="ignore")
-
-st.caption("IT Service Performance · mêmes règles que les notebooks 01 à 05 et le rapport Power BI · "
-           "fichier gardé en mémoire de session, rien n'est enregistré.")

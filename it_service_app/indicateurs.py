@@ -47,16 +47,16 @@ def calculer_kpi(df):
     if "incident_state" in df.columns:
         resolus = int(df["incident_state"].isin(ETATS_RESOLUS).sum())
         kpis += [_kpi("Incidents résolus", resolus, "incidents", "Dernier état Resolved ou Closed.",
-                      f"{n} incidents"),
+                      f"{format_fr(n)} incidents"),
                  _kpi("Incidents ouverts", n - resolus, "incidents", "Dernier état autre que Resolved ou Closed.",
-                      f"{n} incidents")]
+                      f"{format_fr(n)} incidents")]
     else:
         raison = "Colonne incident_state absente."
         kpis += [_kpi("Incidents résolus", None, "incidents", "Dernier état Resolved ou Closed.", "-", raison),
                  _kpi("Incidents ouverts", None, "incidents", "Dernier état autre que Resolved ou Closed.", "-", raison)]
 
     delais = df["resolution_time_hours"].dropna()
-    pop = f"{len(delais)} incidents avec des dates d'ouverture et de résolution valides et cohérentes"
+    pop = f"{format_fr(len(delais))} incidents avec des dates d'ouverture et de résolution valides et cohérentes"
     raison = None if len(delais) else "Aucun incident avec des dates d'ouverture et de résolution valides."
     kpis += [_kpi("Délai moyen de résolution", _arrondi(delais.mean()), "heures",
                   "Moyenne de resolved_at − opened_at.", pop, raison),
@@ -66,7 +66,7 @@ def calculer_kpi(df):
     cloture = df["closure_time_hours"].dropna()
     kpis.append(_kpi("Délai moyen de clôture", _arrondi(cloture.mean()), "heures",
                      "Moyenne de closed_at − opened_at, incidents à l'état Closed.",
-                     f"{len(cloture)} incidents clos avec des dates valides",
+                     f"{format_fr(len(cloture))} incidents clos avec des dates valides",
                      None if len(cloture) else "Aucun incident clos avec des dates valides."))
 
     if _absente(df, "sla_compliant"):
@@ -76,13 +76,13 @@ def calculer_kpi(df):
     else:
         sla = df["sla_compliant"].dropna()
         kpis.append(_kpi("Respect des SLA", _pourcent(sla.mean()), "%",
-                         "Part des incidents avec made_sla = True (définition du notebook et de Power BI).",
-                         f"{len(sla)} incidents avec un statut SLA, ouverts compris"))
+                         "Part des incidents avec made_sla = True.",
+                         f"{format_fr(len(sla))} incidents avec un statut SLA, ouverts compris"))
         if "incident_state" in df.columns:
             sla_res = df.loc[df["incident_state"].isin(ETATS_RESOLUS), "sla_compliant"].dropna()
             kpis.append(_kpi("Respect des SLA (résolus)", _pourcent(sla_res.mean()) if len(sla_res) else None, "%",
                              "Même calcul limité aux incidents Resolved ou Closed.",
-                             f"{len(sla_res)} incidents résolus avec un statut SLA",
+                             f"{format_fr(len(sla_res))} incidents résolus avec un statut SLA",
                              None if len(sla_res) else "Aucun incident résolu dans la sélection."))
 
     if _absente(df, "reassignment_count"):
@@ -92,16 +92,16 @@ def calculer_kpi(df):
                  _kpi("Réassignations moyennes", None, "par incident", "Moyenne de reassignment_count.", "-", raison)]
     else:
         compte = df["reassignment_count"].dropna()
-        pop = f"{len(compte)} incidents avec un compteur renseigné"
+        pop = f"{format_fr(len(compte))} incidents avec un compteur renseigné"
         kpis += [_kpi("Taux d'incidents réassignés", _pourcent((compte > 0).mean()), "%",
-                      "Part des incidents avec reassignment_count > 0 (mesure Power BI).", pop),
+                      "Part des incidents avec reassignment_count > 0.", pop),
                  _kpi("Réassignations moyennes", _arrondi(compte.mean()), "par incident",
-                      "Moyenne du compteur reassignment_count au dernier état (notebook).", pop)]
+                      "Moyenne du compteur reassignment_count au dernier état.", pop)]
 
     if not _absente(df, "reopen_count"):
         compte = df["reopen_count"].dropna()
         kpis.append(_kpi("Réouvertures moyennes", _arrondi(compte.mean()), "par incident",
-                         "Moyenne du compteur reopen_count au dernier état.", f"{len(compte)} incidents"))
+                         "Moyenne du compteur reopen_count au dernier état.", f"{format_fr(len(compte))} incidents"))
     return kpis
 
 

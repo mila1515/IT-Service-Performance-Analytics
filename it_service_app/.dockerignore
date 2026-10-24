@@ -5,6 +5,8 @@
 !app.py
 !preparation.py
 !indicateurs.py
+!graphiques.py
+!rapport.py
 !assets/
 !assets/**
 !.streamlit/

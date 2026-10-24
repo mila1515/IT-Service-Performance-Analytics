@@ -55,16 +55,16 @@ Tests : `python -m unittest discover -s it_service_app/tests`
 1. **Importer** un CSV : le journal brut (`data/raw/incident_event_log.csv`, plusieurs lignes par incident)
    ou une table d'incidents (`data/processed/incident_clean.csv`, une ligne par incident).
 2. **Vérifier** : lignes, colonnes, incidents uniques, format détecté, formats de dates, colonnes absentes,
-   et le tableau des anomalies et exclusions qui influencent les calculs.
+   le tableau des anomalies et exclusions qui influencent les calculs, et les **options de nettoyage facultatives**.
 3. **Filtrer** : période (sur la date d'ouverture `opened_at`), priorité, catégorie, état, équipe.
 4. **Indicateurs et graphiques**, tous calculés sur la sélection filtrée.
-5. **Télécharger** la table préparée, les données filtrées et le récapitulatif des KPI.
+5. **Télécharger** le rapport d'analyse (Word), les données nettoyées, les données filtrées et les indicateurs.
 
 ### Interface
 
 - **Logo** `assets/logo.svg` : jauge de performance et ligne de supervision, aussi utilisé comme icône d'onglet.
 - **Thème** (`.streamlit/config.toml`) : bleu nuit `#1E40AF` pour les actions et les graphiques, turquoise `#0F766E`
-  en accent, fond gris-bleu `#F3F6FA` et cartes blanches, police Inter.
+  en accent, fond gris-bleu `#F3F6FA` et cartes blanches, police Inter, titres sobres (`headingFontSizes`).
 - **Graphiques** : une couleur par série ; les valeurs de remplacement (« Inconnu », « Autres ») sont en gris pour ne
   pas être confondues avec de vraies équipes ou catégories. Graduations et tableaux au format français (24 918 · 1,85).
 
@@ -103,6 +103,18 @@ Si une colonne utile manque, seuls les indicateurs concernés sont indisponibles
 - **Ex-aequo** : `sys_updated_at` est à la minute près ; à date égale, la ligne au `sys_mod_count` le plus élevé est
   gardée (tri stable). Le notebook 02 applique la même règle depuis sa correction du 24/10/2026.
 - **SLA** : un `made_sla` vide ou illisible reste manquant et est exclu du SLA (même règle que le notebook corrigé).
+
+### Options de nettoyage facultatives
+
+Décochées par défaut : les résultats restent ceux des règles ci-dessus, identiques au rapport Power BI.
+Une option cochée s'applique à tous les indicateurs, graphiques, exports et au rapport, qui la mentionnent.
+
+| Option | Effet | Incidents concernés (journal brut) |
+|---|---|---|
+| Exclure les incidents sans équipe | retire les incidents `assignment_group` = « Inconnu » | 2 157 |
+| Exclure les incidents sans catégorie | retire les incidents `category` = « Inconnu » | 7 |
+| Compter un statut SLA vide comme non conforme | `sla_compliant` vide → 0 (ancienne règle du notebook) | 0 |
+| Écarter des délais les résolutions de plus de 30 jours | incident gardé, délai de résolution retiré des moyennes | 1 149 |
 
 ### Différences avec le notebook (sans effet sur les données du projet)
 
@@ -178,15 +190,28 @@ exclusions, et **valeurs manquantes par colonne** du fichier importé (avant ré
 
 ## Exports
 
-| Fichier | Contenu | Encodage |
+| Fichier | Contenu | Format |
 |---|---|---|
-| `it_service_incidents_prepares.csv` | table d'incidents préparée | UTF-8 |
-| `it_service_incidents_filtres.csv` | même table, filtres appliqués | UTF-8 |
-| `it_service_kpi.csv` | KPI : valeur, unité, définition, population, filtres actifs | UTF-8 avec BOM (Excel) |
+| `rapport_analyse_incidents_it.docx` | rapport d'analyse imprimable (voir ci-dessous) | Word |
+| `it_service_incidents_nettoyes.csv` | données nettoyées : une ligne par incident, toute la période | CSV UTF-8 |
+| `it_service_incidents_filtres.csv` | même table, filtres de l'étape 3 appliqués | CSV UTF-8 |
+| `it_service_kpi.csv` | indicateurs : valeur, unité, définition, population, filtres et options | CSV UTF-8 avec BOM (Excel) |
 
-Les tables d'incidents ont **les 46 colonnes de `incident_clean.csv`, dans le même ordre** : elles peuvent remplacer
-la source du rapport Power BI. Les noms de fichiers sont différents, donc rien n'est écrasé ; le rapport actuel
-continue de lire `data/processed/incident_clean.csv`.
+Les tables d'incidents ont **les 46 colonnes de `incident_clean.csv`, dans le même ordre** : sans option cochée,
+`it_service_incidents_nettoyes.csv` est identique à `incident_clean.csv` et peut remplacer la source du rapport
+Power BI. Les noms de fichiers sont différents, donc rien n'est écrasé.
+
+### Rapport d'analyse (Word)
+
+Écrit pour un lecteur non technique, environ 7 pages sur le journal brut (`rapport.py`) :
+
+1. **Le fichier analysé** : ce qu'est un export d'incidents ServiceNow, ce que représente une ligne (événement ou
+   incident), chiffres clés et signification des colonnes principales.
+2. **Contrôle et nettoyage** : les règles expliquées simplement, ce qui a été trouvé dans le fichier, les options choisies.
+3. **Périmètre et indicateurs** : filtres actifs, chaque KPI avec ce qu'il mesure et sur quels incidents.
+4. **Analyses** : les graphiques de l'écran (mêmes définitions, `graphiques.py`) avec une légende de lecture, et les
+   tableaux par priorité, réassignation et incidents les plus longs.
+5. **Interprétation et résumé** : les messages de la lecture des résultats et les limites de l'analyse.
 
 ## Vérification (même fichier, même périmètre)
 

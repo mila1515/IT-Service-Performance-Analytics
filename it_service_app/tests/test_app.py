@@ -34,6 +34,15 @@ class Interface(unittest.TestCase):
         self.assertFalse(at.exception)
         self.assertIn("Colonnes obligatoires absentes", at.error[0].value)
 
+    def test_option_cochee_change_les_resultats(self):
+        at = demarrer(EXEMPLE)
+        self.assertEqual({m.label: m.value for m in at.metric}["Incidents uniques"], "3")
+        at.checkbox(key="option_exclure_sans_categorie").check().run()  # aucune catégorie « Inconnu » ici
+        self.assertEqual({m.label: m.value for m in at.metric}["Incidents uniques"], "3")
+        at.checkbox(key="option_ecarter_delais_extremes").check().run()
+        self.assertFalse(at.exception)
+        self.assertTrue(any("règles de référence" in w.value for w in at.warning))
+
     def test_filtre_sans_resultat(self):
         at = demarrer(EXEMPLE)
         at.multiselect(key="filtre_category").select("B").run()
