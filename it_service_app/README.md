@@ -60,6 +60,14 @@ Tests : `python -m unittest discover -s it_service_app/tests`
 4. **Indicateurs et graphiques**, tous calculés sur la sélection filtrée.
 5. **Télécharger** la table préparée, les données filtrées et le récapitulatif des KPI.
 
+### Interface
+
+- **Logo** `assets/logo.svg` : jauge de performance et ligne de supervision, aussi utilisé comme icône d'onglet.
+- **Thème** (`.streamlit/config.toml`) : bleu nuit `#1E40AF` pour les actions et les graphiques, turquoise `#0F766E`
+  en accent, fond gris-bleu `#F3F6FA` et cartes blanches, police Inter.
+- **Graphiques** : une couleur par série ; les valeurs de remplacement (« Inconnu », « Autres ») sont en gris pour ne
+  pas être confondues avec de vraies équipes ou catégories. Graduations et tableaux au format français (24 918 · 1,85).
+
 ## Colonnes attendues
 
 Format ServiceNow du projet (séparateur `,` ou `;`, UTF-8 ou Windows-1252, `?` = valeur manquante).

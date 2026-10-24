@@ -9,11 +9,30 @@ maxUploadSize = 300
 [client]
 toolbarMode = "minimal"
 
+# Thème « supervision IT » : bleu nuit (actions, graphiques), turquoise (accent), fond gris-bleu.
+# Les couleurs reprennent celles du logo (assets/logo.svg).
 [theme]
 base = "light"
-primaryColor = "#1F5FA8"
-backgroundColor = "#F5F7FA"
-secondaryBackgroundColor = "#E6EDF5"
-textColor = "#1E2A38"
-borderColor = "#D9DEE5"
+primaryColor = "#1E40AF"
+backgroundColor = "#F3F6FA"
+secondaryBackgroundColor = "#E8EEF6"
+textColor = "#1E293B"
+borderColor = "#DCE3EC"
+linkColor = "#1E40AF"
+# Messages d'information en bleu nuit, accent turquoise pour les succès.
+blueColor = "#1E40AF"
+blueBackgroundColor = "#E6EEFB"
+blueTextColor = "#1E3A8A"
+greenColor = "#0F766E"
+greenBackgroundColor = "#E0F2EF"
+greenTextColor = "#0F5F59"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFontWeights = [700, 700, 600, 600, 600, 600]
+metricValueFontSize = "1.85rem"
+metricValueFontWeight = 600
 baseRadius = "0.75rem"
+showWidgetBorder = true
+dataframeHeaderBackgroundColor = "#EEF2F8"
+dataframeBorderColor = "#DCE3EC"
+# Première couleur = série unique des graphiques ; gris = valeurs hors métier (« Inconnu », « Autres »).
+chartCategoricalColors = ["#1E40AF", "#0F766E", "#94A3B8", "#B45309", "#7C3AED", "#BE123C", "#475569"]

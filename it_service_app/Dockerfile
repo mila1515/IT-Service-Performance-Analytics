@@ -9,8 +9,9 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt \
     && useradd --create-home --uid 10001 analyst
 
-# Code de l'application et sa configuration Streamlit (port 8510, thème, taille d'import).
+# Code de l'application, son logo et sa configuration Streamlit (port 8510, thème, taille d'import).
 COPY --chown=analyst:analyst app.py preparation.py indicateurs.py /app/
+COPY --chown=analyst:analyst assets/ /app/assets/
 COPY --chown=analyst:analyst .streamlit/ /app/.streamlit/
 USER analyst
 
