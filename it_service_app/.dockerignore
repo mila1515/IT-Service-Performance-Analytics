@@ -1,0 +1,9 @@
+# Seuls le code et la configuration de l'application sont envoyés au moteur de construction.
+**
+!Dockerfile
+!requirements.txt
+!app.py
+!preparation.py
+!indicateurs.py
+!.streamlit/
+!.streamlit/**

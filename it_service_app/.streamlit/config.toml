@@ -1,0 +1,19 @@
+# Configuration propre à l'application IT Service Performance.
+[server]
+# 8510 : hors de la plage 8501-8503 déjà prise sur le poste (QHSE Air Bot, plateforme de traduction,
+# audit sous Docker) et où Streamlit se décale tout seul quand un port est occupé.
+port = 8510
+# Le journal brut du projet pèse environ 46 Mo.
+maxUploadSize = 300
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "light"
+primaryColor = "#1F5FA8"
+backgroundColor = "#F5F7FA"
+secondaryBackgroundColor = "#E6EDF5"
+textColor = "#1E2A38"
+borderColor = "#D9DEE5"
+baseRadius = "0.75rem"
