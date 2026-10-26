@@ -306,8 +306,6 @@ with st.container(border=True, key="carte_exports"):
         "Mêmes colonnes que le fichier lu par Power BI (`incident_clean.csv`).\n"
         "- **Données nettoyées et filtrées** (CSV) : la même table, limitée aux filtres de l'étape 3.\n"
         "- **Indicateurs** (CSV) : chaque KPI avec sa valeur, sa définition et le périmètre utilisé.")
-    st.caption("Les options de nettoyage cochées à l'étape 2 s'appliquent aux quatre fichiers. "
-               "Les noms de fichiers sont propres à cet outil : aucun fichier du projet n'est écrasé.")
     with st.container(horizontal=True):
         st.download_button("Rapport d'analyse (Word)",
                            lambda: rapport_word(fichier.name, infos, controles, incidents, selection, kpis,
