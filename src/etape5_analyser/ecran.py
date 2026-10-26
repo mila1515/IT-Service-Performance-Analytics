@@ -152,15 +152,11 @@ def _section_exports(data, roles, nom, reglages, validation):
         gauche, droite = st.columns(2)
         with gauche, st.container(border=True, key="carte_analyse_rapport"):
             st.markdown("**Rapport complet**")
-            st.caption("Tout le parcours, de l'étape 1 à l'étape 5 : lecture du fichier, points repérés, décisions, "
-                       "graphiques de contrôle (avec le filtre de l'étape 4 s'il est actif) et ces analyses.")
+            st.caption("Tout le parcours, de l'import aux analyses.")
             section_rapport(validation, dossier_fichiers)
         with droite, st.container(border=True, key="carte_analyse_donnees"):
             st.markdown("**Données et notebook**")
-            st.caption("Un dossier prêt à l'emploi : les données corrigées en CSV"
-                       + (f" (avec la colonne {colonne} déjà calculée)" if avec_delai else "")
-                       + " pour Power BI ou Excel, et un notebook Jupyter qui les lit : aperçu, qualité, statistiques, "
-                         "graphiques, puis ces analyses. Extrayez le ZIP, puis ouvrez les fichiers du dossier.")
+            st.caption("Les données corrigées (CSV) et un notebook Jupyter, dans un ZIP.")
             st.download_button("Données + notebook (ZIP)", dossier_zip, f"{base}_donnees_et_notebook.zip", "application/zip",
                                type="primary", icon=":material/folder_zip:", on_click="ignore")
 
