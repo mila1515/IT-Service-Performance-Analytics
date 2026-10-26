@@ -203,7 +203,7 @@ Power BI. Les noms de fichiers sont différents, donc rien n'est écrasé.
 
 ### Rapport d'analyse (Word)
 
-Écrit pour un lecteur non technique, environ 7 pages sur le journal brut (`rapport.py`) :
+Environ 7 pages sur le journal brut (`rapport.py`) :
 
 1. **Le fichier analysé** : ce qu'est un export d'incidents ServiceNow, ce que représente une ligne (événement ou
    incident), chiffres clés et signification des colonnes principales.

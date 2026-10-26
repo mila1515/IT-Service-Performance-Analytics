@@ -301,9 +301,8 @@ etape("download", 5, "Télécharger")
 with st.container(border=True, key="carte_exports"):
     st.markdown(
         "- **Rapport d'analyse** (Word, à imprimer ou partager) : le fichier, son nettoyage, les indicateurs, "
-        "les graphiques et l'interprétation, expliqués pour un lecteur non technique.\n"
-        "- **Données nettoyées** (CSV) : une ligne par incident, après contrôle et nettoyage, sur toute la période. "
-        "Mêmes colonnes que le fichier lu par Power BI (`incident_clean.csv`).\n"
+        "les graphiques et l'interprétation.\n"
+        "- **Données nettoyées** (CSV) : une ligne par incident, après contrôle et nettoyage, sur toute la période.\n"
         "- **Données nettoyées et filtrées** (CSV) : la même table, limitée aux filtres de l'étape 3.\n"
         "- **Indicateurs** (CSV) : chaque KPI avec sa valeur, sa définition et le périmètre utilisé.")
     with st.container(horizontal=True):

@@ -1,6 +1,6 @@
 """Rapport d'analyse imprimable (Word .docx), de l'import du fichier jusqu'à l'interprétation.
 
-Écrit pour un lecteur non technique : ce qu'est le fichier, ce que représente une ligne, ce que le nettoyage a fait,
+Contenu : ce qu'est le fichier, ce que représente une ligne, ce que le nettoyage a fait,
 les indicateurs, les graphiques de l'écran (mêmes définitions, voir graphiques.py) et un résumé.
 Entrée : les objets déjà calculés par l'application. Sortie : les octets du fichier .docx.
 """
