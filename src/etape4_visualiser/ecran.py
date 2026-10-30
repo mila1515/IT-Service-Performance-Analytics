@@ -25,6 +25,7 @@ from src.etape4_visualiser.interpretations import interpretations
 from src.etape4_visualiser.preparation import prepare
 from src.etape4_visualiser.rapport import rapport_html, rapport_markdown
 from src.etape4_visualiser.rapport_word import rapport_word
+from src.ia.conseils import pour_le_rapport
 
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 QUESTIONS = {
@@ -137,7 +138,8 @@ def contenu_rapport(validation):
             "empreinte": source["empreinte"], "decisions": decisions(points_courants(validation["choix"]), validation["choix"]),
             "journal": phrases_journal(validation["log"], validation.get("regles_signalees", ())),
             "resultat": validation["resultat"], "notes": etat.get("notes", ""),
-            "regles_verifiees": validation.get("regles_verifiees") or {}, "analyses": list(etat.get("analyses") or [])}
+            "regles_verifiees": validation.get("regles_verifiees") or {}, "analyses": list(etat.get("analyses") or []),
+            "ia": pour_le_rapport(etat.get("ia"), validation["choix"])}
     filtre = _memo_filtre()
     return partial(_contenu_rapport, base, validation, {"specs": list(filtre["specs"]), "texte": filtre["texte"]},
                    list(etat.graphiques_ajoutes))

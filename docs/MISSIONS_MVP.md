@@ -166,6 +166,7 @@ Commence par la MISSION 1. Ne code rien avant d'avoir lu les fichiers et exécut
 | Rapport unique des étapes 1 à 5 | Terminé : rapport et archive à l'étape 5, sections par étape, filtre mémorisé ; 92 tests OK ; navigateur et Docker réussis | [Rapport unique](RAPPORT_MISSIONS.md#un-seul-rapport-à-létape-5-sur-les-étapes-1-à-5-2026-10-23) |
 | Archive complète | Terminé : rapport Word et dossier données + notebook ajoutés à « Tout le projet (ZIP) » ; 93 tests OK ; navigateur et Docker réussis | [Archive](RAPPORT_MISSIONS.md#archive--tout-le-projet--vraiment-complète-2026-10-23) |
 | 7. Répétitions | Terminée (version légère) : volet « Pourquoi … se répète ? » sur les cartes Identifiant, lecture seule ; 95 tests OK ; navigateur réussi, aussi sur le fichier réel | [Mission 7](RAPPORT_MISSIONS.md#mission-7--répétitions-version-légère-2026-10-22) |
+| Assistant IA | Codé, à essayer avec une vraie clé : onglet facultatif, conseils sous les cartes, section dans le rapport ; 110 tests OK | [Assistant IA](RAPPORT_MISSIONS.md#assistant-ia-2026-10-30) |
 
 Tous les rapports sont regroupés dans un seul fichier : [RAPPORT_MISSIONS.md](RAPPORT_MISSIONS.md).
 

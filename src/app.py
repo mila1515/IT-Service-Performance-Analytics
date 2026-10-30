@@ -17,13 +17,15 @@ from src.etape2_comprendre.ecran import ecran_comprendre
 from src.etape3_corriger.ecran import ecran_corriger
 from src.etape4_visualiser.ecran import ecran_visualiser
 from src.etape5_analyser.ecran import ecran_analyser
+from src.ia.ecran import ecran_ia
 
 ECRANS = {"Importer": ecran_importer, "Comprendre": ecran_comprendre, "Corriger": ecran_corriger, "Visualiser": ecran_visualiser,
-          "Analyser": ecran_analyser}
+          "Analyser": ecran_analyser, "Assistant IA": ecran_ia}
+ONGLETS = [*ETAPES, "Assistant IA"]
 LOGO = Path(__file__).parent / "assets" / "logo.svg"
 ICONES = {"Importer": ":material/upload_file:", "Comprendre": ":material/visibility:",
           "Corriger": ":material/build:", "Visualiser": ":material/bar_chart:",
-          "Analyser": ":material/insights:"}
+          "Analyser": ":material/insights:", "Assistant IA": ":material/smart_toy:"}
 
 st.set_page_config(page_title="Analyse simple", page_icon=":material/fact_check:", layout="wide",
                    initial_sidebar_state="collapsed")
@@ -34,8 +36,8 @@ etat = st.session_state
 
 with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
     st.image(str(LOGO), width=300)
-    st.segmented_control("Étapes", ETAPES, key="etape", required=True, label_visibility="collapsed",
-                         format_func=lambda e: f"{ICONES[e]} {ETAPES.index(e) + 1} · {e}")
+    st.segmented_control("Étapes", ONGLETS, key="etape", required=True, label_visibility="collapsed",
+                         format_func=lambda e: f"{ICONES[e]} {ONGLETS.index(e) + 1} · {e}")
 
 if etat.etape != "Importer" and etat.get("raw") is None:
     st.info("Importez d'abord un fichier CSV.", icon=":material/upload_file:")

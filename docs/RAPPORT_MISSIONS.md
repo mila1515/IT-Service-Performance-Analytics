@@ -1029,3 +1029,17 @@ Mémoire du conteneur : 50 Mo au repos, **pic d'environ 4,3 Go** pendant le rapp
 **À savoir :** les données figurent deux fois dans l'archive (racine et sous-dossier), qui est donc plus lourde pour un gros fichier.
 
 **Vérifications :** 93 tests OK ; test navigateur réussi en local et sur Docker (contenu du ZIP téléchargé vérifié).
+
+---
+
+## Assistant IA (2026-10-30)
+
+**Demande :** ajouter une IA (API GPT) qui aide à comprendre le fichier et propose des solutions adaptées, sans casser le parcours existant, avec les suggestions au bon endroit et dans le rapport.
+
+**Réalisé :** dossier `src/ia/` et onglet « Assistant IA » : lecture du fichier, conseils de correction, pistes d'analyse. Les conseils apparaissent sous les cartes de l'étape 3 et dans une section du rapport, avec la décision prise (suivie ou non). Option « Masquer les noms de colonnes ».
+
+**Garanties :** l'IA est appelée seulement au clic, ne coche aucun choix et ne modifie aucune donnée. Le résumé envoyé ne contient ni lignes, ni valeurs fréquentes, ni exemples. Seuls les choix existants de la carte sont acceptés. Sans clé ou sans demande à l'IA, les cartes et le rapport ne changent pas.
+
+**À savoir :** les noms de colonnes et les statistiques partent chez OpenAI (sauf noms masqués). Une suggestion peut se tromper, et elle se base sur l'état du fichier au moment de la demande.
+
+**Vérifications :** 110 tests OK (93 existants, 17 nouveaux, sans appel réel à l'API) ; image Docker reconstruite et saine. Reste à essayer avec une vraie clé et à vérifier l'affichage dans un navigateur.

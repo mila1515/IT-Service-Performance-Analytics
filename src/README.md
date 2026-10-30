@@ -204,6 +204,12 @@ flowchart TB
 - Le rapport ne certifie pas l'exactitude des valeurs : il dit ce qui a été vérifié.
 - Tout reste en mémoire : télécharger avant de fermer la page.
 
+## Assistant IA (facultatif)
+
+Un onglet explique le fichier, conseille des corrections et propose des analyses avec l'API GPT. L'IA n'est appelée qu'au
+clic, à partir d'un résumé sans les lignes du fichier, et ne décide de rien. Sans clé, tout le reste fonctionne.
+Configuration et détail de ce qui est envoyé : [ia/README.md](ia/README.md).
+
 ## Outils et stack
 
 | Outil | Version | Rôle dans le projet | Pourquoi ce choix |

@@ -15,6 +15,7 @@ from src.etape2_comprendre.ecran import diagnostic_courant, points_courants, reg
 from src.etape2_comprendre.points import exemples
 from src.etape3_corriger.correction import (choix_complets, executer, phrases_journal, plan_nettoyage, regles_signalees,
                                             resume_resultat)
+from src.ia.ecran import afficher_suggestion
 
 
 def _cle_widget(type_, cle):
@@ -69,7 +70,8 @@ def _ligne(point, ligne, choisi, diagnostic):
     st.segmented_control(ligne["texte"], list(options), format_func=options.get, default=choisi,
                          required=True, key=cle_widget, label_visibility="collapsed",
                          on_change=_enregistrer, args=(point["type"], ligne["cle"], cle_widget))
-    volet = st.expander("Voir les lignes concernées", key=f"{cle_widget}_lignes", on_change="rerun")
+    afficher_suggestion(point["type"], ligne["cle"], options)
+    volet =st.expander("Voir les lignes concernées", key=f"{cle_widget}_lignes", on_change="rerun")
     if volet.open:
         with volet:
             lignes = exemples(st.session_state.raw, diagnostic, point["type"], ligne["cle"], numeros=ligne.get("numeros"))

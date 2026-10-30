@@ -28,6 +28,8 @@ NOTE_ECARTEES = ("Les lignes écartées ne sont pas effacées : elles sont dans 
                  "raison. Un problème qui disparaît parce que sa ligne est écartée n'a pas été réparé.")
 RIEN_A_SIGNALER = "Rien de particulier à signaler."
 NOTE_REGLES = "Une règle non respectée n'est pas forcément une erreur : elle signale un écart avec ce qui était attendu."
+NOTE_IA = ("Suggestions générées par une IA à partir d'un résumé du fichier, sans ses lignes. Elles peuvent se tromper "
+           "et n'ont pas été appliquées automatiquement : seules les décisions de l'étape 3 ont modifié les données.")
 LOGO = Path(__file__).parents[1] / "assets" / "logo.svg"
 POLICE = "Segoe UI, Inter, Arial, sans-serif"
 LARGEUR_GRAPHIQUE = 640
@@ -124,6 +126,25 @@ def _a_dessiner(element):
     return element.get("donnees") is not None and len(element["donnees"]) > 0
 
 
+def _blocs_ia(ia):
+    """Section présente seulement si l'Assistant IA a été utilisé."""
+    if not ia:
+        return []
+    b = [("section", "Suggestions de l'IA"), ("discret", NOTE_IA)]
+    if ia["resume"] or ia["a_regarder"]:
+        b.append(("sous_titre", "Lecture du fichier"))
+        if ia["resume"]:
+            b.append(("texte", ia["resume"]))
+        if ia["a_regarder"]:
+            b.append(("puces", ia["a_regarder"]))
+    if ia["suggestions"]:
+        b += [("sous_titre", "Conseils de correction"),
+              ("tableau", ["Problème", "Suggestion", "Raison", "Décision prise", "Suggestion"], ia["suggestions"])]
+    if ia["pistes"]:
+        b += [("sous_titre", "Pistes d'analyse"), ("puces", ia["pistes"])]
+    return b
+
+
 def blocs(contenu):
     """Le rapport, une fois pour toutes : liste de (genre, …) dans l'ordre de lecture.
 
@@ -192,6 +213,7 @@ def blocs(contenu):
     else:
         b.append(("texte", "Aucune analyse : il faut une colonne de type Catégorie ou Date (étape Comprendre)."))
 
+    b += _blocs_ia(contenu.get("ia"))
     if contenu["notes"].strip():
         b += [("section", "Notes"), ("texte", contenu["notes"].strip())]
     b += [("section", "Ce que ce rapport ne garantit pas"), ("texte", LIMITES)]

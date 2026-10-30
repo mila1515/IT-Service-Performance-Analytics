@@ -5,4 +5,8 @@ services:
     build: .
     ports:
       - "127.0.0.1:${ANALYSE_PORT:-8503}:8501"
+    environment:
+      # Facultatif : lus dans le fichier .env (non versionné) pour l'onglet Assistant IA.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
     restart: unless-stopped
