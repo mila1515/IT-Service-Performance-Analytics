@@ -38,7 +38,6 @@ Ce dépôt réunit trois travaux qui se suivent : une analyse de données, une a
 
 Ce travail est un prototype. Cliquez sur l'image pour voir la démonstration (1 min 35, données fictives) :
 
-[![Démonstration vidéo d'Analyse simple]
 
 https://github.com/user-attachments/assets/1210ee9e-5ea5-43ee-803e-3c29d0b87e3d
 
