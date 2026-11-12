@@ -6,7 +6,11 @@ Cette application permet de refaire l'analyse des incidents IT sur un nouveau fi
 
 Cliquez sur l'image pour voir la démonstration (2 min, données ServiceNow anonymisées) :
 
-[![Démonstration vidéo d'IT Service Performance](../docs/images/apercu_video_it_service.jpg)](../docs/video/IT_Service_Performance.mp4)
+
+
+https://github.com/user-attachments/assets/aed10f59-19cc-4058-87bf-8d2cc16c0833
+
+
 
 ## Le parcours
 
