@@ -28,7 +28,11 @@ Ce dépôt réunit trois travaux qui se suivent : une analyse de données, une a
 
 Cliquez sur l'image pour voir la démonstration (2 min, données ServiceNow anonymisées) :
 
-[![Démonstration vidéo d'IT Service Performance](docs/images/apercu_video_it_service.jpg)](docs/video/IT_Service_Performance.mp4)
+
+
+https://github.com/user-attachments/assets/36ae505c-0e3d-4b97-9471-381912fa1861
+
+
 
 [Voir le lancement et le fonctionnement de l'application →](it_service_app/README.md)
 
