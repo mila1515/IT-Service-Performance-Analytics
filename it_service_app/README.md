@@ -4,7 +4,7 @@
 
 Cette application permet de refaire l'analyse des incidents IT sur un nouveau fichier, **sans exécuter de notebook** : import d'un CSV ServiceNow, contrôle des données, filtres, indicateurs et exports. Elle reprend les règles de nettoyage et les définitions des KPI des [notebooks](../notebooks/README.md), et reste indépendante du reste du dépôt.
 
-Cliquez sur l'image pour voir la démonstration (1 min 34, données ServiceNow anonymisées) :
+Cliquez sur l'image pour voir la démonstration (2 min, données ServiceNow anonymisées) :
 
 [![Démonstration vidéo d'IT Service Performance](../docs/images/apercu_video_it_service.jpg)](../docs/video/IT_Service_Performance.mp4)
 
