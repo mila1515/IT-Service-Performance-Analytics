@@ -26,6 +26,10 @@ Ce dépôt réunit trois travaux qui se suivent : une analyse de données, une a
 
 **Outils :** Python, pandas, Streamlit, Docker.
 
+Cliquez sur l'image pour voir la démonstration (1 min 34, données ServiceNow anonymisées) :
+
+[![Démonstration vidéo d'IT Service Performance](docs/images/apercu_video_it_service.jpg)](docs/video/IT_Service_Performance.mp4)
+
 [Voir le lancement et le fonctionnement de l'application →](it_service_app/README.md)
 
 ## 3. Audit qualité (Analyse simple)

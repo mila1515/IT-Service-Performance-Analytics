@@ -4,6 +4,10 @@
 
 **Analyse simple** est un prototype d'application web qui guide l'utilisateur pour vérifier et préparer n'importe quel fichier CSV avant de l'analyser, sans écrire de code. L'outil ne contient aucune règle métier : il fonctionne aussi bien sur des incidents IT que sur des ventes ou des relevés de capteurs.
 
+Cliquez sur l'image pour voir la démonstration (1 min 35, données fictives) :
+
+[![Démonstration vidéo d'Analyse simple](../docs/images/apercu_video.jpg)](../docs/video/Analyse_simple.mp4)
+
 ## Le parcours
 
 ```mermaid
